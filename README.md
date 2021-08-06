@@ -1,10 +1,10 @@
 # Show in File Manager
 
 Platform independent way for a Python script to open the system file manager and optionally select files to highlight
-in it. The point is not to open the file, but to display it in the operating system's file manager, preferably selected.
+in it. The point is not to _open_ the file, but to _select_ it in the operating system's file manager.
 
-Plenty of programs provide this function. Phrases programs use to name it vary depending on the context. 
-Windows programs use terms like "Show in Windows Explorer", "Show in Explorer", and "Reveal in Explorer". 
+Plenty of programs provide this functionality in their user interface. Phrases programs use to name it vary depending on
+the context. Windows programs use terms like "Show in Windows Explorer", "Show in Explorer", and "Reveal in Explorer".
 Cross-platform programs can prefer terms like "Open Containing Folder" or "Open in File Browser".
 On a downloading program, a term can be "Open destination folder".
 
@@ -16,20 +16,21 @@ The command results in the file manager opening, typically with the files select
 
 ## Rationale
 
-There is no standard with which to open an operating system's file manager at a requested path,
-and highlight files to display in it. Moreover, not all file managers support specifying files to select &mdash;
-if you try to pass a file to these file managers, they will open the file instead of selecting it.  
+There is no standard command line argument with which to open an operating system's file manager and select files at a
+specified path. Moreover, not all file managers support specifying files to select &mdash;
+if you try to pass a file to these file managers, they will open the file instead of selecting it, or display an error
+message.
 
-On desktop Linux the problem is especially acute, as Linux provides a plethora of file managers, with no 
-standard for specifying which files to highlight on a supplied path. Moreover, the system default file manager
-can sometimes be incorrectly set to nonsensical values, such as an AppImage or Flatpak the user installed.
+On desktop Linux the problem is especially acute, as Linux provides a plethora of file managers, with varying command
+line arguments. Moreover, the system default file manager can sometimes be incorrectly set to nonsensical values,
+such as an AppImage or Flatpak the user installed.
 
-To work around these problems, this module maintains a list of file managers, the commands they accept, and any
-limitations they have:
+To work around these problems, this module maintains a list of desktops, their associated file managers, the commands
+the file managers accept, and any limitations these file managers have:
 
 |File Manager|Used by|Command line       |Can Select Files|Accepts URI  |Accepts Path|Handles Multiple Files / Directories|Notes|
 |------------|-------|-------------------|:---:|:---:|:---:|:---:|----|
-| Windows File Explorer|Windows 10, Windows 11| `explorer.exe /select,URI`|:white_check_mark:|:white_check_mark:|:white_check_mark:|:x:|No space between comma and URI.|
+| Windows File Explorer|Windows 10 / 11| `explorer.exe /select,URI`|:white_check_mark:|:white_check_mark:|:white_check_mark:|:x:|No space between comma and URI. Can specify only one URI.|
 | Nautilus (Files)|Gnome, Pop OS, Zorin|`nautilus --select URI1 URI2`|:white_check_mark:|:white_check_mark:|:white_check_mark:|:warning:|Multiple URIs open multiple Nautilus windows.|
 |Dolphin|KDE|`dolphin --select URI1 URI2 `|:white_check_mark:|:white_check_mark:|:white_check_mark:|:white_check_mark:|`--select` functionality fails in some recent KDE releases, but is working in KDE Neon testing.|
 |Nemo|Linux Mint|`nemo URI1 URI2`|:white_check_mark:|:white_check_mark:|:white_check_mark:|:warning:|Multiple URIs open multiple Nemo windows.|
