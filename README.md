@@ -83,8 +83,8 @@ On Windows, it is assumed the only file manager is `explorer.exe`.
 ### Linux Notes
 The file manager is probed using `xdg-mime query default inode/directory`.  
 
-The module provides the Linux only function ```determine_linux_file_manager``` that returns file manager settings with
-setting the module to use them.
+The module provides the Linux only function ```determine_linux_file_manager``` that returns file manager. This function
+only reports the file manager &mdash; it does not set the module to use it.
 
 ## Limitations
 
