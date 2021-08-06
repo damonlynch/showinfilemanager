@@ -40,7 +40,7 @@ the file managers accept, and any limitations these file managers have:
 |Caja|Mate|`caja  URI1 URI2`|:x:|:white_check_mark:|:white_check_mark:|:warning:|Specifying a file causes an error. Multiple URIs open multiple Caja windows.|
 |Thunar|XFCE|`thunar URI1 URI2`|:x:|:white_check_mark:|:white_check_mark:|:warning:|Specifying a file opens it. Multiple URIs open multiple Thunar windows.|
 |PCManFM|LXDE|`pcmanfm  URI`|:x:|:white_check_mark:|:white_check_mark:|:x:|Specifying a file opens it. Multiple URIs open only the first URI.|
-|PCManFM-Qt|LXQt|`pcmanfm-qt  URI1 URI2`|:x:|:white_check_mark:|:white_check_mark:|:white_check_mark:|Specifying a file opens it. Multiple URIs open multiple PCManFM-Qt windows.|
+|PCManFM-Qt|LXQt|`pcmanfm-qt  URI1 URI2`|:x:|:white_check_mark:|:white_check_mark:|:warning:|Specifying a file opens it. Multiple URIs open multiple PCManFM-Qt windows.|
 
 
 ## Usage
