@@ -37,10 +37,10 @@ the file managers accept, and any limitations these file managers have:
 |Pantheon|Elementary OS|`io.elementary.files URI1 URI2`|:white_check_mark:|:white_check_mark:|:white_check_mark:|:warning:| Multiple URIs open multiple Pantheon tabs.|
 |Deepin File Manager|Deepin|`dde-file-manager --show-item URI1 URI2`|:white_check_mark:|:white_check_mark:|:white_check_mark:|:warning:| Multiple URIs open multiple Deepin File Manager tabs.|
 |Peony|Ubuntu Kylin|`peony --show-items URI1 URI2`|:white_check_mark:|:white_check_mark:|:white_check_mark:|:white_check_mark:| |
-|Caja|Mate|`caja URI`|:x:|:white_check_mark:|:white_check_mark:|:warning:|Specifying a file causes an error. Multiple URIs open multiple Caja windows.|
-|Thunar|XFCE|`thunar`|:x:|:white_check_mark:|:white_check_mark:|:warning:|Specifying a file opens it. Multiple URIs open multiple Thunar windows.|
-|PCManFM|LXDE|`pcmanfm URI`|:x:|:white_check_mark:|:white_check_mark:|:x:|Specifying a file opens it. Multiple URIs open only the first URI.|
-|PCManFM-Qt|LXQt|`pcmanfm-qt`|:x:|:white_check_mark:|:white_check_mark:|:white_check_mark:|Specifying a file opens it. Multiple URIs open multiple PCManFM-Qt windows.|
+|Caja|Mate|`caja  URI1 URI2`|:x:|:white_check_mark:|:white_check_mark:|:warning:|Specifying a file causes an error. Multiple URIs open multiple Caja windows.|
+|Thunar|XFCE|`thunar URI1 URI2`|:x:|:white_check_mark:|:white_check_mark:|:warning:|Specifying a file opens it. Multiple URIs open multiple Thunar windows.|
+|PCManFM|LXDE|`pcmanfm  URI`|:x:|:white_check_mark:|:white_check_mark:|:x:|Specifying a file opens it. Multiple URIs open only the first URI.|
+|PCManFM-Qt|LXQt|`pcmanfm-qt  URI1 URI2`|:x:|:white_check_mark:|:white_check_mark:|:white_check_mark:|Specifying a file opens it. Multiple URIs open multiple PCManFM-Qt windows.|
 
 
 ## Usage
