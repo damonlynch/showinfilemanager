@@ -30,16 +30,16 @@ limitations they have:
 |File Manager|Used by|Command line       |Can Select Files|Accepts URI  |Accepts Path|Handles Multiple Files / Directories|Notes|
 |------------|-------|-------------------|:---:|:---:|:---:|:---:|----|
 | Windows File Explorer|Windows 10, Windows 11| `explorer.exe /select,URI`|:white_check_mark:|:white_check_mark:|:white_check_mark:|:x:|No space between comma and URI.|
-| Nautilus (Files)|Gnome, Pop OS, Zorin|`nautilus --select URI1 URI2`|:white_check_mark:|:white_check_mark:|:white_check_mark:|:warning:|Multiple URIs opens multiple Nautilus windows.|
-|Dolphin|KDE|`dolphin --select URI1 URI2 `|:white_check_mark:|:white_check_mark:|:white_check_mark:|`--select` functionality fails in some recent KDE releases, but is working in KDE Neon testing.|
-|Nemo|Linux Mint|`nemo URI1 URI2`|:white_check_mark:|:white_check_mark:|:white_check_mark:|:warning:|Multiple URIs opens multiple Nemo windows.|
-|Pantheon|Elementary OS|`io.elementary.files URI1 URI2`|:white_check_mark:|:white_check_mark:|:white_check_mark:|:warning:| Multiple URIs opens multiple Pantheon tabs.|
-|Deepin File Manager|Deepin|`dde-file-manager --show-item URI1 URI2`|:white_check_mark:|:white_check_mark:|:warning:| Multiple URIs opens multiple Deepin File Manager tabs.|
+| Nautilus (Files)|Gnome, Pop OS, Zorin|`nautilus --select URI1 URI2`|:white_check_mark:|:white_check_mark:|:white_check_mark:|:warning:|Multiple URIs open multiple Nautilus windows.|
+|Dolphin|KDE|`dolphin --select URI1 URI2 `|:white_check_mark:|:white_check_mark:|:white_check_mark:|:white_check_mark:|`--select` functionality fails in some recent KDE releases, but is working in KDE Neon testing.|
+|Nemo|Linux Mint|`nemo URI1 URI2`|:white_check_mark:|:white_check_mark:|:white_check_mark:|:warning:|Multiple URIs open multiple Nemo windows.|
+|Pantheon|Elementary OS|`io.elementary.files URI1 URI2`|:white_check_mark:|:white_check_mark:|:white_check_mark:|:warning:| Multiple URIs open multiple Pantheon tabs.|
+|Deepin File Manager|Deepin|`dde-file-manager --show-item URI1 URI2`|:white_check_mark:|:white_check_mark:|:white_check_mark:|:warning:| Multiple URIs open multiple Deepin File Manager tabs.|
 |Peony|Ubuntu Kylin|`peony --show-items URI1 URI2`|:white_check_mark:|:white_check_mark:|:white_check_mark:|:white_check_mark:| |
-|Caja|Mate|`caja URI`|:x:|:white_check_mark:|:white_check_mark:|:warning:|Specifying a file causes an error. Multiple URIs opens multiple Caja windows.|
-|Thunar|XFCE|`thunar`|:x:|:white_check_mark:|:white_check_mark:|:warning:|Specifying a file opens it. Multiple URIs opens multiple Thunar windows.|
-|PCManFM|LXDE|`pcmanfm URI`|:x:|:white_check_mark:|:white_check_mark:|:white_check_mark:|Specifying a file opens it. Multiple URIs opens only the first URI.|
-|PCManFM-Qt|LXQt|`pcmanfm-qt`|:x:|:white_check_mark:|:white_check_mark:|:white_check_mark:|Specifying a file opens it. Multiple URIs opens multiple PCManFM-Qt windows.|
+|Caja|Mate|`caja URI`|:x:|:white_check_mark:|:white_check_mark:|:warning:|Specifying a file causes an error. Multiple URIs open multiple Caja windows.|
+|Thunar|XFCE|`thunar`|:x:|:white_check_mark:|:white_check_mark:|:warning:|Specifying a file opens it. Multiple URIs open multiple Thunar windows.|
+|PCManFM|LXDE|`pcmanfm URI`|:x:|:white_check_mark:|:white_check_mark:|:x:|Specifying a file opens it. Multiple URIs open only the first URI.|
+|PCManFM-Qt|LXQt|`pcmanfm-qt`|:x:|:white_check_mark:|:white_check_mark:|:white_check_mark:|Specifying a file opens it. Multiple URIs open multiple PCManFM-Qt windows.|
 
 
 ## Usage
@@ -88,6 +88,7 @@ setting the module to use them.
 ## Limitations
 
  - The code is in a preliminary state. Critiques are welcome.
+ - Characters like é in path names currently fail.
  - It currently does not work at all on OS X.
  - It's performance in a confined Linux environment like a Flatpak or Snap is untested. 
  - It is intended that this code be uploaded to PyPi when it is in better shape.
