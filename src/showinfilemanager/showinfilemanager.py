@@ -4,284 +4,123 @@ import shlex
 import subprocess
 import sys
 from typing import Optional, Tuple, Union, Sequence
-from enum import Enum
 import urllib.parse
 import shutil
 import argparse
 import pathlib
 
-try:
-    from xdg.DesktopEntry import DesktopEntry
-    from xdg import BaseDirectory
-    import xdg
-except ImportError:
-    pass
+
+import linux
+import __about__
+import __init__
+from constants import FileManagerType
+
+_valid_file_manager_probed = False
+_valid_file_manager = None
+_valid_file_manager_type = None
 
 
-__author__ = 'Damon Lynch'
-__copyright__ = "Copyright 2011-2021, Damon Lynch"
-__title__ = "Show in File Manager"
-__summary__ = "Platform independent way for a Python script to open the system file manager and optionally select " \
-              "files to highlight in it."
-
-__version__ = '0.0.1'
 
 
-_default_file_manager_probed = False
-_default_file_manager = None
-_default_file_manager_type = None
 
-
-class FileManagerType(Enum):
-    regular = 1         # file_manager "File1" "File2"
-    select = 2          # file_manager --select
-    dir_only_uri = 3    # cannot select files
-    show_item = 4       # file_manager --show-item
-    show_items = 5      # file_manager --show-items
-    win_select = 6      # explorer.exe /select
-
-
-# Linux specific routines
-
-_linux_desktop = None
-
-
-class LinuxDesktop(Enum):
-    gnome = 1
-    unity = 2
-    cinnamon = 3
-    kde = 4
-    xfce = 5
-    mate = 6
-    lxde = 7
-    lxqt = 8
-    ubuntugnome = 9
-    popgnome = 10
-    deepin = 11
-    zorin = 12
-    ukui = 13  # Kylin
-    pantheon = 14
-    unknown = 15
-
-
-LinuxDesktopFamily = dict(
-    ubuntugnome='gnome',
-    popgnome='gnome',
-    zorin='gnome',
-    unity='gnome',
- )
-
-
-StandardLinuxFileManager = dict(
-    gnome='nautilus',
-    kde='dolphin',
-    cinnamon='nemo',
-    mate='caja',
-    xfce='thunar',
-    lxde='pcmanfm',
-    lxqt='pcmanfm-qt',
-    deepin='dde-file-manager',
-    pantheon='io.elementary.files',
-    ukui='peony'
-)
-
-
-LinuxFileManagerBehavior = dict(
-    nautilus=FileManagerType.select,
-    dolphin=FileManagerType.select,
-    caja=FileManagerType.dir_only_uri,
-    thunar=FileManagerType.dir_only_uri,
-    nemo=FileManagerType.regular,
-    pcmanfm=FileManagerType.dir_only_uri,
-    peony=FileManagerType.show_items,
-)
-LinuxFileManagerBehavior['pcmanfm-qt'] = FileManagerType.dir_only_uri
-LinuxFileManagerBehavior['dde-file-manager'] = FileManagerType.show_item
-LinuxFileManagerBehavior['io.elementary.files'] = FileManagerType.regular
-
-
-def get_linux_desktop() -> LinuxDesktop:
+def get_stock_file_manager() -> str:
     """
-    Determine Linux desktop environment
-    :return: enum representing desktop environment, Desktop.unknown if unknown.
+    Get stock file manager for this operating system / desktop.
+
+    Exceptions are not caught.
+
+    :return: executable name
     """
 
-    try:
-        env = os.getenv('XDG_CURRENT_DESKTOP').lower()
-    except AttributeError:
-        # Occurs when there is no value set
-        return LinuxDesktop.unknown
+    system = platform.system()
+    if system == 'Windows':
+        file_manager = 'explorer.exe'
+    elif system == 'Linux':
+        file_manager = linux.get_stock_linux_file_manager()
+    elif system == 'Darwin':
+        raise NotImplementedError
+    else:
+        raise NotImplementedError
 
-    if env == 'unity:unity7':
-        env = 'unity'
-    elif env == 'x-cinnamon':
-        env = 'cinnamon'
-    elif env == 'ubuntu:gnome':
-        env = 'ubuntugnome'
-    elif env == 'pop:gnome':
-        env = 'popgnome'
-    elif env == 'gnome-classic:gnome':
-        env = 'gnome'
-    elif env == 'budgie:gnome':
-        env = 'gnome'
-    elif env == 'zorin:gnome':
-        env = 'zorin'
-
-    try:
-        return LinuxDesktop[env]
-    except KeyError:
-        return LinuxDesktop.unknown
+    assert shutil.which(file_manager) is not None
+    return file_manager
 
 
-def _set_linux_desktop() -> None:
-    global _linux_desktop
-    _linux_desktop = get_linux_desktop()
-
-
-def standard_linux_file_manager_for_desktop() -> Tuple[Optional[str], Optional[FileManagerType]]:
+def get_user_file_manager() -> str:
     """
-    If default file manager cannot be determined using system tools, guess
-    based on desktop environment.
+    Get the file manager as set by the user.
 
-    :return: file manager command (without path), and type; if not detected, (None, None)
+    Exceptions are not caught.
+
+    :return: executable name
     """
 
-    if _linux_desktop is None:
-        _set_linux_desktop()
+    system = platform.system()
+    if system == 'Windows':
+        file_manager = 'explorer.exe'
+    elif system == 'Linux':
+        file_manager = linux.get_user_linux_file_manager()
+    elif system == 'Darwin':
+        raise NotImplementedError
+    else:
+        raise NotImplementedError
 
-    try:
-        desktop = _linux_desktop.name
-        desktop = LinuxDesktopFamily.get(desktop) or desktop
-
-        fm = StandardLinuxFileManager[desktop]
-        assert shutil.which(fm)
-        t = LinuxFileManagerBehavior[fm]
-        return fm, t
-    except KeyError:
-        return None, None
-    except AssertionError:
-        return None, None
+    assert shutil.which(file_manager) is not None
+    return file_manager
 
 
-def determine_linux_file_manager(force_standard: bool = False) -> Tuple[Optional[str], Optional[FileManagerType]]:
+def get_valid_file_manager() -> str:
     """
-    Attempt to determine the default file manager for the system.
+    Get user's file manager, falling back to using sensible defaults for the particular desktop  or OS.
 
-    :param force_standard: if file manager does not match expectations for current desktop environment,
-    return the standard file manager for that desktop.  The file manager will always exist, regardless.
-    :return: file manager command (without path), and type; if not detected, (None, None)
+    All exceptions are caught, except those if this platform is not supported by this module.
+
+    :return: If the user's default file manager is set and it is known by this module, then
+    return it. Otherwise return the stock file manager, if it exists.
     """
 
-    assert sys.platform.startswith('linux')
-    cmd = shlex.split('xdg-mime query default inode/directory')
-    try:
-        desktop_file = subprocess.check_output(cmd, universal_newlines=True)  # type: str
-    except:
-        return standard_linux_file_manager_for_desktop()
-
-    # Remove new line character from output
-    desktop_file = desktop_file[:-1]
-    if desktop_file.endswith(';'):
-        desktop_file = desktop_file[:-1]
-
-    for desktop_path in (os.path.join(d, 'applications') for d in BaseDirectory.xdg_data_dirs):
-        path = os.path.join(desktop_path, desktop_file)
-        if os.path.exists(path):
-            try:
-                desktop_entry = DesktopEntry(path)
-            except xdg.Exceptions.ParsingError:
-                return standard_linux_file_manager_for_desktop()
-            try:
-                desktop_entry.parse(path)
-            except:
-                return standard_linux_file_manager_for_desktop()
-
-            fm = desktop_entry.getExec()
-
-            # Strip away any extraneous arguments
-            fm_cmd = fm.split()[0]
-            # Strip away any path information
-            fm_cmd = os.path.split(fm_cmd)[1]
-            # Strip away any quotes
-            fm_cmd = fm_cmd.replace('"', '')
-            fm_cmd = fm_cmd.replace("'", '')
-
-            if force_standard and _linux_desktop != LinuxDesktop.unknown:
-                try:
-                    standard = StandardLinuxFileManager[_linux_desktop.name]
-                except KeyError:
-                    return standard_linux_file_manager_for_desktop()
-                else:
-                    if standard != fm_cmd:
-                        return standard_linux_file_manager_for_desktop()
-
-            # Nonexistent file managers
-            if shutil.which(fm_cmd) is None:
-                return standard_linux_file_manager_for_desktop()
-
-            try:
-                file_manager_type = LinuxFileManagerBehavior[fm_cmd]
-            except KeyError:
-                file_manager_type = FileManagerType.regular
-
-            return fm_cmd, file_manager_type
-
-    # Special case: no base dirs set, e.g. LXQt
-    return standard_linux_file_manager_for_desktop()
+    system = platform.system()
+    if system == 'Windows':
+        file_manager = 'explorer.exe'
+    elif system == 'Linux':
+        file_manager = linux.get_valid_linux_file_manager()
+    elif system == 'Darwin':
+        raise NotImplementedError
+    else:
+        raise NotImplementedError
+    return file_manager
 
 
-def probe_system_file_manager(force_standard: bool = False) -> None:
+def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None,
+                         file_manager: Optional[str] = None) -> None:
     """
-    Determine file manager used in this operating system.
+    Open the system file manager and display an optional directory, or items in the  directory.
 
-    On Windows, this will always be explorer.exe.
-
-    :param force_standard: if file manager does not match expectations for current desktop environment or platform,
-    return the standard file manager. The file manager will always exist, regardless.
-    :return: file manager command, and what type of mechanism it provides for selecting files
-    """
-
-    global _default_file_manager_probed
-    global _default_file_manager
-    global _default_file_manager_type
-
-    if not _default_file_manager_probed:
-        system = platform.system()
-        if system == 'Windows':
-            _default_file_manager = 'explorer.exe'
-            _default_file_manager_type = FileManagerType.win_select
-            assert shutil.which(_default_file_manager) is not None
-            _default_file_manager_probed = True
-
-        elif system == 'Linux':
-            _default_file_manager, _default_file_manager_type = \
-                determine_linux_file_manager(force_standard=force_standard)
-            _default_file_manager_probed = True
-        elif system == 'Darwin':
-            raise NotImplementedError
-        else:
-            raise NotImplementedError
-
-
-def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence]] = None) -> None:
-    """
-    Open the system file manager and display optional directory or items in the  directory.
+    If there is no valid file manager found on the system, do nothing. A valid file manager
+    is a file manager this module knows about.
 
     :param path_or_uri: zero or more files or directories to open, specified as a single URI
      or valid path, or a sequence of URIs/paths.
+    :param file_manager: executable name to use. If not specified, then get_valid_file_manager()
+     will determine which file manager to use.
     """
 
-    if not _default_file_manager_probed:
-        probe_system_file_manager()
+    global _valid_file_manager
+    global _valid_file_manager_type
 
-    if _default_file_manager is None:
-        raise Exception("A file manager could not be determined")
+    if not file_manager:
+        _set_valid_file_manager()
+        file_manager = _valid_file_manager
+
+    if not file_manager:
+        return
 
     if path_or_uri is None:
         arg = ''
         uris = ''
     else:
         if isinstance(path_or_uri, str):
+            # turn the single path / URI into a Tuple
             path_or_uri = path_or_uri,
 
         uris = ''
@@ -295,7 +134,7 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence]] = None) -> 
                 uri = pathlib.Path(os.path.abspath(pu)).as_uri()
                 parse_result = None
 
-            if _default_file_manager_type == FileManagerType.dir_only_uri:
+            if _valid_file_manager_type == FileManagerType.dir_only_uri:
                 # Show only the directory; do not attempt to select the file
                 if parse_result is None:
                     parse_result = urllib.parse.urlparse(uri)
@@ -304,22 +143,23 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence]] = None) -> 
             uris = '{} {}'.format(uris, uri)
 
         arg = ''
-        if _default_file_manager_type == FileManagerType.select:
-            arg = '--select '
-        elif _default_file_manager_type == FileManagerType.show_item:
+        if _valid_file_manager_type == FileManagerType.win_select:
+            arg = '/select,'  # no trailing space is necessary on Windows
+        elif _valid_file_manager_type == FileManagerType.select:
+            arg = '--select '  # trailing space is necessary for this and subsequent entries
+        elif _valid_file_manager_type == FileManagerType.show_item:
             arg = '--show-item '
-        elif _default_file_manager_type == FileManagerType.show_items:
+        elif _valid_file_manager_type == FileManagerType.show_items:
             arg = '--show-items '
-        elif _default_file_manager_type == FileManagerType.win_select:
-            arg = '/select,'
 
-    if _default_file_manager in ('explorer.exe', 'pcmanfm'):
+    # Some file managers must be passed only one or zero paths / URIs
+    if file_manager in ('explorer.exe', 'pcmanfm'):
         uris = uris.split() or ['']
     else:
         uris = [uris]
 
     for u in uris:
-        cmd = '{} {}{}'.format(_default_file_manager, arg, u)
+        cmd = '{} {}{}'.format(file_manager, arg, u)
         if platform.system() != "Windows":
             args = shlex.split(cmd)
         else:
@@ -327,13 +167,36 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence]] = None) -> 
         subprocess.Popen(args)
 
 
+def _set_valid_file_manager() -> None:
+    """
+    Set module level global variables to set a valid file manager for this user in this desktop environment.
+    """
+
+    global _valid_file_manager_probed
+    global _valid_file_manager
+    global _valid_file_manager_type
+
+    if not _valid_file_manager_probed:
+        fm = get_valid_file_manager()
+        if fm:
+            _valid_file_manager = fm
+            system = platform.system()
+            if system == 'Windows':
+                _valid_file_manager_type = FileManagerType.win_select
+            elif system == 'Linux':
+                _valid_file_manager_type = linux.get_linux_file_manager_type(fm)
+            else:
+                raise NotImplementedError
+        _valid_file_manager_probed = True
+
+
 def parser_options(formatter_class=argparse.HelpFormatter):
     parser = argparse.ArgumentParser(
-        prog=__title__, description=__summary__, formatter_class=formatter_class
+        prog=__about__.__title__, description=__about__.__summary__, formatter_class=formatter_class
     )
 
     parser.add_argument(
-        '--version', action='version', version='%(prog)s {}'.format(__version__)
+        '--version', action='version', version='%(prog)s {}'.format(__init__.__version__)
     )
 
     parser.add_argument('path', nargs='*')
@@ -341,9 +204,14 @@ def parser_options(formatter_class=argparse.HelpFormatter):
     return parser
 
 
-if __name__ == '__main__':
+def main() -> None:
     parser = parser_options()
 
     args = parser.parse_args()
 
     show_in_file_manager(path_or_uri=args.path)
+
+
+if __name__ == '__main__':
+    main()
+
