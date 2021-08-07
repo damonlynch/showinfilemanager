@@ -112,7 +112,7 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
     if not file_manager:
         return
 
-    if path_or_uri is None:
+    if not path_or_uri:
         arg = ''
         uris = ''
     else:
@@ -157,6 +157,7 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
 
     for u in uris:
         cmd = '{} {}{}'.format(file_manager, arg, u)
+        print(cmd)
         if platform.system() != "Windows":
             args = shlex.split(cmd)
         else:
