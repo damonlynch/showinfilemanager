@@ -8,11 +8,11 @@ Plenty of programs expose this functionality in their user interface. On Windows
 "Show in Explorer", and "Reveal in Explorer" are common. Cross-platform programs use terms like "Open Containing
 Folder" or "Open in File Browser". 
 
-![Show in Windows Explorer](.github/photomechanic-win.png)
-![Open containing folder](.github/documentviewer-gnome.png)
+![Show in Windows Explorer](https://github.com/damonlynch/showinfilemanager/blob/main/.github/photomechanic-win.png)
+![Open containing folder](https://github.com/damonlynch/showinfilemanager/blob/main/.github/documentviewer-gnome.png)
 
 The command results in the file manager opening, ideally with the files selected:
-![Peony file manager](.github/peony-kylin.png)
+![Peony file manager](https://github.com/damonlynch/showinfilemanager/blob/main/.github/peony-kylin.png)
 
  With Show in File Manager, your Python program or command line script can do the same, with minimum effort from you.
 
@@ -167,7 +167,7 @@ show_in_file_manager('/home/user')                                             #
  - The code is in a preliminary state. Critiques are welcome.
  - Characters like é in path names currently fail.
  - It currently does not work at all on macOS.
- - It's behavior in a confined Linux environment like a Flatpak or Snap is untested. 
+ - Its behavior in a confined Linux environment like a Flatpak or Snap is untested.
  - It is intended that this code be uploaded to PyPi when it is in better shape.
 
 ## Contributing
