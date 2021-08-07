@@ -1,2 +1,5 @@
 .idea
 venv
+dist
+src/show_in_file_manager.egg-info/
+src/showinfilemanager/__pycache__/
