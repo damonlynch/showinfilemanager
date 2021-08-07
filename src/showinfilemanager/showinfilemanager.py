@@ -188,6 +188,36 @@ def _set_valid_file_manager() -> None:
         _valid_file_manager_probed = True
 
 
+class Diagnostic:
+
+    def __init__(self) -> None:
+        try:
+            self.stock_file_manager = get_stock_file_manager()
+        except Exception as e:
+            self.stock_file_manager = str(e)
+        try:
+            self.user_file_manager = get_user_file_manager()
+        except Exception as e:
+            self.user_file_manager = str(e)
+        try:
+            self.valid_file_manager = get_valid_file_manager()
+        except Exception as e:
+            self.valid_file_manager = str(e)
+
+        if platform.system() == "Linux":
+            try:
+                self.desktop = linux.get_linux_desktop()
+            except:
+                self.desktop = linux.LinuxDesktop.unknown
+        else:
+            self.desktop = ''
+
+    def __str__(self) -> str:
+        return "Stock file manager: {}\nUser's choice of file manager: {}\nValid file manager: {}".format(
+            self.stock_file_manager, self.user_file_manager, self.valid_file_manager
+        ) + "\nLinux Desktop: {}".format(self.desktop.name) if self.desktop else ""
+
+
 def parser_options(formatter_class=argparse.HelpFormatter):
     parser = argparse.ArgumentParser(
         prog=__about__.__title__, description=__about__.__summary__, formatter_class=formatter_class
@@ -206,6 +236,8 @@ def main() -> None:
     parser = parser_options()
 
     args = parser.parse_args()
+
+    print(Diagnostic())
 
     show_in_file_manager(path_or_uri=args.path)
 
