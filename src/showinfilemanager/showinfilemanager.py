@@ -20,9 +20,6 @@ _valid_file_manager = None
 _valid_file_manager_type = None
 
 
-
-
-
 def get_stock_file_manager() -> str:
     """
     Get stock file manager for this operating system / desktop.
@@ -71,7 +68,7 @@ def get_user_file_manager() -> str:
 
 def get_valid_file_manager() -> str:
     """
-    Get user's file manager, falling back to using sensible defaults for the particular desktop  or OS.
+    Get user's file manager, falling back to using sensible defaults for the desktop / OS.
 
     All exceptions are caught, except those if this platform is not supported by this module.
 

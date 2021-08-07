@@ -97,7 +97,7 @@ Other functions mentioned below are not necessary to call, but are provided for 
 ```python
 def get_valid_file_manager() -> str:
     """
-    Get user's file manager, falling back to using sensible defaults for the particular desktop  or OS.
+    Get user's file manager, falling back to using sensible defaults for the desktop / OS.
 
     All exceptions are caught, except those if this platform is not supported by this module.
 
