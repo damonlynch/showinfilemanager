@@ -10,10 +10,10 @@ import argparse
 import pathlib
 
 
-import linux
-import __about__
-import __init__
-from constants import FileManagerType
+import showinfilemanager.linux as linux
+import showinfilemanager.__about__ as __about__
+import showinfilemanager.__init__ as __init__
+from showinfilemanager.constants import FileManagerType
 
 _valid_file_manager_probed = False
 _valid_file_manager = None

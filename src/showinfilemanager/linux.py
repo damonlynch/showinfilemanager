@@ -12,7 +12,7 @@ try:
 except ImportError:
     pass
 
-from constants import FileManagerType
+from showinfilemanager.constants import FileManagerType
 
 _linux_desktop = None
 
