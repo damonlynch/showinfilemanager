@@ -165,7 +165,8 @@ class LinuxDesktop(Enum):
     zorin = 12
     ukui = 13  # Kylin
     pantheon = 14
-    unknown = 15
+    enlightenment = 15
+    unknown = 16
 
 
 LinuxDesktopFamily = dict(
@@ -186,7 +187,8 @@ StandardLinuxFileManager = dict(
     lxqt='pcmanfm-qt',
     deepin='dde-file-manager',
     pantheon='io.elementary.files',
-    ukui='peony'
+    ukui='peony',
+    enlightenment='pcmanfm',
 )
 
 
