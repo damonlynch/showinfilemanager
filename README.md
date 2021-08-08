@@ -41,7 +41,7 @@ Currently, macOS is not supported by this module. Fixes are welcome!
 
 |File Manager|Used by|Command line       |Can Select Files|Handles Multiple Files / Directories|Notes|
 |------------|-------|-------------------|:---:|:---:|----|
-| Windows File Explorer|Windows 10 / 11| `explorer.exe /select,URI`|:white_check_mark:|:x:|No space between comma and URI. Can specify only one URI.|
+| Windows File Explorer|Windows 10 / 11, Windows Subsystem for Linux (WSL)| `explorer.exe /select,URI`|:white_check_mark:|:x:|No space between comma and URI. Can specify only one URI.|
 | Nautilus (Files)|Gnome, Pop OS, Zorin|`nautilus --select URI1 URI2`|:white_check_mark:|:warning:|Multiple URIs open multiple Nautilus windows.|
 |Dolphin|KDE|`dolphin --select URI1 URI2 `|:white_check_mark:|:white_check_mark:|A regression in recent KDE releases means `--select` is ignored, but it is fixed in KDE Neon testing.|
 |Nemo|Linux Mint|`nemo URI1 URI2`|:white_check_mark:|:warning:|Multiple URIs open multiple Nemo windows.|
