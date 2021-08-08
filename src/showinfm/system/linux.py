@@ -28,8 +28,9 @@ def get_stock_linux_file_manager() -> str:
     :return: executable name
     """
 
+    global _linux_desktop
     if _linux_desktop is None:
-        _set_linux_desktop()
+        _linux_desktop = get_linux_desktop()
 
     try:
         desktop = _linux_desktop.name
@@ -262,8 +263,4 @@ def get_linux_desktop() -> LinuxDesktop:
     except KeyError:
         raise Exception("The desktop environment {} is unknown".format(env))
 
-
-def _set_linux_desktop() -> None:
-    global _linux_desktop
-    _linux_desktop = get_linux_desktop()
 

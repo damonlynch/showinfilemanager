@@ -10,11 +10,10 @@ import argparse
 import pathlib
 
 
-import showinfm.__about__ as __about__
-import showinfm.__init__ as __init__
+from showinfm import __about__
 from showinfm.constants import FileManagerType, Platform
 from showinfm.system import current_platform
-import showinfm.system.linux as linux
+from showinfm.system import linux
 
 _valid_file_manager_probed = False
 _valid_file_manager = None
@@ -222,7 +221,7 @@ def parser_options(formatter_class=argparse.HelpFormatter):
     )
 
     parser.add_argument(
-        '--version', action='version', version='%(prog)s {}'.format(__init__.__version__)
+        '--version', action='version', version='%(prog)s {}'.format(__about__.__version__)
     )
 
     parser.add_argument('--verbose', action='store_true')
@@ -237,7 +236,7 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    if args.verbose or __init__.__version__ < '0.1.0':
+    if args.verbose or __about__.__version__ < '0.1.0':
         print(Diagnostic())
 
     show_in_file_manager(path_or_uri=args.path)
