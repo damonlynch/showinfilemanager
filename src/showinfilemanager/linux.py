@@ -1,9 +1,9 @@
+from enum import Enum
 import os
 import shlex
-import subprocess
-from typing import  Tuple
-from enum import Enum
 import shutil
+import subprocess
+from typing import Optional, Tuple
 
 try:
     from xdg.DesktopEntry import DesktopEntry
@@ -166,7 +166,9 @@ class LinuxDesktop(Enum):
     ukui = 13  # Kylin
     pantheon = 14
     enlightenment = 15
-    unknown = 16
+    wsl = 16
+    wsl2 = 17
+    unknown = 18
 
 
 LinuxDesktopFamily = dict(
@@ -189,6 +191,8 @@ StandardLinuxFileManager = dict(
     pantheon='io.elementary.files',
     ukui='peony',
     enlightenment='pcmanfm',
+    wsl='explorer.exe',
+    wsl2='explorer.exe'
 )
 
 
@@ -206,6 +210,22 @@ LinuxFileManagerBehavior['dde-file-manager'] = FileManagerType.show_item
 LinuxFileManagerBehavior['io.elementary.files'] = FileManagerType.regular
 
 
+def wsl_version() -> Optional[LinuxDesktop]:
+    with open('/proc/version') as f:
+        p = f.read()
+    if p.find('microsoft') > 0 and p.find('WSL2'):
+        return LinuxDesktop.wsl2
+    if p.find('Microsoft') > 0:
+        return LinuxDesktop.wsl
+    return None
+
+
+def detect_wsl() -> bool:
+    with open('/proc/version') as f:
+        p = f.read()
+    return p.lower().find('microsoft') > 0
+
+
 def get_linux_desktop() -> LinuxDesktop:
     """
     Determine Linux desktop environment
@@ -216,7 +236,11 @@ def get_linux_desktop() -> LinuxDesktop:
     try:
         env = os.getenv('XDG_CURRENT_DESKTOP').lower()
     except AttributeError:
-        raise Exception("The value for XDG_CURRENT_DESKTOP is not set")
+        wsl = wsl_version()
+        if wsl is not None:
+            return wsl
+        else:
+            raise Exception("The value for XDG_CURRENT_DESKTOP is not set")
 
     if env == 'unity:unity7':
         env = 'unity'

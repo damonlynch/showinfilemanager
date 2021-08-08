@@ -13,11 +13,14 @@ import pathlib
 import showinfilemanager.linux as linux
 import showinfilemanager.__about__ as __about__
 import showinfilemanager.__init__ as __init__
-from showinfilemanager.constants import FileManagerType
+from showinfilemanager.constants import FileManagerType, Platform
 
 _valid_file_manager_probed = False
 _valid_file_manager = None
 _valid_file_manager_type = None
+_platform_probed = False
+_platform = None
+
 
 
 def get_stock_file_manager() -> str:
@@ -29,13 +32,10 @@ def get_stock_file_manager() -> str:
     :return: executable name
     """
 
-    system = platform.system()
-    if system == 'Windows':
+    if _platform == Platform.windows:
         file_manager = 'explorer.exe'
-    elif system == 'Linux':
+    elif _platform == Platform.linux:
         file_manager = linux.get_stock_linux_file_manager()
-    elif system == 'Darwin':
-        raise NotImplementedError
     else:
         raise NotImplementedError
 
@@ -52,13 +52,10 @@ def get_user_file_manager() -> str:
     :return: executable name
     """
 
-    system = platform.system()
-    if system == 'Windows':
+    if _platform == Platform.windows:
         file_manager = 'explorer.exe'
-    elif system == 'Linux':
+    elif _platform == Platform.linux:
         file_manager = linux.get_user_linux_file_manager()
-    elif system == 'Darwin':
-        raise NotImplementedError
     else:
         raise NotImplementedError
 
@@ -76,13 +73,10 @@ def get_valid_file_manager() -> str:
     return it. Otherwise return the stock file manager, if it exists.
     """
 
-    system = platform.system()
-    if system == 'Windows':
+    if _platform == Platform.windows:
         file_manager = 'explorer.exe'
-    elif system == 'Linux':
+    elif _platform == Platform.linux:
         file_manager = linux.get_valid_linux_file_manager()
-    elif system == 'Darwin':
-        raise NotImplementedError
     else:
         raise NotImplementedError
     return file_manager
@@ -157,7 +151,8 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
 
     for u in uris:
         cmd = '{} {}{}'.format(file_manager, arg, u)
-        print(cmd)
+        print("Executing", cmd)
+        # Do not check _platform here, it makes no sense
         if platform.system() != "Windows":
             args = shlex.split(cmd)
         else:
@@ -178,19 +173,40 @@ def _set_valid_file_manager() -> None:
         fm = get_valid_file_manager()
         if fm:
             _valid_file_manager = fm
-            system = platform.system()
-            if system == 'Windows':
+            if _platform == Platform.windows:
                 _valid_file_manager_type = FileManagerType.win_select
-            elif system == 'Linux':
+            elif _platform == Platform.linux:
                 _valid_file_manager_type = linux.get_linux_file_manager_type(fm)
             else:
                 raise NotImplementedError
         _valid_file_manager_probed = True
 
 
+def _detect_platform() -> None:
+    """
+    Set module level global variables to detect the platform being run in.
+    """
+
+    global _platform_probed
+    global _platform
+
+    if not _platform_probed:
+        _platform_probed = True
+        system = platform.system()
+        if system == "Windows" or linux.detect_wsl():
+            _platform = Platform.windows
+        elif system == "Linux":
+            _platform = Platform.linux
+        elif system == "Darwin":
+            _platform = Platform.macos
+        else:
+            raise NotImplementedError
+
+
 class Diagnostic:
 
     def __init__(self) -> None:
+        _detect_platform()
         try:
             self.stock_file_manager = get_stock_file_manager()
         except Exception as e:
@@ -204,7 +220,7 @@ class Diagnostic:
         except Exception as e:
             self.valid_file_manager = str(e)
 
-        if platform.system() == "Linux":
+        if _platform == Platform.linux:
             try:
                 self.desktop = linux.get_linux_desktop()
             except:
@@ -213,9 +229,13 @@ class Diagnostic:
             self.desktop = ''
 
     def __str__(self) -> str:
-        return "Stock file manager: {}\nUser's choice of file manager: {}\nValid file manager: {}".format(
-            self.stock_file_manager, self.user_file_manager, self.valid_file_manager
-        ) + "\nLinux Desktop: {}".format(self.desktop.name) if self.desktop else ""
+        desktop = "Linux Desktop: {}\n".format(self.desktop.name) if self.desktop else ""
+        file_managers = "Stock: {}\nUser's choice: {}\nValid: {}".format(
+                    self.stock_file_manager,
+                    self.user_file_manager,
+                    self.valid_file_manager
+        )
+        return desktop + file_managers
 
 
 def parser_options(formatter_class=argparse.HelpFormatter):
@@ -227,6 +247,8 @@ def parser_options(formatter_class=argparse.HelpFormatter):
         '--version', action='version', version='%(prog)s {}'.format(__init__.__version__)
     )
 
+    parser.add_argument('--verbose', action='store_true')
+
     parser.add_argument('path', nargs='*')
 
     return parser
@@ -237,11 +259,9 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    print(Diagnostic())
+    if args.verbose or __init__.__version__ < '0.1.0':
+        print(Diagnostic())
 
     show_in_file_manager(path_or_uri=args.path)
 
-
-if __name__ == '__main__':
-    main()
 
