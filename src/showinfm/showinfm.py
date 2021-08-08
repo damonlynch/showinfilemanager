@@ -10,16 +10,15 @@ import argparse
 import pathlib
 
 
-import showinfilemanager.linux as linux
-import showinfilemanager.__about__ as __about__
-import showinfilemanager.__init__ as __init__
-from showinfilemanager.constants import FileManagerType, Platform
+import showinfm.__about__ as __about__
+import showinfm.__init__ as __init__
+from showinfm.constants import FileManagerType, Platform
+from showinfm.system import current_platform
+import showinfm.system.linux as linux
 
 _valid_file_manager_probed = False
 _valid_file_manager = None
 _valid_file_manager_type = None
-_platform_probed = False
-_platform = None
 
 
 
@@ -32,9 +31,9 @@ def get_stock_file_manager() -> str:
     :return: executable name
     """
 
-    if _platform == Platform.windows:
+    if current_platform == Platform.windows:
         file_manager = 'explorer.exe'
-    elif _platform == Platform.linux:
+    elif current_platform == Platform.linux:
         file_manager = linux.get_stock_linux_file_manager()
     else:
         raise NotImplementedError
@@ -52,9 +51,9 @@ def get_user_file_manager() -> str:
     :return: executable name
     """
 
-    if _platform == Platform.windows:
+    if current_platform == Platform.windows:
         file_manager = 'explorer.exe'
-    elif _platform == Platform.linux:
+    elif current_platform == Platform.linux:
         file_manager = linux.get_user_linux_file_manager()
     else:
         raise NotImplementedError
@@ -73,9 +72,9 @@ def get_valid_file_manager() -> str:
     return it. Otherwise return the stock file manager, if it exists.
     """
 
-    if _platform == Platform.windows:
+    if current_platform == Platform.windows:
         file_manager = 'explorer.exe'
-    elif _platform == Platform.linux:
+    elif current_platform == Platform.linux:
         file_manager = linux.get_valid_linux_file_manager()
     else:
         raise NotImplementedError
@@ -152,7 +151,7 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
     for u in uris:
         cmd = '{} {}{}'.format(file_manager, arg, u)
         print("Executing", cmd)
-        # Do not check _platform here, it makes no sense
+        # Do not check current_platform here, it makes no sense
         if platform.system() != "Windows":
             args = shlex.split(cmd)
         else:
@@ -173,40 +172,19 @@ def _set_valid_file_manager() -> None:
         fm = get_valid_file_manager()
         if fm:
             _valid_file_manager = fm
-            if _platform == Platform.windows:
+            if current_platform == Platform.windows:
                 _valid_file_manager_type = FileManagerType.win_select
-            elif _platform == Platform.linux:
+            elif current_platform == Platform.linux:
                 _valid_file_manager_type = linux.get_linux_file_manager_type(fm)
             else:
                 raise NotImplementedError
         _valid_file_manager_probed = True
 
 
-def _detect_platform() -> None:
-    """
-    Set module level global variables to detect the platform being run in.
-    """
-
-    global _platform_probed
-    global _platform
-
-    if not _platform_probed:
-        _platform_probed = True
-        system = platform.system()
-        if system == "Windows" or linux.detect_wsl():
-            _platform = Platform.windows
-        elif system == "Linux":
-            _platform = Platform.linux
-        elif system == "Darwin":
-            _platform = Platform.macos
-        else:
-            raise NotImplementedError
-
 
 class Diagnostic:
 
     def __init__(self) -> None:
-        _detect_platform()
         try:
             self.stock_file_manager = get_stock_file_manager()
         except Exception as e:
@@ -220,7 +198,7 @@ class Diagnostic:
         except Exception as e:
             self.valid_file_manager = str(e)
 
-        if _platform == Platform.linux:
+        if current_platform == Platform.linux:
             try:
                 self.desktop = linux.get_linux_desktop()
             except:
