@@ -8,3 +8,9 @@ class FileManagerType(Enum):
     show_item = 4       # file_manager --show-item
     show_items = 5      # file_manager --show-items
     win_select = 6      # explorer.exe /select
+
+
+class Platform(Enum):
+    windows = 1
+    linux = 2
+    macos = 3
