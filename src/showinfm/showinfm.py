@@ -1,24 +1,34 @@
+# Copyright (c) 2016-2021 Damon Lynch
+# SPDX - License - Identifier: MIT
+
+"""
+Show in File Manager
+
+Open the system file manager and optionally select files in it.
+"""
+
+__author__ = 'Damon Lynch'
+__copyright__ = "Copyright 2016-2021, Damon Lynch"
+
+import argparse
 import os
+import pathlib
 import platform
 import shlex
-import subprocess
-import sys
-from typing import Optional, Tuple, Union, Sequence
-import urllib.parse
 import shutil
-import argparse
-import pathlib
+import subprocess
+from typing import Optional, Union, Sequence
+import urllib.parse
 
 
-from showinfm import __about__
-from showinfm.constants import FileManagerType, Platform
-from showinfm.system import current_platform
-from showinfm.system import linux
+from . import __about__
+from .constants import FileManagerType, Platform
+from .system import current_platform
+from .system import linux
 
 _valid_file_manager_probed = False
 _valid_file_manager = None
 _valid_file_manager_type = None
-
 
 
 def get_stock_file_manager() -> str:
@@ -45,6 +55,8 @@ def get_user_file_manager() -> str:
     """
     Get the file manager as set by the user.
 
+    The file manager executable is tested to see if it exists.
+
     Exceptions are not caught.
 
     :return: executable name
@@ -64,6 +76,11 @@ def get_user_file_manager() -> str:
 def get_valid_file_manager() -> str:
     """
     Get user's file manager, falling back to using sensible defaults for the desktop / OS.
+
+    The user's choice of file manager is the default choice. However, this is not always
+    set correctly, most likely because the user's distro has not correctly set the default
+    file manager. If the user's choice is unrecognized by this module, then reject it and
+    choose the standard file manager for the detected desktop environment.
 
     All exceptions are caught, except those if this platform is not supported by this module.
 
@@ -180,8 +197,10 @@ def _set_valid_file_manager() -> None:
         _valid_file_manager_probed = True
 
 
-
-class Diagnostic:
+class Diagnostics:
+    """
+    Collect basic diagnostics information for this module.
+    """
 
     def __init__(self) -> None:
         try:
@@ -216,6 +235,13 @@ class Diagnostic:
 
 
 def parser_options(formatter_class=argparse.HelpFormatter):
+    """
+    Parse command line options for this script
+
+    :param formatter_class: one of 4 argparse formatting classes
+    :return: argparse.ArgumentParser
+    """
+
     parser = argparse.ArgumentParser(
         prog=__about__.__title__, description=__about__.__summary__, formatter_class=formatter_class
     )
@@ -237,7 +263,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.verbose or __about__.__version__ < '0.1.0':
-        print(Diagnostic())
+        print(Diagnostics())
 
     show_in_file_manager(path_or_uri=args.path)
 
