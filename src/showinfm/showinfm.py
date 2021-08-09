@@ -79,12 +79,12 @@ def get_valid_file_manager() -> str:
 
     The user's choice of file manager is the default choice. However, this is not always
     set correctly, most likely because the user's distro has not correctly set the default
-    file manager. If the user's choice is unrecognized by this module, then reject it and
+    file manager. If the user's choice is unrecognized by this package, then reject it and
     choose the standard file manager for the detected desktop environment.
 
-    All exceptions are caught, except those if this platform is not supported by this module.
+    All exceptions are caught, except those if this platform is not supported by this package.
 
-    :return: If the user's default file manager is set and it is known by this module, then
+    :return: If the user's default file manager is set and it is known by this package, then
     return it. Otherwise return the stock file manager, if it exists.
     """
 
@@ -103,7 +103,7 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
     Open the system file manager and display an optional directory, or items in the  directory.
 
     If there is no valid file manager found on the system, do nothing. A valid file manager
-    is a file manager this module knows about.
+    is a file manager this package knows about.
 
     :param path_or_uri: zero or more files or directories to open, specified as a single URI
      or valid path, or a sequence of URIs/paths.
@@ -199,7 +199,7 @@ def _set_valid_file_manager() -> None:
 
 class Diagnostics:
     """
-    Collect basic diagnostics information for this module.
+    Collect basic diagnostics information for this package.
     """
 
     def __init__(self) -> None:

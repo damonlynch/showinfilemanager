@@ -1,24 +1,31 @@
 # Show in File Manager
 
-**Show in File Manager** is a platform independent Python module to open the system file manager and optionally select
+**Show in File Manager** is a Python package to open the system file manager and optionally select
 files in it. The point is not to _open_ the files, but to _select_ them in the file manager, thereby highlighting the
 files and allowing the user to quickly do something with them.
 
 Plenty of programs expose this functionality in their user interface. On Windows terms like "Show in Windows Explorer",
 "Show in Explorer", and "Reveal in Explorer" are common. Cross-platform programs use terms like "Open Containing
-Folder" or "Open in File Browser". 
+Folder" or "Open in File Browser":
 
 ![Show in Windows Explorer](https://github.com/damonlynch/showinfilemanager/blob/main/.github/photomechanic-win.png)
 ![Open containing folder](https://github.com/damonlynch/showinfilemanager/blob/main/.github/documentviewer-gnome.png)
 
 The command results in the file manager opening, ideally with the files selected:
+
 ![Peony file manager](https://github.com/damonlynch/showinfilemanager/blob/main/.github/peony-kylin.png)
 
- With Show in File Manager, your Python program or command line script can do the same, with minimum effort from you.
+With Show in File Manager, your Python program or command line script can do the same, with minimum effort from you.
+Although this package provides several functions to assist in identifying the the system's file managers, in most 
+circumstances you need to call only one function, the function `show_in_file_manager`,and it should just work.
+
+This package aspires to be a platform independent, but it currently supports Windows 10/11, Linux, and WSL. 
+Contributions to make it work on all major platforms are welcome.
+
 
 ## Rationale
 
-This module solves the following problems:
+This package solves the following problems:
  - What is the operating system's stock file manager?
  - What is the user's choice of file manager?
  - Is it best to use the stock or user's choice of file manager? 
@@ -35,7 +42,6 @@ On desktop Linux the problem is especially acute, as Linux provides a plethora o
 command line arguments. Moreover, the user's default file manager can sometimes be incorrectly set to nonsensical 
 values, such as an AppImage or Flatpak of a random application.
 
-Currently, macOS is not supported by this module. Fixes are welcome!
 
 ## Supported File Managers
 
@@ -67,7 +73,7 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
     Open the system file manager and display an optional directory, or items in the  directory.
 
     If there is no valid file manager found on the system, do nothing. A valid file manager
-    is a file manager this module knows about.
+    is a file manager this package knows about.
 
     :param path_or_uri: zero or more files or directories to open, specified as a single URI
      or valid path, or a sequence of URIs/paths.
@@ -87,7 +93,7 @@ For file managers are unable to select files to display, the file manager will d
 
 For file managers that can handle file selections, but only one at time, multiple file manager windows will be opened.
 
-If you specify a file manager executable and this module does not recognize it, it will be called with the files as the
+If you specify a file manager executable and this package does not recognize it, it will be called with the files as the
 only command line arguments.
 
 Other functions mentioned below are not necessary to call, but are provided for convenience and control.
@@ -99,16 +105,21 @@ def get_valid_file_manager() -> str:
     """
     Get user's file manager, falling back to using sensible defaults for the desktop / OS.
 
-    All exceptions are caught, except those if this platform is not supported by this module.
+    The user's choice of file manager is the default choice. However, this is not always
+    set correctly, most likely because the user's distro has not correctly set the default
+    file manager. If the user's choice is unrecognized by this package, then reject it and
+    choose the standard file manager for the detected desktop environment.
 
-    :return: If the user's default file manager is set and it is known by this module, then
+    All exceptions are caught, except those if this platform is not supported by this package.
+
+    :return: If the user's default file manager is set and it is known by this package, then
     return it. Otherwise return the stock file manager, if it exists. If it does not exist,
     an empty string will be returned.
     """
 ```
 
-This module makes opinionated choices about the most sensible choice of file manager:
-1. A file manager is "valid" if and only if this module knows how to handle it.
+This package makes opinionated choices about the most sensible choice of file manager:
+1. A file manager is "valid" if and only if this package recognizes it, e.g. `nautilus`, `explorer.exe`.
 2. If the user's choice of file manager is valid, that file manager is used.
 3. If the user's choice of file manager is invalid or could not be determined, the stock file manager is used.
 
@@ -165,9 +176,9 @@ show_in_file_manager('/home/user')                                             #
 ## Limitations
 
  - The code is in a preliminary state. Critiques are welcome.
- - Characters like é in path names currently fail.
+ - Characters like é in path names can currently fail.
  - It currently does not work at all on macOS.
- - Its behavior in a confined Linux environment like a Flatpak or Snap is untested.
+ - Its behavior in a confined Linux environment like a Flatpak, Snap, or AppImage is untested.
  - It is intended that this code be uploaded to PyPi when it is in better shape.
 
 ## Contributing
@@ -175,7 +186,7 @@ show_in_file_manager('/home/user')                                             #
 Please file issues or pull requests to improve the code. Discuss improvements in the GitHub discussion section for 
 this project.
 
-The inspiration for this code is from [Rapid Photo Downloader](https://github.com/damonlynch/rapid-photo-downloader).
+The initial source of this code is from [Rapid Photo Downloader](https://github.com/damonlynch/rapid-photo-downloader).
 
 
 ## License
