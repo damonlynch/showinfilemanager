@@ -81,6 +81,7 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
     On non-Windows platforms, regular paths will be converted to URIs
     when passed as command line arguments to the file manager, because
     some file mangers do not handle regular paths correctly.
+    
     On Windows or WSL, regular paths are not converted to URIs, but they
     are quoted.
 
