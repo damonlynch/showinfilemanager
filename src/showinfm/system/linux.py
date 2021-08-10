@@ -157,6 +157,24 @@ def get_linux_file_manager_type(file_manager: str) -> FileManagerType:
     return LinuxFileManagerBehavior.get(file_manager, FileManagerType.regular)
 
 
+def wsl_path_is_directory(path: str) -> bool:
+    # Simple case: Linux path
+    if os.path.isdir(path):
+        return True
+    # Simple case: Linux file
+    if os.path.isfile(path):
+        return False
+    # Potential windows path: let's try convert it from a Windows path to a WSL path
+    try:
+        linux_path = subprocess.run(
+            ['wslpath', '-u', path], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True
+        ).stdout.decode().strip()
+    except subprocess.CalledProcessError:
+        return False
+    return os.path.isdir(linux_path)
+
+
+
 class LinuxDesktop(Enum):
     gnome = 1
     unity = 2

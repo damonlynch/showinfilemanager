@@ -17,14 +17,14 @@ import platform
 import shlex
 import shutil
 import subprocess
-from typing import Optional, Union, Sequence
+from typing import Optional, Union, Sequence, List
 import urllib.parse
 
 
 from . import __about__
 from .constants import FileManagerType, Platform
-from .system import current_platform
-from .system import linux
+from .system import current_platform, is_wsl
+from .system import linux, tools
 
 _valid_file_manager_probed = False
 _valid_file_manager = None
@@ -98,6 +98,7 @@ def get_valid_file_manager() -> str:
 
 
 def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None,
+                         open_not_select_directory: Optional[bool] = True,
                          file_manager: Optional[str] = None) -> None:
     """
     Open the system file manager and display an optional directory, or items in the  directory.
@@ -105,8 +106,14 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
     If there is no valid file manager found on the system, do nothing. A valid file manager
     is a file manager this package knows about.
 
+    But if you pass the name of a  file manager executable, it will be used, regardless of
+    whether it is valid or not, whether it exists or not.
+
     :param path_or_uri: zero or more files or directories to open, specified as a single URI
      or valid path, or a sequence of URIs/paths.
+    :param open_not_select_directory: if the URI or path is a directory and not a file, open
+     the directory itself in the file manager, rather than selecting it and displaying it in
+     its parent directory.
     :param file_manager: executable name to use. If not specified, then get_valid_file_manager()
      will determine which file manager to use.
     """
@@ -121,32 +128,61 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
     if not file_manager:
         return
 
+    directories = []  # Used for directories when open_not_select_directory is True
+
     if not path_or_uri:
         arg = ''
-        uris = ''
+        uris_and_paths = ''
     else:
         if isinstance(path_or_uri, str):
             # turn the single path / URI into a Tuple
             path_or_uri = path_or_uri,
 
-        uris = ''
+        uris_and_paths = []
         for pu in path_or_uri:
             # Were we passed a URI or simple path?
-            parse_result = urllib.parse.urlparse(pu)
-            if parse_result.scheme:
-                uri = pu
-            else:
-                # Convert the path to a URI
-                uri = pathlib.Path(os.path.abspath(pu)).as_uri()
-                parse_result = None
+            if pu:
+                if tools.is_uri(pu):
+                    uri = pu
+                    path = None
+                else:
+                    # Do not convert the path to a URI, as that can mess things up on WSL and probably other
+                    # contexts too
+                    path = pu
+                    uri = None
 
-            if _valid_file_manager_type == FileManagerType.dir_only_uri:
-                # Show only the directory; do not attempt to select the file
-                if parse_result is None:
-                    parse_result = urllib.parse.urlparse(uri)
-                uri = urllib.parse.urlunparse(parse_result._replace(path=os.path.dirname(parse_result.path)))
+                if _valid_file_manager_type == FileManagerType.dir_only_uri:
+                    # Show only the directory; do not attempt to select the file
+                    if uri:
+                        parse_result = urllib.parse.urlparse(uri)
+                        path = parse_result.path
 
-            uris = '{} {}'.format(uris, uri)
+                    path = os.path.dirname(path)
+                    if uri:
+                        uri = urllib.parse.urlunparse(parse_result._replace(path=path))
+                    else:
+                        path = tools.quote_path(path)
+
+                    uris_and_paths.append(uri or path)
+                else:
+                    is_dir = False
+                    if open_not_select_directory:
+                        if uri:
+                            parse_result = urllib.parse.urlparse(uri)
+                            path = parse_result.path
+                            is_dir = os.path.isdir(path)
+                        elif is_wsl:
+                            is_dir = linux.wsl_path_is_directory(path)
+                        else:
+                            is_dir = os.path.isdir(path)
+                        if is_dir:
+                            if uri is None:
+                                path = tools.quote_path(path)
+                            directories.append(uri or path)
+                    if not is_dir:
+                        if uri is None:
+                            path = tools.quote_path(path)
+                        uris_and_paths.append(uri or path)
 
         arg = ''
         if _valid_file_manager_type == FileManagerType.win_select:
@@ -158,13 +194,32 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
         elif _valid_file_manager_type == FileManagerType.show_items:
             arg = '--show-items '
 
-    # Some file managers must be passed only one or zero paths / URIs
-    if file_manager in ('explorer.exe', 'pcmanfm'):
-        uris = uris.split() or ['']
-    else:
-        uris = [uris]
+    if uris_and_paths:
+        # Some file managers must be passed only one or zero paths / URIs
+        if file_manager not in ('explorer.exe', 'pcmanfm'):
+            uris_and_paths = [' '.join(uris_and_paths)]
 
-    for u in uris:
+        _launch_file_manager(uris_or_paths=uris_and_paths, arg=arg, file_manager=file_manager)
+
+    if directories:
+        if file_manager not in ('explorer.exe', 'pcmanfm'):
+            directories = [' '.join(directories)]
+        _launch_file_manager(uris_or_paths=directories, arg='', file_manager=file_manager)
+
+    if not uris_and_paths and not directories:
+        _launch_file_manager(uris_or_paths=[''], arg='', file_manager=file_manager)
+
+
+def _launch_file_manager(uris_or_paths: List[str], arg: str, file_manager: str) -> None:
+    """
+    Launch the file manager
+
+    :param uris_or_paths: list of URIs, or a list of a single empty string
+    :param arg: arg to pass the file manager
+    :param file_manager: file manager executable name
+    """
+
+    for u in uris_or_paths:
         cmd = '{} {}{}'.format(file_manager, arg, u)
         print("Executing", cmd)
         # Do not check current_platform here, it makes no sense
@@ -262,7 +317,7 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    if args.verbose or __about__.__version__ < '0.1.0':
+    if args.verbose:  # or __about__.__version__ < '0.1.0':
         print(Diagnostics())
 
     show_in_file_manager(path_or_uri=args.path)
