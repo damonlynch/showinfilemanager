@@ -120,7 +120,7 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
     the file manager to use, which defaults to the value returned by
     get_valid_file_manager()
 
-    For file managers are unable to select files to display, the file manager
+    For file managers unable to select files to display, the file manager
     will instead display the contents of the path.
 
     For file managers that can handle file selections, but only one at time,
@@ -130,13 +130,13 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
     recognize it, it will be called with the files as the only command line
     arguments.
 
-    :param path_or_uri: zero or more files or directories to open, specified as a single URI
-     or valid path, or a sequence of URIs/paths.
-    :param open_not_select_directory: if the URI or path is a directory and not a file, open
-     the directory itself in the file manager, rather than selecting it and displaying it in
-     its parent directory.
-    :param file_manager: executable name to use. If not specified, then get_valid_file_manager()
-     will determine which file manager to use.
+    :param path_or_uri: zero or more files or directories to open, specified
+     as a single URI or valid path, or a sequence of URIs/paths.
+    :param open_not_select_directory: if the URI or path is a directory and
+     not a file, open the directory itself in the file manager, rather than
+     selecting it and displaying it in its parent directory.
+    :param file_manager: executable name to use. If not specified, then
+     get_valid_file_manager() will determine which file manager to use.
     """
 
     global _valid_file_manager

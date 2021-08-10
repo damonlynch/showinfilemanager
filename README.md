@@ -74,37 +74,37 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
                          file_manager: Optional[str] = None) -> None:
     """
     Open the file manager and show zero or more directories or files in it.
-    
-    The path_or_uri is a sequence of items, or a single item. An item can 
-    be regular path, or a URI. 
-    
-    On non-Windows platforms, regular paths will be converted to URIs 
-    when passed as command line arguments to the file manager, because 
-    some file mangers do not handle regular paths correctly. 
+
+    The path_or_uri is a sequence of items, or a single item. An item can
+    be regular path, or a URI.
+
+    On non-Windows platforms, regular paths will be converted to URIs
+    when passed as command line arguments to the file manager, because
+    some file mangers do not handle regular paths correctly.
     On Windows or WSL, regular paths are not converted to URIs, but they
-    are quoted.  
+    are quoted.
 
     The most common use of this function is to call it without specifying
-    the file manager to use, which defaults to the value returned by 
-    get_valid_file_manager() 
+    the file manager to use, which defaults to the value returned by
+    get_valid_file_manager()
 
-    For file managers are unable to select files to display, the file manager
+    For file managers unable to select files to display, the file manager
     will instead display the contents of the path.
 
     For file managers that can handle file selections, but only one at time,
     multiple file manager windows will be opened.
-    
+
     If you specify a file manager executable and this package does not
     recognize it, it will be called with the files as the only command line
     arguments.
 
-    :param path_or_uri: zero or more files or directories to open, specified as a single URI
-     or valid path, or a sequence of URIs/paths.
-    :param open_not_select_directory: if the URI or path is a directory and not a file, open
-     the directory itself in the file manager, rather than selecting it and displaying it in
-     its parent directory.
-    :param file_manager: executable name to use. If not specified, then get_valid_file_manager()
-     will determine which file manager to use.
+    :param path_or_uri: zero or more files or directories to open, specified
+     as a single URI or valid path, or a sequence of URIs/paths.
+    :param open_not_select_directory: if the URI or path is a directory and
+     not a file, open the directory itself in the file manager, rather than
+     selecting it and displaying it in its parent directory.
+    :param file_manager: executable name to use. If not specified, then 
+     get_valid_file_manager() will determine which file manager to use.
     """
 ```
 
