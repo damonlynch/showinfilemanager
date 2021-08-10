@@ -35,6 +35,10 @@ def get_stock_file_manager() -> str:
     """
     Get stock file manager for this operating system / desktop.
 
+    On Windows the default is `explorer.exe`. On Linux the first step
+    is to determine which desktop is running, and from that lookup its
+    default file manager.
+
     Exceptions are not caught.
 
     :return: executable name
@@ -101,13 +105,30 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
                          open_not_select_directory: Optional[bool] = True,
                          file_manager: Optional[str] = None) -> None:
     """
-    Open the system file manager and display an optional directory, or items in the  directory.
+    Open the file manager and show zero or more directories or files in it.
 
-    If there is no valid file manager found on the system, do nothing. A valid file manager
-    is a file manager this package knows about.
+    The path_or_uri is a sequence of items, or a single item. An item can
+    be regular path, or a URI.
 
-    But if you pass the name of a  file manager executable, it will be used, regardless of
-    whether it is valid or not, whether it exists or not.
+    On non-Windows platforms, regular paths will be converted to URIs
+    when passed as command line arguments to the file manager, because
+    some file mangers do not handle regular paths correctly.
+    On Windows or WSL, regular paths are not converted to URIs, but they
+    are quoted.
+
+    The most common use of this function is to call it without specifying
+    the file manager to use, which defaults to the value returned by
+    get_valid_file_manager()
+
+    For file managers are unable to select files to display, the file manager
+    will instead display the contents of the path.
+
+    For file managers that can handle file selections, but only one at time,
+    multiple file manager windows will be opened.
+
+    If you specify a file manager executable and this package does not
+    recognize it, it will be called with the files as the only command line
+    arguments.
 
     :param path_or_uri: zero or more files or directories to open, specified as a single URI
      or valid path, or a sequence of URIs/paths.
@@ -146,10 +167,13 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
                     uri = pu
                     path = None
                 else:
-                    # Do not convert the path to a URI, as that can mess things up on WSL and probably other
-                    # contexts too
-                    path = pu
-                    uri = None
+                    if current_platform == Platform.windows:
+                        # Do not convert the path to a URI, as that can mess things up on WSL
+                        path = pu
+                        uri = None
+                    else:
+                        uri = pathlib.Path(os.path.abspath(pu)).as_uri()
+                        path = None
 
                 if _valid_file_manager_type == FileManagerType.dir_only_uri:
                     # Show only the directory; do not attempt to select the file

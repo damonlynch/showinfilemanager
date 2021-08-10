@@ -17,7 +17,7 @@ The command results in the file manager opening, ideally with the files selected
 
 With Show in File Manager, your Python program or command line script can do the same, with minimum effort from you.
 Although this package provides several functions to assist in identifying the the system's file managers, in most 
-circumstances you need to call only one function, the function `show_in_file_manager`,and it should just work.
+circumstances you need to call only one function, the function `show_in_file_manager`, and it should just work.
 
 This package aspires to be a platform independent, but it currently supports Windows 10/11, Linux, and WSL. 
 Contributions to make it work on all major platforms are welcome.
@@ -34,13 +34,15 @@ This package solves the following problems:
 
 There is no standard command line argument with which to open an operating system's file manager and select files at a
 specified path. Moreover, not all file managers support specifying files to select &mdash;
-if you try to pass a file to some file managers, they will open the file instead of selecting it, or display an error
-message, or ignore the command line argument. Some file managers will only allow selecting one file at a time from the
-command line. 
+if you try to pass a file to some file managers, they will open the file instead of selecting it, or worse yet display 
+an error message. Some file managers will only allow selecting one file at a time from the command line. 
 
 On desktop Linux the problem is especially acute, as Linux provides a plethora of file managers, with widely varying
 command line arguments. Moreover, the user's default file manager can sometimes be incorrectly set to nonsensical 
 values, such as an AppImage or Flatpak of a random application.
+
+Windows is not without its share of limitations. Explorer.exe will select only one file at a time when called from the
+command line, and the argument must be quoted in a way that it understands. 
 
 
 ## Supported File Managers
@@ -68,33 +70,43 @@ All file managers tested thus far accept URIs like `file:///home/user/file.txt`,
 
 ```python
 def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None,
+                         open_not_select_directory: Optional[bool] = True,
                          file_manager: Optional[str] = None) -> None:
     """
-    Open the system file manager and display an optional directory, or items in the  directory.
+    Open the file manager and show zero or more directories or files in it.
+    
+    The path_or_uri is a sequence of items, or a single item. An item can 
+    be regular path, or a URI. 
+    
+    On non-Windows platforms, regular paths will be converted to URIs 
+    when passed as command line arguments to the file manager, because 
+    some file mangers do not handle regular paths correctly. 
+    On Windows or WSL, regular paths are not converted to URIs, but they
+    are quoted.  
 
-    If there is no valid file manager found on the system, do nothing. A valid file manager
-    is a file manager this package knows about.
+    The most common use of this function is to call it without specifying
+    the file manager to use, which defaults to the value returned by 
+    get_valid_file_manager() 
+
+    For file managers are unable to select files to display, the file manager
+    will instead display the contents of the path.
+
+    For file managers that can handle file selections, but only one at time,
+    multiple file manager windows will be opened.
+    
+    If you specify a file manager executable and this package does not
+    recognize it, it will be called with the files as the only command line
+    arguments.
 
     :param path_or_uri: zero or more files or directories to open, specified as a single URI
      or valid path, or a sequence of URIs/paths.
+    :param open_not_select_directory: if the URI or path is a directory and not a file, open
+     the directory itself in the file manager, rather than selecting it and displaying it in
+     its parent directory.
     :param file_manager: executable name to use. If not specified, then get_valid_file_manager()
      will determine which file manager to use.
     """
 ```
-
-Open the file manager and show zero or more directories or files in it. The path_or_uri is a sequence of items, or a
-single item. An item can be regular path, or a URI. All regular paths will be converted to URIs when passed as command
-line arguments to the file manager. 
-
-The most common use of this function is to call it without specifying the file manager to use, which defaults to the
-most sensible choice of file manager being used (see below). 
-
-For file managers are unable to select files to display, the file manager will display the contents of the path.
-
-For file managers that can handle file selections, but only one at time, multiple file manager windows will be opened.
-
-If you specify a file manager executable and this package does not recognize it, it will be called with the files as the
-only command line arguments.
 
 Other functions mentioned below are not necessary to call, but are provided for convenience and control.
 
@@ -121,7 +133,8 @@ def get_valid_file_manager() -> str:
 This package makes opinionated choices about the most sensible choice of file manager:
 1. A file manager is "valid" if and only if this package recognizes it, e.g. `nautilus`, `explorer.exe`.
 2. If the user's choice of file manager is valid, that file manager is used.
-3. If the user's choice of file manager is invalid or could not be determined, the stock file manager is used.
+3. If the user's choice of file manager is invalid or could not be determined, the desktop or OS's stock file manager 
+   is used.
 
 
 ### Get the operating system's stock file manager
@@ -131,14 +144,15 @@ def get_stock_file_manager() -> str:
     """
     Get stock file manager for this operating system / desktop.
 
+    On Windows the default is `explorer.exe`. On Linux the first step
+    is to determine which desktop is running, and from that lookup its
+    default file manager.
+
     Exceptions are not caught.
 
     :return: executable name
     """
 ```
-
-On Windows the default is `explorer.exe`. On Linux the first step is to determine which desktop is running, and from
-that lookup its default file manager. 
 
 ### Get the user's choice of file manager
 
@@ -153,7 +167,7 @@ def get_user_file_manager() -> str:
     """
 ```
 
-On Windows, for now only the stock file manager is returned. That can change in future releases.
+On Windows, for now only the stock file manager is returned. That could change in future releases.
 
 On Linux, the file manager is probed using `xdg-mime query default inode/directory`, and the resulting `.desktop` file
 is parsed to extract the file manager command. 
@@ -167,8 +181,8 @@ Show file or directory in file manager, using the most sensible choice of file m
 show_in_file_manager('C:\Documents\myfile.txt')                                # Windows path
 show_in_file_manager('file://C:/Documents/myfile.txt')                         # Windows URI
 show_in_file_manager('/home/user/myfile.txt')                                  # Linux path
-show_in_file_manager(('/home/user/myfile.txt', '/home/user/myotherfile.txt'))  # Linux multiple paths
-show_in_file_manager('file:///home/user/myfile.txt')                           # Linux URI
+show_in_file_manager(('/home/user/myfile.txt', '/home/user/other file.txt'))   # Linux multiple paths
+show_in_file_manager('file:///home/user/other%20file.txt')                     # Linux URI
 show_in_file_manager()                                                         # Simply open the file manager
 show_in_file_manager('/home/user')                                             # Open the file manager at a directory
 ```
