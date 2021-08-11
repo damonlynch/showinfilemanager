@@ -19,8 +19,7 @@ With Show in File Manager, your Python program or command line script can do the
 Although this package provides several functions to assist in identifying the the system's file managers, in most 
 circumstances you need to call only one function, the function `show_in_file_manager`, and it should just work.
 
-This package aspires to be a platform independent, but it currently supports Windows 10/11, Linux, and WSL. 
-Contributions to make it work on all major platforms are welcome.
+This package aspires to be a platform independent, but it currently supports Windows 10/11, Linux, WSL, and macOS.
 
 
 ## Rationale
@@ -50,6 +49,7 @@ command line, and the argument must be quoted in a way that it understands.
 |File Manager|Used by|Command line       |Can Select Files|Handles Multiple Files / Directories|Notes|
 |------------|-------|-------------------|:---:|:---:|----|
 | Windows File Explorer|Windows 10 / 11, Windows Subsystem for Linux (WSL)| `explorer.exe /select,URI`|:white_check_mark:|:x:|No space between comma and URI. Can specify only one URI.|
+|Finder|macOS|`open --reveal URI`|:white_check_mark:|:x:| |
 | Nautilus (Files)|Gnome, Pop OS, Zorin|`nautilus --select URI1 URI2`|:white_check_mark:|:warning:|Multiple URIs open multiple Nautilus windows.|
 |Dolphin|KDE|`dolphin --select URI1 URI2 `|:white_check_mark:|:white_check_mark:|A regression in recent KDE releases means `--select` is ignored, but it is fixed in KDE Neon testing.|
 |Nemo|Linux Mint|`nemo URI1 URI2`|:white_check_mark:|:warning:|Multiple URIs open multiple Nemo windows.|
@@ -147,7 +147,8 @@ def get_stock_file_manager() -> str:
 
     On Windows the default is `explorer.exe`. On Linux the first step
     is to determine which desktop is running, and from that lookup its
-    default file manager.
+    default file manager. On macOS, the default is finder, accessed
+    via the command 'open'.
 
     Exceptions are not caught.
 
@@ -168,7 +169,7 @@ def get_user_file_manager() -> str:
     """
 ```
 
-On Windows, for now only the stock file manager is returned. That could change in future releases.
+On Windows and macOS, for now only the stock file manager is returned. That could change in future releases.
 
 On Linux, the file manager is probed using `xdg-mime query default inode/directory`, and the resulting `.desktop` file
 is parsed to extract the file manager command. 

@@ -22,7 +22,7 @@ import urllib.parse
 
 
 from . import __about__
-from .constants import FileManagerType, Platform
+from .constants import FileManagerType, Platform, single_file_only
 from .system import current_platform, is_wsl
 from .system import linux, tools
 
@@ -37,7 +37,8 @@ def get_stock_file_manager() -> str:
 
     On Windows the default is `explorer.exe`. On Linux the first step
     is to determine which desktop is running, and from that lookup its
-    default file manager.
+    default file manager. On macOS, the default is finder, accessed
+    via the command 'open'.
 
     Exceptions are not caught.
 
@@ -48,6 +49,8 @@ def get_stock_file_manager() -> str:
         file_manager = 'explorer.exe'
     elif current_platform == Platform.linux:
         file_manager = linux.get_stock_linux_file_manager()
+    elif current_platform == Platform.macos:
+        file_manager = 'open'
     else:
         raise NotImplementedError
 
@@ -70,6 +73,8 @@ def get_user_file_manager() -> str:
         file_manager = 'explorer.exe'
     elif current_platform == Platform.linux:
         file_manager = linux.get_user_linux_file_manager()
+    elif current_platform == Platform.macos:
+        file_manager = 'open'
     else:
         raise NotImplementedError
 
@@ -82,9 +87,10 @@ def get_valid_file_manager() -> str:
     Get user's file manager, falling back to using sensible defaults for the desktop / OS.
 
     The user's choice of file manager is the default choice. However, this is not always
-    set correctly, most likely because the user's distro has not correctly set the default
-    file manager. If the user's choice is unrecognized by this package, then reject it and
-    choose the standard file manager for the detected desktop environment.
+    set correctly. On Linux, it most likely is because the user's distro has not correctly
+    set the default file manager. If the user's choice is unrecognized by this package,
+    then reject it and choose the standard file manager for the detected desktop
+    environment.
 
     All exceptions are caught, except those if this platform is not supported by this package.
 
@@ -96,6 +102,8 @@ def get_valid_file_manager() -> str:
         file_manager = 'explorer.exe'
     elif current_platform == Platform.linux:
         file_manager = linux.get_valid_linux_file_manager()
+    elif current_platform == Platform.macos:
+        file_manager = 'open'
     else:
         raise NotImplementedError
     return file_manager
@@ -153,9 +161,13 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
     directories = []  # Used for directories when open_not_select_directory is True
 
     if not path_or_uri:
-        arg = ''
-        uris_and_paths = ''
-    else:
+        if current_platform == Platform.macos:
+            # macOS finder requires a path to be able to launch it from the command line
+            path_or_uri = 'file:///'
+        else:
+            arg = ''
+            uris_and_paths = ''
+    if path_or_uri:
         if isinstance(path_or_uri, str):
             # turn the single path / URI into a Tuple
             path_or_uri = path_or_uri,
@@ -213,21 +225,23 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
         if _valid_file_manager_type == FileManagerType.win_select:
             arg = '/select,'  # no trailing space is necessary on Windows
         elif _valid_file_manager_type == FileManagerType.select:
-            arg = '--select '  # trailing space is necessary for this and subsequent entries
+            arg = '--select '  # trailing space is necessary
         elif _valid_file_manager_type == FileManagerType.show_item:
-            arg = '--show-item '
+            arg = '--show-item '  # trailing space is necessary
         elif _valid_file_manager_type == FileManagerType.show_items:
-            arg = '--show-items '
+            arg = '--show-items '  # trailing space is necessary
+        elif _valid_file_manager_type == FileManagerType.reveal:
+            arg = '--reveal '  # trailing space is necessary
 
     if uris_and_paths:
         # Some file managers must be passed only one or zero paths / URIs
-        if file_manager not in ('explorer.exe', 'pcmanfm'):
+        if file_manager not in single_file_only:
             uris_and_paths = [' '.join(uris_and_paths)]
 
         _launch_file_manager(uris_or_paths=uris_and_paths, arg=arg, file_manager=file_manager)
 
     if directories:
-        if file_manager not in ('explorer.exe', 'pcmanfm'):
+        if file_manager not in single_file_only:
             directories = [' '.join(directories)]
         _launch_file_manager(uris_or_paths=directories, arg='', file_manager=file_manager)
 
@@ -272,6 +286,8 @@ def _set_valid_file_manager() -> None:
                 _valid_file_manager_type = FileManagerType.win_select
             elif current_platform == Platform.linux:
                 _valid_file_manager_type = linux.get_linux_file_manager_type(fm)
+            elif current_platform == Platform.macos:
+                _valid_file_manager_type = FileManagerType.reveal
             else:
                 raise NotImplementedError
         _valid_file_manager_probed = True
