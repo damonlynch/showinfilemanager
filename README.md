@@ -71,7 +71,8 @@ All file managers tested thus far accept URIs like `file:///home/user/file.txt`,
 ```python
 def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None,
                          open_not_select_directory: Optional[bool] = True,
-                         file_manager: Optional[str] = None) -> None:
+                         file_manager: Optional[str] = None,
+                         verbose: bool = False) -> None:
     """
     Open the file manager and show zero or more directories or files in it.
 
@@ -81,7 +82,7 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
     On non-Windows platforms, regular paths will be converted to URIs
     when passed as command line arguments to the file manager, because
     some file mangers do not handle regular paths correctly.
-    
+
     On Windows or WSL, regular paths are not converted to URIs, but they
     are quoted.
 
@@ -104,8 +105,10 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
     :param open_not_select_directory: if the URI or path is a directory and
      not a file, open the directory itself in the file manager, rather than
      selecting it and displaying it in its parent directory.
-    :param file_manager: executable name to use. If not specified, then 
+    :param file_manager: executable name to use. If not specified, then
      get_valid_file_manager() will determine which file manager to use.
+    :param verbose: if True print command to be executed before launching
+     it
     """
 ```
 

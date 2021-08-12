@@ -1,8 +1,6 @@
 # Copyright (c) 2016-2021 Damon Lynch
 # SPDX - License - Identifier: MIT
 
-__author__ = 'Damon Lynch'
-__copyright__ = "Copyright 2016-2021, Damon Lynch"
 
 from enum import Enum
 import os

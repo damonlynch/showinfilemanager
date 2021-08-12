@@ -7,10 +7,11 @@ Show in File Manager
 Open the system file manager and optionally select files in it.
 """
 
-__author__ = 'Damon Lynch'
-__copyright__ = "Copyright 2016-2021, Damon Lynch"
-
 import argparse
+try:
+    import importlib.metadata as importlib_metadata
+except ImportError:
+    import importlib_metadata
 import os
 import pathlib
 import platform
@@ -21,7 +22,6 @@ from typing import Optional, Union, Sequence, List
 import urllib.parse
 
 
-from . import __about__
 from .constants import FileManagerType, Platform, single_file_only
 from .system import current_platform, is_wsl
 from .system import linux, tools
@@ -111,7 +111,8 @@ def get_valid_file_manager() -> str:
 
 def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None,
                          open_not_select_directory: Optional[bool] = True,
-                         file_manager: Optional[str] = None) -> None:
+                         file_manager: Optional[str] = None,
+                         verbose: bool = False) -> None:
     """
     Open the file manager and show zero or more directories or files in it.
 
@@ -146,6 +147,8 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
      selecting it and displaying it in its parent directory.
     :param file_manager: executable name to use. If not specified, then
      get_valid_file_manager() will determine which file manager to use.
+    :param verbose: if True print command to be executed before launching
+     it
     """
 
     global _valid_file_manager
@@ -238,29 +241,32 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
         if file_manager not in single_file_only:
             uris_and_paths = [' '.join(uris_and_paths)]
 
-        _launch_file_manager(uris_or_paths=uris_and_paths, arg=arg, file_manager=file_manager)
+        _launch_file_manager(uris_or_paths=uris_and_paths, arg=arg, file_manager=file_manager, verbose=verbose)
 
     if directories:
         if file_manager not in single_file_only:
             directories = [' '.join(directories)]
-        _launch_file_manager(uris_or_paths=directories, arg='', file_manager=file_manager)
+        _launch_file_manager(uris_or_paths=directories, arg='', file_manager=file_manager, verbose=verbose)
 
     if not uris_and_paths and not directories:
-        _launch_file_manager(uris_or_paths=[''], arg='', file_manager=file_manager)
+        _launch_file_manager(uris_or_paths=[''], arg='', file_manager=file_manager, verbose=verbose)
 
 
-def _launch_file_manager(uris_or_paths: List[str], arg: str, file_manager: str) -> None:
+def _launch_file_manager(uris_or_paths: List[str], arg: str, file_manager: str, verbose: bool) -> None:
     """
     Launch the file manager
 
     :param uris_or_paths: list of URIs, or a list of a single empty string
     :param arg: arg to pass the file manager
     :param file_manager: file manager executable name
+    :param verbose: if True print command to be executed before launching
+     it
     """
 
     for u in uris_or_paths:
         cmd = '{} {}{}'.format(file_manager, arg, u)
-        print("Executing", cmd)
+        if verbose:
+            print("Executing", cmd)
         # Do not check current_platform here, it makes no sense
         if platform.system() != "Windows":
             args = shlex.split(cmd)
@@ -330,6 +336,26 @@ class Diagnostics:
         return desktop + file_managers
 
 
+def package_metadata():
+    """
+    Get Python package metadata
+
+    :return: version number and package summary
+    """
+
+    try:
+        version = importlib_metadata.version('show-in-file-manager')
+    except:
+       version = "Unknown version"
+       summary = "Platform independent Python module to open the system file manager and optionally select files in it"
+
+    else:
+        metadata = importlib_metadata.metadata('show-in-file-manager')
+        summary = metadata['summary']
+
+    return version, summary
+
+
 def parser_options(formatter_class=argparse.HelpFormatter):
     """
     Parse command line options for this script
@@ -338,15 +364,19 @@ def parser_options(formatter_class=argparse.HelpFormatter):
     :return: argparse.ArgumentParser
     """
 
+    version, description = package_metadata()
+
     parser = argparse.ArgumentParser(
-        prog=__about__.__title__, description=__about__.__summary__, formatter_class=formatter_class
+        prog='Show in File Manager', description=description, formatter_class=formatter_class
     )
 
     parser.add_argument(
-        '--version', action='version', version='%(prog)s {}'.format(__about__.__version__)
+        '--version', action='version', version='%(prog)s {}'.format(version)
     )
 
     parser.add_argument('--verbose', action='store_true')
+
+    parser.add_argument('--debug',action='store_true')
 
     parser.add_argument('path', nargs='*')
 
@@ -358,9 +388,11 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    if args.verbose:  # or __about__.__version__ < '0.1.0':
+    verbose = args.verbose
+    if args.debug:
         print(Diagnostics())
+        verbose = True
 
-    show_in_file_manager(path_or_uri=args.path)
+    show_in_file_manager(path_or_uri=args.path, verbose=verbose)
 
 
