@@ -38,13 +38,12 @@ def quote_path(path: str) -> str:
     """
 
     if current_platform == Platform.windows:
-        # Assume no double quotes in paths
+        # Double quotes are not allowed in paths names - they are used for quoting
+
         if re.match("""'(.*)'""", path) is not None:
             # Replace single quotes with double quotes
-            print(1)
             return '"{}"'.format(path[1:-1])
         if re.match(r"""\"(.*)\"""", path) is None:
-            print(2)
             # Add double quotes where there was no quoting at all
             return '"{}"'.format(path)
     else:

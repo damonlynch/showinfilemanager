@@ -192,7 +192,6 @@ show_in_file_manager('/home/user')                                             #
 ## Limitations
 
  - The code is in a preliminary state. Critiques are welcome.
- - Characters like é in path names can currently fail.
  - Its behavior in a confined Linux environment like a Flatpak, Snap, or AppImage is untested.
  - It is intended that this code be uploaded to PyPi when it is in better shape.
 

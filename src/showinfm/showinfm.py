@@ -166,7 +166,7 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
             path_or_uri = 'file:///'
         else:
             arg = ''
-            uris_and_paths = ''
+            uris_and_paths = []
     if path_or_uri:
         if isinstance(path_or_uri, str):
             # turn the single path / URI into a Tuple
