@@ -8,12 +8,12 @@ Plenty of programs expose this functionality in their user interface. On Windows
 "Show in Explorer", and "Reveal in Explorer" are common. Cross-platform programs use terms like "Open Containing
 Folder" or "Open in File Browser":
 
-![Show in Windows Explorer](https://github.com/damonlynch/showinfilemanager/blob/main/.github/photomechanic-win.png)
-![Open containing folder](https://github.com/damonlynch/showinfilemanager/blob/main/.github/documentviewer-gnome.png)
+![Show in Windows Explorer](https://github.com/damonlynch/showinfilemanager/raw/main/.github/photomechanic-win.png)
+![Open containing folder](https://github.com/damonlynch/showinfilemanager/raw/main/.github/documentviewer-gnome.png)
 
 The command results in the file manager opening, ideally with the files selected:
 
-![Peony file manager](https://github.com/damonlynch/showinfilemanager/blob/main/.github/peony-kylin.png)
+![Peony file manager](https://github.com/damonlynch/showinfilemanager/raw/main/.github/peony-kylin.png)
 
 With Show in File Manager, your Python program or command line script can do the same, with minimum effort from you.
 Although this package provides several functions to assist in identifying the the system's file managers, in most 
@@ -48,18 +48,18 @@ command line, and the argument must be quoted in a way that it understands.
 
 |File Manager|Used by|Command line       |Can Select Files|Handles Multiple Files / Directories|Notes|
 |------------|-------|-------------------|:---:|:---:|----|
-| Windows File Explorer|Windows 10 / 11, Windows Subsystem for Linux (WSL)| `explorer.exe /select,URI`|:white_check_mark:|:x:|No space between comma and URI. Can specify only one URI.|
-|Finder|macOS|`open --reveal URI`|:white_check_mark:|:x:| |
-| Nautilus (Files)|Gnome, Pop OS, Zorin|`nautilus --select URI1 URI2`|:white_check_mark:|:warning:|Multiple URIs open multiple Nautilus windows.|
-|Dolphin|KDE|`dolphin --select URI1 URI2 `|:white_check_mark:|:white_check_mark:|A regression in recent KDE releases means `--select` is ignored, but it is fixed in KDE Neon testing.|
-|Nemo|Linux Mint|`nemo URI1 URI2`|:white_check_mark:|:warning:|Multiple URIs open multiple Nemo windows.|
-|Pantheon|Elementary OS|`io.elementary.files URI1 URI2`|:white_check_mark:|:warning:| Multiple URIs open multiple Pantheon tabs.|
-|Deepin File Manager|Deepin|`dde-file-manager --show-item URI1 URI2`|:white_check_mark:|:warning:| Multiple URIs open multiple Deepin File Manager tabs.|
-|Peony|Ubuntu Kylin|`peony --show-items URI1 URI2`|:white_check_mark:|:white_check_mark:| |
-|Caja|Mate|`caja  URI1 URI2`|:x:|:warning:|Specifying a file causes an error. Multiple URIs open multiple Caja windows.|
-|Thunar|XFCE|`thunar URI1 URI2`|:x:|:warning:|Specifying a file opens it. Multiple URIs open multiple Thunar windows.|
-|PCManFM|LXDE|`pcmanfm  URI`|:x:|:x:|Specifying a file opens it. Multiple URIs open only the first URI.|
-|PCManFM-Qt|LXQt|`pcmanfm-qt  URI1 URI2`|:x:|:warning:|Specifying a file opens it. Multiple URIs open multiple PCManFM-Qt windows.|
+| Windows File Explorer|Windows 10 / 11, Windows Subsystem for Linux (WSL)| `explorer.exe /select,URI`|&#9989;|&#10060;|No space between comma and URI. Can specify only one URI.|
+|Finder|macOS|`open --reveal URI`|&#9989;|&#10060;| |
+| Nautilus (Files)|Gnome, Pop OS, Zorin|`nautilus --select URI1 URI2`|&#9989;|&#9888;|Multiple URIs open multiple Nautilus windows.|
+|Dolphin|KDE|`dolphin --select URI1 URI2 `|&#9989;|&#9989;|A regression in recent KDE releases means `--select` is ignored, but it is fixed in KDE Neon testing.|
+|Nemo|Linux Mint|`nemo URI1 URI2`|&#9989;|&#9888;|Multiple URIs open multiple Nemo windows.|
+|Pantheon|Elementary OS|`io.elementary.files URI1 URI2`|&#9989;|&#9888;| Multiple URIs open multiple Pantheon tabs.|
+|Deepin File Manager|Deepin|`dde-file-manager --show-item URI1 URI2`|&#9989;|&#9888;| Multiple URIs open multiple Deepin File Manager tabs.|
+|Peony|Ubuntu Kylin|`peony --show-items URI1 URI2`|&#9989;|&#9989;| |
+|Caja|Mate|`caja  URI1 URI2`|&#10060;|&#9888;|Specifying a file causes an error. Multiple URIs open multiple Caja windows.|
+|Thunar|XFCE|`thunar URI1 URI2`|&#10060;|&#9888;|Specifying a file opens it. Multiple URIs open multiple Thunar windows.|
+|PCManFM|LXDE|`pcmanfm  URI`|&#10060;|&#10060;|Specifying a file opens it. Multiple URIs open only the first URI.|
+|PCManFM-Qt|LXQt|`pcmanfm-qt  URI1 URI2`|&#10060;|&#9888;|Specifying a file opens it. Multiple URIs open multiple PCManFM-Qt windows.|
 
 All file managers tested thus far accept URIs like `file:///home/user/file.txt`, as well as regular paths like
 `/home/user/file.txt`.
