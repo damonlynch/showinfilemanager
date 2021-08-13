@@ -22,6 +22,12 @@ circumstances you need to call only one function, the function `show_in_file_man
 This package aspires to be a platform independent, but it currently supports Windows 10/11, Linux, WSL, and macOS.
 
 
+## How to Install
+
+```bash
+python3 -m pip install show-in-file-manager
+```
+
 ## Rationale
 
 This package solves the following problems:
