@@ -11,7 +11,7 @@ Folder" or "Open in File Browser":
 ![Show in Windows Explorer](https://github.com/damonlynch/showinfilemanager/raw/main/.github/photomechanic-win.png)
 ![Open containing folder](https://github.com/damonlynch/showinfilemanager/raw/main/.github/documentviewer-gnome.png)
 
-The command results in the file manager opening, ideally with the files selected:
+A command like "Open in File Browser" results in the file manager opening, ideally with the files selected:
 
 ![Peony file manager](https://github.com/damonlynch/showinfilemanager/raw/main/.github/peony-kylin.png)
 
@@ -202,6 +202,7 @@ show_in_file_manager('/home/user')                                             #
 
  - The code is in a preliminary state. Critiques are welcome.
  - Its behavior in a confined Linux environment like a Flatpak, Snap, or AppImage is untested.
+ - On WSL, it currently opens explorer.exe.
 
 ## Contributing
 
