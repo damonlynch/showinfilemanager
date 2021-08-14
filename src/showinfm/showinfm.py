@@ -367,18 +367,18 @@ def parser_options(formatter_class=argparse.HelpFormatter):
     version, description = package_metadata()
 
     parser = argparse.ArgumentParser(
-        prog='Show in File Manager', description=description, formatter_class=formatter_class
+        prog='showinfilemanager', description=description, formatter_class=formatter_class
     )
 
     parser.add_argument(
         '--version', action='version', version='%(prog)s {}'.format(version)
     )
 
-    parser.add_argument('--verbose', action='store_true')
+    parser.add_argument('--verbose', action='store_true', help="display command being run to stdout")
 
-    parser.add_argument('--debug',action='store_true')
+    parser.add_argument('--debug', action='store_true', help="output debugging information to stdout")
 
-    parser.add_argument('path', nargs='*')
+    parser.add_argument('path', nargs='*', help="zero or more URIs or paths of files or directories")
 
     return parser
 
