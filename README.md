@@ -34,7 +34,7 @@ Generate the man page:
 python3 setup.py build_pandoc
 ```
 
-You can call import it to your Python code
+You can import it as a Python module:
 ```python
 from showinfm import show_in_file_manager
 show_in_file_manager('/home/user/file.txt')
