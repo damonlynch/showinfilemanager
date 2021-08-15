@@ -75,7 +75,7 @@ command line, and the argument must be quoted in a way that it understands.
 
 ## Supported file managers
 This package takes care of calling the file managers with the correct arguments for you. The command line arguments
-show below are for reference.
+shown here are for reference:
 
 |File Manager|Used by|Command line       |Can Select Files|Handles Multiple Files / Directories|Notes|
 |------------|-------|-------------------|:---:|:---:|----|
