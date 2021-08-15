@@ -19,14 +19,37 @@ With Show in File Manager, your Python program or command line script can do the
 Although this package provides several functions to assist in identifying the the system's file managers, in most 
 circumstances you need to call only one function, the function `show_in_file_manager`, and it should just work.
 
-This package aspires to be a platform independent, but it currently supports Windows 10/11, Linux, WSL, and macOS.
+This package aspires to be a platform independent, but it currently supports Windows 10/11, Linux, WSL, and macOS. It
+works with 12 [supported file managers](#supported-file-managers).
 
 
-## How to Install
+## How to install and run
 
 ```bash
 python3 -m pip install show-in-file-manager
 ```
+
+Generate the man page:
+```bash
+python3 setup.py build_pandoc
+```
+
+You can call import it to your Python code
+```python
+from showinfm import show_in_file_manager
+show_in_file_manager('/home/user/file.txt')
+```
+
+Or run it from the command line:
+```bash
+showinfilemanager file1.txt file2.txt
+```
+
+```commandline
+showinfilemanager.exe D:\Documents\document.docx
+```
+
+More [examples](#examples) are below.
 
 ## Rationale
 
@@ -50,7 +73,9 @@ Windows is not without its share of limitations. Explorer.exe will select only o
 command line, and the argument must be quoted in a way that it understands. 
 
 
-## Supported File Managers
+## Supported file managers
+This package takes care of calling the file managers with the correct arguments for you. The command line arguments
+show below are for reference.
 
 |File Manager|Used by|Command line       |Can Select Files|Handles Multiple Files / Directories|Notes|
 |------------|-------|-------------------|:---:|:---:|----|
