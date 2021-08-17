@@ -4,6 +4,7 @@
 
 from enum import Enum
 import os
+from pathlib import Path
 import shlex
 import shutil
 import subprocess
@@ -69,26 +70,27 @@ def get_user_linux_file_manager() -> str:
     if desktop_file.endswith(';'):
         desktop_file = desktop_file[:-1]
 
-    for desktop_path in (os.path.join(d, 'applications') for d in BaseDirectory.xdg_data_dirs):
-        path = os.path.join(desktop_path, desktop_file)
-        if os.path.exists(path):
+    for desktop_path in (Path(d) / 'applications' for d in BaseDirectory.xdg_data_dirs):
+        path = desktop_path / desktop_file
+        if path.exists():
+            p = str(path)
             try:
-                desktop_entry = DesktopEntry(path)
+                desktop_entry = DesktopEntry(p)
             except:
-                raise Exception("Could not open desktop entry at {}".format(path))
+                raise Exception("Could not open desktop entry at {}".format(p))
             try:
-                desktop_entry.parse(path)
+                desktop_entry.parse(p)
             except xdg.Exceptions.ParsingError:
-                raise Exception("Could not parse desktop entry at {}".format(path))
+                raise Exception("Could not parse desktop entry at {}".format(p))
             except:
-                raise Exception("Desktop entry at {} might be malformed".format(path))
+                raise Exception("Desktop entry at {} might be malformed".format(p))
 
             fm = desktop_entry.getExec()
 
             # Strip away any extraneous arguments
             fm_cmd = fm.split()[0]
             # Strip away any path information
-            fm_cmd = os.path.split(fm_cmd)[1]
+            fm_cmd = Path(fm_cmd).name
             # Strip away any quotes
             fm_cmd = fm_cmd.replace('"', '')
             fm_cmd = fm_cmd.replace("'", '')
@@ -155,22 +157,28 @@ def get_linux_file_manager_type(file_manager: str) -> FileManagerType:
     return LinuxFileManagerBehavior.get(file_manager, FileManagerType.regular)
 
 
-def wsl_path_is_directory(path: str) -> bool:
+def wsl_path_is_directory(path: Path) -> bool:
+    """
+    When running in WSL, detect if the path being passed is a directory
+
+    :param path: can be a Windows path e.g. C:/Windows, or a Linux path e.g. /mnt/c/Windows
+    :return: True if a Windows or Linux directory, else False
+    """
+
     # Simple case: Linux path
-    if os.path.isdir(path):
+    if path.is_dir():
         return True
     # Simple case: Linux file
-    if os.path.isfile(path):
+    if path.is_file():
         return False
     # Potential windows path: let's try convert it from a Windows path to a WSL path
     try:
         linux_path = subprocess.run(
-            ['wslpath', '-u', path], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True
+            ['wslpath', '-u', str(path)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True
         ).stdout.decode().strip()
     except subprocess.CalledProcessError:
         return False
-    return os.path.isdir(linux_path)
-
+    return Path(linux_path).is_dir()
 
 
 class LinuxDesktop(Enum):

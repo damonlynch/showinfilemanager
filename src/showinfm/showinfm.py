@@ -12,8 +12,7 @@ try:
     import importlib.metadata as importlib_metadata
 except ImportError:
     import importlib_metadata
-import os
-import pathlib
+from pathlib import Path
 import platform
 import shlex
 import shutil
@@ -185,21 +184,22 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
                 else:
                     if current_platform == Platform.windows:
                         # Do not convert the path to a URI, as that can mess things up on WSL
-                        path = pu
+                        path = Path(pu)
                         uri = None
                     else:
-                        uri = pathlib.Path(os.path.abspath(pu)).as_uri()
+                        uri = Path(pu).resolve().as_uri()
                         path = None
 
                 if _valid_file_manager_type == FileManagerType.dir_only_uri:
-                    # Show only the directory; do not attempt to select the file
+                    # Show only the directory: do not attempt to select the file, because the file manager cannot
+                    # handle it.
                     if uri:
                         parse_result = urllib.parse.urlparse(uri)
-                        path = parse_result.path
+                        path = Path(parse_result.path)
 
-                    path = os.path.dirname(path)
+                    path = path.parent
                     if uri:
-                        uri = urllib.parse.urlunparse(parse_result._replace(path=path))
+                        uri = urllib.parse.urlunparse(parse_result._replace(path=str(path)))
                     else:
                         path = tools.quote_path(path)
 
@@ -209,12 +209,12 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
                     if open_not_select_directory:
                         if uri:
                             parse_result = urllib.parse.urlparse(uri)
-                            path = parse_result.path
-                            is_dir = os.path.isdir(path)
+                            path = Path(parse_result.path)
+                            is_dir = path.is_dir()
                         elif is_wsl:
                             is_dir = linux.wsl_path_is_directory(path)
                         else:
-                            is_dir = os.path.isdir(path)
+                            is_dir = path.is_dir()
                         if is_dir:
                             if uri is None:
                                 path = tools.quote_path(path)

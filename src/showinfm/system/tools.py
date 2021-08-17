@@ -3,6 +3,7 @@
 
 import re
 import shlex
+from pathlib import Path
 
 from . import urivalidate
 from . import current_platform
@@ -19,7 +20,7 @@ def is_uri(path_uri: str) -> bool:
     return re.match("^%s$" % urivalidate.URI, path_uri, re.VERBOSE) is not None
 
 
-def quote_path(path: str) -> str:
+def quote_path(path: Path) -> Path:
     """
     Quote path in a way that works with file managers on Windows and Unix-like.
 
@@ -34,16 +35,17 @@ def quote_path(path: str) -> str:
     :return: double quoted path
     """
 
+    p = str(Path)
     if current_platform == Platform.windows:
         # Double quotes are not allowed in paths names - they are used for quoting
 
-        if re.match("""'(.*)'""", path) is not None:
+        if re.match("""'(.*)'""", p) is not None:
             # Replace single quotes with double quotes
-            return '"{}"'.format(path[1:-1])
-        if re.match(r"""\"(.*)\"""", path) is None:
+            return Path('"{}"'.format(p[1:-1]))
+        if re.match(r"""\"(.*)\"""", p) is None:
             # Add double quotes where there was no quoting at all
-            return '"{}"'.format(path)
+            return Path('"{}"'.format(path))
     else:
-        if not (path[0] in ('"', "'") and path[-1] == path[0]):
-            return shlex.quote(path)
+        if not (p[0] in ('"', "'") and p[-1] == p[0]):
+            return Path(shlex.quote(p))
     return path
