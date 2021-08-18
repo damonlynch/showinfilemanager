@@ -1,6 +1,8 @@
+# Copyright (c) 2021 Damon Lynch
+# SPDX - License - Identifier: MIT
+
 from pathlib import Path
 from typing import List
-import urllib.parse
 
 from .tools import is_uri, path_to_url, url_to_path
 

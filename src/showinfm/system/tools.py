@@ -1,4 +1,5 @@
 # Copyright (c) 2021 Damon Lynch
+# Some portions Copyright (c) 2008-2021 The pip developers
 # SPDX - License - Identifier: MIT
 
 import os
