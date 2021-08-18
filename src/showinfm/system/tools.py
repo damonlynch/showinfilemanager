@@ -1,9 +1,13 @@
 # Copyright (c) 2021 Damon Lynch
 # SPDX - License - Identifier: MIT
 
+import os
+from pathlib import Path
 import re
 import shlex
-from pathlib import Path
+import sys
+import urllib.parse
+import urllib.request
 
 from . import urivalidate
 from . import current_platform
@@ -48,4 +52,47 @@ def quote_path(path: Path) -> Path:
     else:
         if not (p[0] in ('"', "'") and p[-1] == p[0]):
             return Path(shlex.quote(p))
+    return path
+
+
+def path_to_url(path: str) -> str:
+    """
+    Convert a path to a file: URL.  The path will be made absolute and have
+    quoted path parts.
+
+    Taken from pip: https://github.com/pypa/pip/blob/main/src/pip/_internal/utils/urls.py
+    Copyright (c) 2008-2021 The pip developers
+    """
+
+    path = os.path.normpath(os.path.abspath(path))
+    url = urllib.parse.urljoin("file:", urllib.request.pathname2url(path))
+    return url
+
+
+def url_to_path(url: str) -> str:
+    """
+    Convert a file: URL to a path.
+
+    Taken from pip: https://github.com/pypa/pip/blob/main/src/pip/_internal/utils/urls.py
+    Copyright (c) 2008-2021 The pip developers
+    """
+
+    assert url.startswith(
+        "file:"
+    ), f"You can only turn file: urls into filenames (not {url!r})"
+
+    _, netloc, path, _, _ = urllib.parse.urlsplit(url)
+
+    if not netloc or netloc == "localhost":
+        # According to RFC 8089, same as empty authority.
+        netloc = ""
+    elif sys.platform == "win32":
+        # If we have a UNC path, prepend UNC share notation.
+        netloc = "\\\\" + netloc
+    else:
+        raise ValueError(
+            f"non-local file URIs are not supported on this platform: {url!r}"
+        )
+
+    path = urllib.request.url2pathname(netloc + path)
     return path

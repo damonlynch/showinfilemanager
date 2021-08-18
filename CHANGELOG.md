@@ -1,11 +1,12 @@
 Changelog for Show in File Manager
 ==================================
 
-0.0.5 (2021-08-14)
+0.0.5 (2021-08-xx)
 ------------------
 
  - Add setup.py for man page generation.
  - Improve README to clarify installation and usage.
+ - Parse filename globs passed via the command line on Windows.
 
 0.0.4 (2021-08-14)
 ------------------

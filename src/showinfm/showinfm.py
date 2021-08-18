@@ -23,7 +23,7 @@ import urllib.parse
 
 from .constants import FileManagerType, Platform, single_file_only
 from .system import current_platform, is_wsl
-from .system import linux, tools
+from .system import linux, tools, windows
 
 _valid_file_manager_probed = False
 _valid_file_manager = None
@@ -197,7 +197,8 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
                         parse_result = urllib.parse.urlparse(uri)
                         path = Path(parse_result.path)
 
-                    path = path.parent
+                    if not path.is_dir():
+                        path = path.parent
                     if uri:
                         uri = urllib.parse.urlunparse(parse_result._replace(path=str(path)))
                     else:
@@ -364,10 +365,10 @@ def parser_options(formatter_class=argparse.HelpFormatter):
     :return: argparse.ArgumentParser
     """
 
-    version, description = package_metadata()
+    version, summary = package_metadata()
 
     parser = argparse.ArgumentParser(
-        prog='showinfilemanager', description=description, formatter_class=formatter_class
+        prog='showinfilemanager', description=summary, formatter_class=formatter_class
     )
 
     parser.add_argument(
@@ -393,6 +394,11 @@ def main() -> None:
         print(Diagnostics())
         verbose = True
 
-    show_in_file_manager(path_or_uri=args.path, verbose=verbose)
+    if current_platform == Platform.windows and not is_wsl:
+        path_or_uri = windows.parse_command_line_arguments(args.path)
+    else:
+        path_or_uri = args.path
+
+    show_in_file_manager(path_or_uri=path_or_uri, verbose=verbose)
 
 
