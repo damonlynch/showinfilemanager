@@ -71,7 +71,7 @@ values, such as an AppImage or Flatpak of a random application.
 
 Windows is not without its share of limitations. Explorer.exe will select only one file at a time when called from the
 command line, and the argument must be quoted in a way that it understands. Rather than using the command line, this
-package instead uses the win32 interface to programmatically select multiple files. 
+package instead uses the win32 interface to programmatically select multiple files (not possible when running in WSL). 
 
 
 ## Supported file managers
