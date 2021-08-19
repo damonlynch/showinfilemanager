@@ -70,7 +70,8 @@ command line arguments. Moreover, the user's default file manager can sometimes 
 values, such as an AppImage or Flatpak of a random application.
 
 Windows is not without its share of limitations. Explorer.exe will select only one file at a time when called from the
-command line, and the argument must be quoted in a way that it understands. 
+command line, and the argument must be quoted in a way that it understands. Rather than using the command line, this
+package instead uses the win32 interface to programmatically select multiple files. 
 
 
 ## Supported file managers
@@ -79,7 +80,7 @@ shown here are for reference:
 
 |File Manager|Used by|Command line       |Can Select Files|Handles Multiple Files / Directories|Notes|
 |------------|-------|-------------------|:---:|:---:|----|
-| Windows File Explorer|Windows 10 / 11, Windows Subsystem for Linux (WSL)| `explorer.exe /select,URI`|&#9989;|&#10060;|No space between comma and URI. Can specify only one URI.|
+| Windows File Explorer|Windows 10 / 11, Windows Subsystem for Linux (WSL)| `explorer.exe /select,URI`|&#9989;|&#9888;|No space between comma and URI. Can specify only one URI via the command line, but multiple files can be specified via the win32 API.|
 |Finder|macOS|`open --reveal URI`|&#9989;|&#10060;| |
 | Nautilus (Files)|Gnome, Pop OS, Zorin|`nautilus --select URI1 URI2`|&#9989;|&#9888;|Multiple URIs open multiple Nautilus windows.|
 |Dolphin|KDE|`dolphin --select URI1 URI2 `|&#9989;|&#9989;|A regression in recent KDE releases means `--select` is ignored, but it is fixed in KDE Neon testing.|
