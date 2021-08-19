@@ -275,8 +275,8 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
                 directories = [' '.join(directories)]
             _launch_file_manager(uris_or_paths=directories, arg='', file_manager=file_manager, verbose=verbose)
 
-        if not uris_and_paths and not directories:
-            _launch_file_manager(uris_or_paths=[''], arg='', file_manager=file_manager, verbose=verbose)
+    if not uris_and_paths and not directories:
+        _launch_file_manager(uris_or_paths=[''], arg='', file_manager=file_manager, verbose=verbose)
 
 
 def _launch_file_manager(uris_or_paths: List[str], arg: str, file_manager: str, verbose: bool) -> None:
