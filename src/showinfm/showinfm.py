@@ -215,7 +215,7 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
                         parse_result = urllib.parse.urlparse(uri)
                         path = Path(parse_result.path)
 
-                    if not path.is_dir():
+                    if not path.is_dir() or not open_not_select_directory:
                         path = path.parent
                     if uri:
                         uri = urllib.parse.urlunparse(parse_result._replace(path=str(path)))
