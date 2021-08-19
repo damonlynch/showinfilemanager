@@ -123,7 +123,7 @@ def get_valid_linux_file_manager() -> str:
         if user_fm not in get_known_linux_file_managers():
             user_fm = ''
 
-    if not (user_fm and stock):
+    if not (user_fm or stock):
         return ''
 
     if not user_fm:
