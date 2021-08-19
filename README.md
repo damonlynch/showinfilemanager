@@ -82,7 +82,7 @@ shown here are for reference:
 |------------|-------|-------------------|:---:|:---:|----|
 | Windows File Explorer|Windows 10 / 11, Windows Subsystem for Linux (WSL)| `explorer.exe /select,URI`|&#9989;|&#9888;|No space between comma and URI. Can specify only one URI via the command line, but multiple files can be specified via the win32 API.|
 |Finder|macOS|`open --reveal URI`|&#9989;|&#10060;| |
-| Nautilus (Files)|Gnome, Pop OS, Zorin|`nautilus --select URI1 URI2`|&#9989;|&#9888;|Multiple URIs open multiple Nautilus windows.|
+| Nautilus (Files)|Gnome, Pop!_OS, Zorin|`nautilus --select URI1 URI2`|&#9989;|&#9888;|Multiple URIs open multiple Nautilus windows.|
 |Dolphin|KDE|`dolphin --select URI1 URI2 `|&#9989;|&#9989;|A regression in recent KDE releases means `--select` is ignored, but it is fixed in KDE Neon testing.|
 |Nemo|Linux Mint|`nemo URI1 URI2`|&#9989;|&#9888;|Multiple URIs open multiple Nemo windows.|
 |Pantheon|Elementary OS|`io.elementary.files URI1 URI2`|&#9989;|&#9888;| Multiple URIs open multiple Pantheon tabs.|
