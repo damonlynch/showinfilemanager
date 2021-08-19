@@ -213,22 +213,38 @@ is parsed to extract the file manager command.
 
 ## Examples
 
-Show file or directory in file manager, using the most sensible choice of file manager:
+From Python, show file or directory in file manager, using the most sensible choice of file manager:
 ```python
-show_in_file_manager('C:\Documents\myfile.txt')                                # Windows path
-show_in_file_manager('file://C:/Documents/myfile.txt')                         # Windows URI
-show_in_file_manager('/home/user/myfile.txt')                                  # Linux path
-show_in_file_manager(('/home/user/myfile.txt', '/home/user/other file.txt'))   # Linux multiple paths
-show_in_file_manager('file:///home/user/other%20file.txt')                     # Linux URI
-show_in_file_manager()                                                         # Simply open the file manager
-show_in_file_manager('/home/user')                                             # Open the file manager at a directory
+show_in_file_manager('C:\Documents\myfile.txt')                               # Windows path
+show_in_file_manager('file://C:/Documents/myfile.txt')                        # Windows URI
+show_in_file_manager('/home/user/myfile.txt')                                 # Linux path
+show_in_file_manager(('/home/user/myfile.txt', '/home/user/other file.txt'))  # Linux multiple paths
+show_in_file_manager('file:///home/user/other%20file.txt')                    # Linux URI
+show_in_file_manager()                                                        # Simply open the file manager
+show_in_file_manager('/home/user')                                            # Open the file manager at a directory
+show_in_file_manager('/home/user', open_not_select_directory=False)           # Select the user directory in the home folder
 ```
+
+Open the system home directory (`/home` on Linux, `/Users` on macOS) and select the user's home folder in it:
+```bash
+showinfilemanager -s ~
+```
+Open the user's home directory directly, without selecting it:
+```bash
+showinfilemanager ~
+```
+Select files in two different directories, and open a third directory:
+```bash
+showinfilemanager myfile.txt ../anotherfile.txt ../../
+```
+The previous command will open three different instances of the file manager, because of three different directories
+(macOS users may need to adjust finder preferences in order to display multiple finder windows).
 
 ## Limitations
 
- - The code is in a preliminary state. Critiques are welcome.
  - Its behavior in a confined Linux environment like a Flatpak, Snap, or AppImage is untested.
- - On WSL, it currently opens explorer.exe.
+ - On WSL, it currently only opens explorer.exe &mdash; running a Linux file manager under WSL2 is currently not
+   supported.
 
 ## Contributing
 
