@@ -46,7 +46,7 @@ showinfilemanager file1.txt file2.txt
 ```
 
 ```commandline
-showinfilemanager.exe D:\Documents\document.docx
+showinfilemanager.exe D:\Documents\*.docx
 ```
 
 More [examples](#examples) are below.
