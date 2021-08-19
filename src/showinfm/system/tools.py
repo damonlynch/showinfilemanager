@@ -2,11 +2,13 @@
 # Some portions Copyright (c) 2008-2021 The pip developers
 # SPDX - License - Identifier: MIT
 
+from collections import defaultdict
 import os
 from pathlib import Path
 import re
 import shlex
 import sys
+from typing import List, DefaultDict
 import urllib.parse
 import urllib.request
 
@@ -56,7 +58,7 @@ def quote_path(path: Path) -> Path:
     return path
 
 
-def path_to_url(path: str) -> str:
+def path_to_file_url(path: str) -> str:
     """
     Convert a path to a file: URL.  The path will be made absolute and have
     quoted path parts.
@@ -70,9 +72,12 @@ def path_to_url(path: str) -> str:
     return url
 
 
-def url_to_path(url: str) -> str:
+def file_url_to_path(url: str) -> str:
     """
     Convert a file: URL to a path.
+
+    On Windows this is more reliable than urllib.parse.urlparse, because that fails when run with a URI like
+    file:///D:/somedirectory
 
     Taken from pip: https://github.com/pypa/pip/blob/main/src/pip/_internal/utils/urls.py
     Copyright (c) 2008-2021 The pip developers
@@ -97,3 +102,23 @@ def url_to_path(url: str) -> str:
 
     path = urllib.request.url2pathname(netloc + path)
     return path
+
+
+def directories_and_their_files(paths: List[str]) -> DefaultDict[str, List[str]]:
+    """
+    Group paths into directories and their files.
+
+    If path is a directory, the parent will be the directory, and the subfolder will
+    be the child of that directory.
+
+    :param paths: list of paths
+    :return: default dict of folders with list of their files
+    """
+
+    if isinstance(paths, str):
+        paths = [paths]
+    folder_contents = defaultdict(list)
+    for path in paths:
+        p = Path(path)
+        folder_contents[str(p.parent)].append(p.name)
+    return folder_contents

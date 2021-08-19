@@ -7,6 +7,8 @@ Changelog for Show in File Manager
  - Add setup.py for man page generation.
  - Improve README to clarify installation and usage.
  - Parse filename globs passed via the command line on Windows.
+ - Use win32 API to execute explorer.exe on Windows, allowing for
+   multiple file selection.
 
 0.0.4 (2021-08-14)
 ------------------
