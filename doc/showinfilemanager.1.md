@@ -20,30 +20,41 @@ For file managers that do not support specifying files to select, this program w
 directory the file is found in. 
 
 **URIs**
-: URIs or paths of files or directories
+: URIs or paths of files or directories.
 
 **-h**, **--help** 
-: display help message
+: Display help message.
 
 **--version** 
-:  show program's version number and exit
+: Show program's version number and exit.
+
+**-s**, **--select-folder**
+: Select folder instead of displaying its contents. By default, when a URI or path is a directory and
+  not a file, the directory itself is shown in the file manager. This option changes the default and 
+  selects the folder, displaying it in its parent directory.
 
 **--verbose**
-: display command being run to stdout
+: Display command being run to stdout.
 
 **--debug**
-: output debugging information to stdout
+: Output debugging information to stdout.
 
 # EXAMPLES
 **showinfilemanager ~/myfile.txt**
-: Open the system file manager and select *~/myfile.txt* in the user's home directory
+: Open the system file manager and select *~/myfile.txt* in the user's home directory.
+
+**showinfilemanager D:\\Documents\\\*.docx**
+: Open the system file manager and select all the Word documents in the Documents directory on the D: drive.
+
+**showinfilemanager -s /Users/***
+: Open the system file manager and select all the files and directories in the Users folder
 
 **showinfilemanager file:///home/user/first%20file.txt file:///home/user/second%20file.txt**
-: Open the system file manager and select 'first file.txt' and 'second file.txt' in the user's home directory
+: Open the system file manager and select 'first file.txt' and 'second file.txt' in the user's home directory.
 
 **showinfilemanager /etc/hosts /home/user/.bashrc**
 : Open the system file manager and select the hosts file in one file manager window, and the user's .bashrc file in 
-another
+another.
 
 
 # AUTHORS
