@@ -86,8 +86,8 @@ shown here are for reference:
 |Finder|macOS|`open --reveal URI`|&#9989;|&#10060;| |
 | Nautilus (Files)|Gnome, Pop!_OS, Zorin|`nautilus --select URI1 URI2`|&#9989;|&#9888;|Multiple URIs open multiple Nautilus windows. See [issue #1955](https://gitlab.gnome.org/GNOME/nautilus/-/issues/1955).|
 |Dolphin|KDE|`dolphin --select URI1 URI2 `|&#9989;|&#9989;|A regression in recent KDE releases means `--select` is ignored, but it is fixed in KDE Neon testing.|
-|Nemo|Linux Mint|`nemo URI1 URI2`|&#9989;|&#9888;|Multiple URIs open multiple Nemo windows.|
-|Pantheon|Elementary OS|`io.elementary.files URI1 URI2`|&#9989;|&#9888;| Multiple URIs open multiple Pantheon tabs.|
+|Nemo|Linux Mint|`nemo URI1 URI2`|&#9989;|&#9888;|Multiple URIs open multiple Nemo windows. Cannot select folders.|
+|Pantheon|Elementary OS|`io.elementary.files URI1 URI2`|&#9989;|&#9888;| Multiple URIs open multiple Pantheon tabs. Cannot select folders.|
 |Deepin File Manager|Deepin|`dde-file-manager --show-item URI1 URI2`|&#9989;|&#9888;| Multiple URIs open multiple Deepin File Manager tabs.|
 |Peony|Ubuntu Kylin|`peony --show-items URI1 URI2`|&#9989;|&#9989;| |
 |Caja|Mate|`caja  URI1 URI2`|&#10060;|&#9888;|Specifying a file causes an error. Multiple URIs open multiple Caja windows.|
