@@ -49,7 +49,7 @@ def get_stock_file_manager() -> str:
     if current_platform == Platform.windows:
         file_manager = 'explorer.exe'
     elif current_platform == Platform.linux:
-        file_manager = linux.get_stock_linux_file_manager()
+        file_manager = linux.stock_linux_file_manager()
     elif current_platform == Platform.macos:
         file_manager = 'open'
     else:
@@ -73,7 +73,7 @@ def get_user_file_manager() -> str:
     if current_platform == Platform.windows:
         file_manager = 'explorer.exe'
     elif current_platform == Platform.linux:
-        file_manager = linux.get_user_linux_file_manager()
+        file_manager = linux.user_linux_file_manager()
     elif current_platform == Platform.macos:
         file_manager = 'open'
     else:
@@ -102,7 +102,7 @@ def get_valid_file_manager() -> str:
     if current_platform == Platform.windows:
         file_manager = 'explorer.exe'
     elif current_platform == Platform.linux:
-        file_manager = linux.get_valid_linux_file_manager()
+        file_manager = linux.valid_linux_file_manager()
     elif current_platform == Platform.macos:
         file_manager = 'open'
     else:
@@ -319,7 +319,7 @@ def _file_manager_type(fm: str) -> FileManagerType:
     if current_platform == Platform.windows:
         return FileManagerType.win_select
     elif current_platform == Platform.linux:
-        return linux.get_linux_file_manager_type(fm)
+        return linux.linux_file_manager_type(fm)
     elif current_platform == Platform.macos:
         return FileManagerType.reveal
     else:
@@ -364,7 +364,7 @@ class Diagnostics:
 
         if current_platform == Platform.linux:
             try:
-                self.desktop = linux.get_linux_desktop()
+                self.desktop = linux.linux_desktop()
             except:
                 self.desktop = linux.LinuxDesktop.unknown
         else:

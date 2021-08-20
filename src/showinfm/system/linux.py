@@ -22,7 +22,7 @@ from ..constants import FileManagerType
 _linux_desktop = None
 
 
-def get_stock_linux_file_manager() -> str:
+def stock_linux_file_manager() -> str:
     """
     Get stock (system default) file manager for the desktop environment.
 
@@ -35,7 +35,7 @@ def get_stock_linux_file_manager() -> str:
 
     global _linux_desktop
     if _linux_desktop is None:
-        _linux_desktop = get_linux_desktop()
+        _linux_desktop = linux_desktop()
 
     try:
         desktop = _linux_desktop.name
@@ -46,7 +46,7 @@ def get_stock_linux_file_manager() -> str:
         raise Exception("The desktop {} is unknown".format(desktop))
 
 
-def get_user_linux_file_manager() -> str:
+def user_linux_file_manager() -> str:
     """
     Determine the file manager for this desktop as set by the user.
 
@@ -100,7 +100,7 @@ def get_user_linux_file_manager() -> str:
     return ''
 
 
-def get_valid_linux_file_manager() -> str:
+def valid_linux_file_manager() -> str:
     """
     Get user's file manager, falling back to using sensible defaults for the particular desktop environment.
 
@@ -111,16 +111,16 @@ def get_valid_linux_file_manager() -> str:
     """
 
     try:
-        stock = get_stock_linux_file_manager()
+        stock = stock_linux_file_manager()
     except:
         stock = ''
 
     try:
-        user_fm = get_user_linux_file_manager()
+        user_fm = user_linux_file_manager()
     except:
         user_fm = ''
     else:
-        if user_fm not in get_known_linux_file_managers():
+        if user_fm not in known_linux_file_managers():
             user_fm = ''
 
     if not (user_fm or stock):
@@ -137,7 +137,7 @@ def get_valid_linux_file_manager() -> str:
         return ''
 
 
-def get_known_linux_file_managers() -> Tuple[str]:
+def known_linux_file_managers() -> Tuple[str]:
     """
     Generate a collection of Linux file managers this module knows about
 
@@ -147,7 +147,7 @@ def get_known_linux_file_managers() -> Tuple[str]:
     return tuple(StandardLinuxFileManager.values())
 
 
-def get_linux_file_manager_type(file_manager: str) -> FileManagerType:
+def linux_file_manager_type(file_manager: str) -> FileManagerType:
     """
     Determine the type of command line arguments the Linux file manager expects
     :param file_manager: executable name
@@ -257,7 +257,7 @@ def detect_wsl() -> bool:
     return p.lower().find('microsoft') > 0
 
 
-def get_linux_desktop() -> LinuxDesktop:
+def linux_desktop() -> LinuxDesktop:
     """
     Determine Linux desktop environment
 
