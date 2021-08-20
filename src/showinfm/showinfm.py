@@ -224,21 +224,28 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
 
                     uris_and_paths.append(uri or path)
                 else:
-                    is_dir = False
-                    if open_not_select_directory:
+                    open_directory = False
+                    if open_not_select_directory or file_manager_type == FileManagerType.regular:
                         if uri:
                             parse_result = urllib.parse.urlparse(uri)
                             path = Path(parse_result.path)
-                            is_dir = path.is_dir()
+                            open_directory = path.is_dir()
                         elif is_wsl:
-                            is_dir = linux.wsl_path_is_directory(path)
+                            open_directory = linux.wsl_path_is_directory(path)
                         else:
-                            is_dir = path.is_dir()
-                        if is_dir:
+                            open_directory = path.is_dir()
+                        if open_directory:
+                            if file_manager_type == FileManagerType.regular and not open_not_select_directory:
+                                # This type of file manger cannot select directories, because it provides no mechanism
+                                # to distinguish between selecting and opening a directory.
+                                # So open the parent instead.
+                                path = path.parent
+                                if uri:
+                                    uri = urllib.parse.urlunparse(parse_result._replace(path=str(path)))
                             if uri is None:
                                 path = tools.quote_path(path)
                             directories.append(uri or str(path))
-                    if not is_dir:
+                    if not open_directory:
                         if uri is None and (is_wsl or current_platform != Platform.windows):
                             path = tools.quote_path(path)
                         uris_and_paths.append(uri or str(path))
