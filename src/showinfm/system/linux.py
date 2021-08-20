@@ -5,10 +5,13 @@
 from enum import Enum
 import os
 from pathlib import Path
+import re
 import shlex
 import shutil
 import subprocess
 from typing import Optional, Tuple
+
+import packaging.version
 
 try:
     from xdg.DesktopEntry import DesktopEntry
@@ -154,7 +157,46 @@ def linux_file_manager_type(file_manager: str) -> FileManagerType:
     :return: FileManagerType matching with the executable name, else FileManagerType.regular as a fallback
     """
 
+    if file_manager == 'caja' and caja_supports_select():
+        return FileManagerType.select
     return LinuxFileManagerBehavior.get(file_manager, FileManagerType.regular)
+
+
+def caja_version() -> Optional[packaging.version.Version]:
+    """
+    Get the version of Caja via a command line switch
+    :return: parsed ver
+    """
+
+    try:
+        version_string = subprocess.run(
+            ['caja', '--version'], stdout=subprocess.PIPE, check=True
+        ).stdout.decode().strip()
+    except subprocess.CalledProcessError:
+        raise Exception("Failed to get version number from caja")
+
+    result = re.search('\d', version_string)
+    if result is None:
+        return None
+
+    version = version_string[result.start():]
+    return packaging.version.parse(version)
+
+
+def caja_supports_select() -> bool:
+    """
+    Determine if caja supports --select command line switch.
+
+    :return: True if caja version is >= version 1.26
+    """
+
+    try:
+        version = caja_version()
+    except Exception:
+        return False
+    if version is None:
+        return False
+    return version >= packaging.version.Version('1.26')
 
 
 def wsl_path_is_directory(path: Path) -> bool:

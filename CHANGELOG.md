@@ -1,6 +1,10 @@
 Changelog for Show in File Manager
 ==================================
 
+0.0.7 (2021-08-20)
+------------------
+ - Use `--select` command line switch in caja 1.26 or newer.
+
 0.0.6 (2021-08-19)
 ------------------
 

@@ -56,7 +56,7 @@ More [examples](#examples) are below.
 This package solves the following problems:
  - What is the operating system's stock file manager?
  - What is the user's choice of file manager?
- - Is it best to use the stock or user's choice of file manager? 
+ - Is the user's choice of file manager set correctly? 
  - How do I supply command line arguments to select files in the file manager?
  - What about file managers with limited features?  
 
@@ -90,7 +90,7 @@ shown here are for reference:
 |Pantheon|Elementary OS|`io.elementary.files URI1 URI2`|&#9989;|&#9888;| Multiple URIs open multiple Pantheon tabs. Cannot select folders.|
 |Deepin File Manager|Deepin|`dde-file-manager --show-item URI1 URI2`|&#9989;|&#9888;| Multiple URIs open multiple Deepin File Manager tabs.|
 |Peony|Ubuntu Kylin|`peony --show-items URI1 URI2`|&#9989;|&#9989;| |
-|Caja|Mate|`caja  URI1 URI2`|&#10060;|&#9888;|Specifying a file causes an error. Multiple URIs open multiple Caja windows.|
+|Caja|Mate|`caja --select URI1 URI2`|&#9888;|&#9888;|Starting with 1.26, can select a file or folder using `--select`. In all versions, specifying a file without this switch causes an error. Multiple URIs open multiple Caja windows.|
 |Thunar|XFCE|`thunar URI1 URI2`|&#10060;|&#9888;|Specifying a file opens it. Multiple URIs open multiple Thunar windows.|
 |PCManFM|LXDE|`pcmanfm  URI`|&#10060;|&#10060;|Specifying a file opens it. Multiple URIs open only the first URI.|
 |PCManFM-Qt|LXQt|`pcmanfm-qt  URI1 URI2`|&#10060;|&#9888;|Specifying a file opens it. Multiple URIs open multiple PCManFM-Qt windows.|
@@ -169,8 +169,9 @@ def valid_file_manager() -> str:
 ```
 
 This package makes opinionated choices about the most sensible choice of file manager:
-1. A file manager is "valid" if and only if this package recognizes it, e.g. `nautilus`, `explorer.exe`.
-2. If the user's choice of file manager is valid, that file manager is used.
+1. A file manager is valid if and only if this package recognizes it, e.g. `nautilus`, `explorer.exe`.
+2. If the user's choice of file manager is valid (i.e. an actual file manager, not some random application), that file
+   manager is used.
 3. If the user's choice of file manager is invalid or could not be determined, the desktop or OS's stock file manager 
    is used.
 
