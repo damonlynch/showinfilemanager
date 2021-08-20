@@ -32,7 +32,7 @@ _valid_file_manager = None
 _valid_file_manager_type = None
 
 
-def get_stock_file_manager() -> str:
+def stock_file_manager() -> str:
     """
     Get stock file manager for this operating system / desktop.
 
@@ -59,7 +59,7 @@ def get_stock_file_manager() -> str:
     return file_manager
 
 
-def get_user_file_manager() -> str:
+def user_file_manager() -> str:
     """
     Get the file manager as set by the user.
 
@@ -83,7 +83,7 @@ def get_user_file_manager() -> str:
     return file_manager
 
 
-def get_valid_file_manager() -> str:
+def valid_file_manager() -> str:
     """
     Get user's file manager, falling back to using sensible defaults for the desktop / OS.
 
@@ -129,7 +129,7 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
 
     The most common use of this function is to call it without specifying
     the file manager to use, which defaults to the value returned by
-    get_valid_file_manager()
+    valid_file_manager().
 
     For file managers unable to select files to display, the file manager
     will instead display the contents of the path.
@@ -147,7 +147,7 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
      not a file, open the directory itself in the file manager, rather than
      selecting it and displaying it in its parent directory.
     :param file_manager: executable name to use. If not specified, then
-     get_valid_file_manager() will determine which file manager to use.
+     valid_file_manager() will determine which file manager to use.
     :param verbose: if True print command to be executed before launching
      it
     """
@@ -336,7 +336,7 @@ def _set_valid_file_manager() -> None:
     global _valid_file_manager_type
 
     if not _valid_file_manager_probed:
-        fm = get_valid_file_manager()
+        fm = valid_file_manager()
         if fm:
             _valid_file_manager = fm
             _valid_file_manager_type = _file_manager_type(fm)
@@ -350,15 +350,15 @@ class Diagnostics:
 
     def __init__(self) -> None:
         try:
-            self.stock_file_manager = get_stock_file_manager()
+            self.stock_file_manager = stock_file_manager()
         except Exception as e:
             self.stock_file_manager = str(e)
         try:
-            self.user_file_manager = get_user_file_manager()
+            self.user_file_manager = user_file_manager()
         except Exception as e:
             self.user_file_manager = str(e)
         try:
-            self.valid_file_manager = get_valid_file_manager()
+            self.valid_file_manager = valid_file_manager()
         except Exception as e:
             self.valid_file_manager = str(e)
 

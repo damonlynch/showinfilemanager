@@ -1,7 +1,12 @@
 Changelog for Show in File Manager
 ==================================
 
-0.0.5 (2021-08-xx)
+0.0.6 (2021-08-19)
+------------------
+
+ - Remove get_ prefix from package level function names.
+
+0.0.5 (2021-08-19)
 ------------------
 
  - Add setup.py for man page generation.
