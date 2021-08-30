@@ -19,7 +19,7 @@ With Show in File Manager, your Python program or command line script can do the
 Although this package provides several functions to assist in identifying the the system's file managers, in most 
 circumstances you need to call only one function, the function `show_in_file_manager`, and it should just work.
 
-This package aspires to be a platform independent, but it currently supports Windows 10/11, Linux, WSL, and macOS. It
+This package aspires to be platform independent, but it currently supports Windows 10/11, Linux, WSL, and macOS. It
 works with 12 [supported file managers](#supported-file-managers).
 
 
