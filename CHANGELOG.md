@@ -1,6 +1,11 @@
 Changelog for Show in File Manager
 ==================================
 
+0.0.8 (2012-08-31)
+------------------
+ - Support [CutefishOS](https://en.cutefishos.com/).
+ - Support [Index File Manager](https://invent.kde.org/maui/index-fm).
+
 0.0.7 (2021-08-20)
 ------------------
  - Use `--select` command line switch in caja 1.26 or newer.
