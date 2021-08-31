@@ -15,12 +15,12 @@ A command like "Open in File Browser" results in the file manager opening, ideal
 
 ![Peony file manager](https://github.com/damonlynch/showinfilemanager/raw/main/.github/peony-kylin.png)
 
-With Show in File Manager, your Python program or command line script can do the same, with minimum effort from you.
+With **Show in File Manager**, your Python program or command line script can do the same, with minimum effort from you.
 Although this package provides several functions to assist in identifying the the system's file managers, in most 
 circumstances you need to call only one function, the function `show_in_file_manager`, and it should just work.
 
-This package aspires to be platform independent, but it currently supports Windows 10/11, Linux, WSL, and macOS. It
-works with 12 [supported file managers](#supported-file-managers).
+This package aspires to be platform independent, but it currently supports only Windows 10/11, Linux, WSL, and macOS. It
+works with 14 [supported file managers](#supported-file-managers).
 
 
 ## How to install and run
@@ -84,16 +84,18 @@ shown here are for reference:
 |------------|-------|-------------------|:---:|:---:|----|
 | Windows File Explorer|Windows 10 / 11, Windows Subsystem for Linux (WSL)| `explorer.exe /select,URI`|&#9989;|&#9888;|No space between comma and URI. Can specify only one URI via the command line, but multiple files can be specified via the Win32 API.|
 |Finder|macOS|`open --reveal URI`|&#9989;|&#10060;| |
-| Nautilus (Files)|Gnome, Pop!_OS, Zorin|`nautilus --select URI1 URI2`|&#9989;|&#9888;|Multiple URIs open multiple Nautilus windows. See [issue #1955](https://gitlab.gnome.org/GNOME/nautilus/-/issues/1955).|
-|Dolphin|KDE|`dolphin --select URI1 URI2 `|&#9989;|&#9989;|A regression in recent KDE releases means `--select` is ignored, but it is fixed in KDE Neon testing.|
-|Nemo|Linux Mint|`nemo URI1 URI2`|&#9989;|&#9888;|Multiple URIs open multiple Nemo windows. Cannot select folders.|
-|Pantheon|Elementary OS|`io.elementary.files URI1 URI2`|&#9989;|&#9888;| Multiple URIs open multiple Pantheon tabs. Cannot select folders.|
-|Deepin File Manager|Deepin|`dde-file-manager --show-item URI1 URI2`|&#9989;|&#9888;| Multiple URIs open multiple Deepin File Manager tabs.|
-|Peony|Ubuntu Kylin|`peony --show-items URI1 URI2`|&#9989;|&#9989;| |
-|Caja|Mate|`caja --select URI1 URI2`|&#9888;|&#9888;|Starting with 1.26, can select a file or folder using `--select`. In all versions, specifying a file without this switch causes an error. Multiple URIs open multiple Caja windows.|
-|Thunar|XFCE|`thunar URI1 URI2`|&#10060;|&#9888;|Specifying a file opens it. Multiple URIs open multiple Thunar windows.|
+|[Nautilus (Files)](https://gitlab.gnome.org/GNOME/nautilus)|Gnome, Pop!_OS, Zorin|`nautilus --select URI1 URI2`|&#9989;|&#9888;|Multiple URIs open multiple Nautilus windows. See [issue #1955](https://gitlab.gnome.org/GNOME/nautilus/-/issues/1955).|
+|[Dolphin](https://github.com/KDE/dolphin)|KDE|`dolphin --select URI1 URI2 `|&#9989;|&#9989;|A regression in recent KDE releases means `--select` is ignored, but it is fixed in KDE Neon testing.|
+|[Nemo](https://github.com/linuxmint/nemo)|Linux Mint|`nemo URI1 URI2`|&#9989;|&#9888;|Multiple URIs open multiple Nemo windows. Cannot select folders.|
+|[Elementary OS Files](https://github.com/elementary/files)|Elementary OS|`io.elementary.files URI1 URI2`|&#9989;|&#9888;| Multiple URIs open multiple Files tabs. Cannot select folders.|
+|[Deepin File Manager](https://github.com/linuxdeepin/dde-file-manager)|Deepin|`dde-file-manager --show-item URI1 URI2`|&#9989;|&#9888;| Multiple URIs open multiple Deepin File Manager tabs.|
+|[Peony](https://github.com/ukui/peony)|Ubuntu Kylin|`peony --show-items URI1 URI2`|&#9989;|&#9989;| |
+|[Caja](https://github.com/mate-desktop/caja)|Mate|`caja --select URI1 URI2`|&#9888;|&#9888;|Starting with 1.26, can select a file or folder using `--select`. In all versions, specifying a file without this switch causes an error. Multiple URIs open multiple Caja windows. See [issue #1547](https://github.com/mate-desktop/caja/issues/1547).|
+|[Thunar](https://gitlab.xfce.org/xfce/thunar)|XFCE|`thunar URI1 URI2`|&#10060;|&#9888;|Specifying a file opens it. Multiple URIs open multiple Thunar windows.|
 |PCManFM|LXDE|`pcmanfm  URI`|&#10060;|&#10060;|Specifying a file opens it. Multiple URIs open only the first URI.|
-|PCManFM-Qt|LXQt|`pcmanfm-qt  URI1 URI2`|&#10060;|&#9888;|Specifying a file opens it. Multiple URIs open multiple PCManFM-Qt windows.|
+|[PCManFM-Qt](https://github.com/lxqt/pcmanfm-qt)|LXQt|`pcmanfm-qt URI1 URI2`|&#10060;|&#9888;|Specifying a file opens it. Multiple URIs open multiple PCManFM-Qt windows.|
+|[CutefishOS File Manager](https://github.com/cutefishos/filemanager)|CutefishOS|`cutefish-filemanager`|&#10060;|&#10060;|Specifying a file causes File Manager to attempt to open it as if it is a folder . Multiple URIs open only the first URI.|
+|[Index](https://invent.kde.org/maui/index-fm)| |`index URI1 URI2` |&#10060;|&#10060;|Specifying a file has no effect. Multiple URIs open multiple tabs, in addition to the user's home directory, which is always opened.| 
 
 All file managers tested thus far accept URIs like `file:///home/user/file.txt`, as well as regular paths like
 `/home/user/file.txt`.
