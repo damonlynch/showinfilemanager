@@ -147,7 +147,7 @@ def known_linux_file_managers() -> Tuple[str]:
     :return: tuple of executable names
     """
 
-    return tuple(StandardLinuxFileManager.values())
+    return tuple(LinuxFileManagerBehavior.keys())
 
 
 def linux_file_manager_type(file_manager: str) -> FileManagerType:
@@ -241,7 +241,8 @@ class LinuxDesktop(Enum):
     enlightenment = 15
     wsl = 16
     wsl2 = 17
-    unknown = 18
+    cutefish = 18
+    unknown = 19
 
 
 LinuxDesktopFamily = dict(
@@ -265,7 +266,8 @@ StandardLinuxFileManager = dict(
     ukui='peony',
     enlightenment='pcmanfm',
     wsl='explorer.exe',
-    wsl2='explorer.exe'
+    wsl2='explorer.exe',
+    cutefish='cutefish-filemanager',
 )
 
 
@@ -277,10 +279,12 @@ LinuxFileManagerBehavior = dict(
     nemo=FileManagerType.regular,
     pcmanfm=FileManagerType.dir_only_uri,
     peony=FileManagerType.show_items,
+    index=FileManagerType.dir_only_uri,
 )
 LinuxFileManagerBehavior['pcmanfm-qt'] = FileManagerType.dir_only_uri
 LinuxFileManagerBehavior['dde-file-manager'] = FileManagerType.show_item
 LinuxFileManagerBehavior['io.elementary.files'] = FileManagerType.regular
+LinuxFileManagerBehavior['cutefish-filemanager'] = FileManagerType.dir_only_uri
 
 
 def wsl_version() -> Optional[LinuxDesktop]:

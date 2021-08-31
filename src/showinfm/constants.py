@@ -20,4 +20,4 @@ class Platform(Enum):
     macos = 3
 
 
-single_file_only = ('explorer.exe', 'pcmanfm', 'open')
+single_file_only = ('explorer.exe', 'pcmanfm', 'open', 'cutefish-filemanager')
