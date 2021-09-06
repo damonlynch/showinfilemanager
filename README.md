@@ -77,6 +77,10 @@ WSL &mdash; this package will launch `explorer.exe` using the command line under
 
 
 ## Supported file managers
+
+All file managers tested thus far accept [URIs](https://en.wikipedia.org/wiki/Uniform_Resource_Identifier) like
+`file:///home/user/file.txt`, as well as regular paths like `/home/user/file.txt`.
+
 This package takes care of calling the file managers with the correct arguments for you. The command line arguments
 shown here are for reference:
 
@@ -94,11 +98,8 @@ shown here are for reference:
 |[Thunar](https://gitlab.xfce.org/xfce/thunar)|XFCE|`thunar URI1 URI2`|&#10060;|&#9888;|Specifying a file opens it. Multiple URIs open multiple Thunar windows.|
 |PCManFM|LXDE|`pcmanfm  URI`|&#10060;|&#10060;|Specifying a file opens it. Multiple URIs open only the first URI.|
 |[PCManFM-Qt](https://github.com/lxqt/pcmanfm-qt)|LXQt|`pcmanfm-qt URI1 URI2`|&#10060;|&#9888;|Specifying a file opens it. Multiple URIs open multiple PCManFM-Qt windows.|
-|[CutefishOS File Manager](https://github.com/cutefishos/filemanager)|CutefishOS|`cutefish-filemanager`|&#10060;|&#10060;|Specifying a file causes File Manager to attempt to open it as if it is a folder . Multiple URIs open only the first URI.|
-|[Index](https://invent.kde.org/maui/index-fm)| |`index URI1 URI2` |&#10060;|&#10060;|Specifying a file has no effect. Multiple URIs open multiple tabs, in addition to the user's home directory, which is always opened.| 
-
-All file managers tested thus far accept URIs like `file:///home/user/file.txt`, as well as regular paths like
-`/home/user/file.txt`.
+|[CutefishOS File Manager](https://github.com/cutefishos/filemanager)|CutefishOS|`cutefish-filemanager`|&#10060;|&#10060;|Specifying a file causes File Manager to attempt to open it as if it is a folder. Multiple URIs open only the first URI.|
+|[Index](https://invent.kde.org/maui/index-fm)| |`index URI1 URI2` |&#10060;|&#10060;|Specifying a file has no effect. Multiple URIs open multiple tabs, in addition to the user's home directory, which is always opened.|
 
 ## Usage
 
