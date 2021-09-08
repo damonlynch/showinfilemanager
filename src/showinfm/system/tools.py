@@ -42,7 +42,7 @@ def quote_path(path: Path) -> Path:
     :return: double quoted path
     """
 
-    p = str(Path)
+    p = str(path)
     if current_platform == Platform.windows:
         # Double quotes are not allowed in paths names - they are used for quoting
 
