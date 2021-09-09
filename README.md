@@ -20,7 +20,7 @@ Although this package provides several functions to assist in identifying the th
 circumstances you need to call only one function, the function `show_in_file_manager`, and it should just work.
 
 This package aspires to be platform independent, but it currently supports only Windows 10/11, Linux, WSL, and macOS. It
-works with 14 [supported file managers](#supported-file-managers).
+works with 18 [supported file managers](#supported-file-managers).
 
 
 ## How to install and run
@@ -78,11 +78,11 @@ WSL &mdash; this package will launch `explorer.exe` using the command line under
 
 ## Supported file managers
 
-All file managers tested thus far accept [URIs](https://en.wikipedia.org/wiki/Uniform_Resource_Identifier) like
-`file:///home/user/file.txt`, as well as regular paths like `/home/user/file.txt`.
-
 This package takes care of calling the file managers with the correct arguments for you. The command line arguments
-shown here are for reference:
+shown here are for reference. 
+
+Almost all file managers accept [URIs](https://en.wikipedia.org/wiki/Uniform_Resource_Identifier)
+like `file:///home/user/file.txt` in addition to regular paths like `/home/user/file.txt`.
 
 |File Manager|Used by|Command line       |Can Select Files|Handles Multiple Files / Directories|Notes|
 |------------|-------|-------------------|:---:|:---:|----|
@@ -99,7 +99,12 @@ shown here are for reference:
 |PCManFM|LXDE|`pcmanfm  URI`|&#10060;|&#10060;|Specifying a file opens it. Multiple URIs open only the first URI.|
 |[PCManFM-Qt](https://github.com/lxqt/pcmanfm-qt)|LXQt|`pcmanfm-qt URI1 URI2`|&#10060;|&#9888;|Specifying a file opens it. Multiple URIs open multiple PCManFM-Qt windows.|
 |[CutefishOS File Manager](https://github.com/cutefishos/filemanager)|CutefishOS|`cutefish-filemanager`|&#10060;|&#10060;|Specifying a file causes File Manager to attempt to open it as if it is a folder. Multiple URIs open only the first URI.|
-|[Index](https://invent.kde.org/maui/index-fm)| |`index URI1 URI2` |&#10060;|&#10060;|Specifying a file has no effect. Multiple URIs open multiple tabs, in addition to the user's home directory, which is always opened.|
+|[Index](https://invent.kde.org/maui/index-fm)|Linux|`index URI1 URI2` |&#10060;|&#10060;|Specifying a file has no effect. Multiple URIs open multiple tabs, in addition to the user's home directory, which is always opened.|
+|[Double Commander](https://doublecmd.sourceforge.io/)|Windows, Linux|`doublecmd URI1 URI2`|&#9989;|&#9888;|A double panel file manager accepting up to two URIs. Cannot select folders.|
+|[Krusader](https://krusader.org/)|KDE|`krusader URI`|&#10060;|&#9888;|A double panel file manager accepting one URI. Two URIs can be specified using `--left` and `--right`, but that is unsupported by this package. Specifying a file causes an error.|
+|[SpaceFM](https://ignorantguru.github.io/spacefm/)|Linux|`spacefm URI1 URI2`|&#10060;|&#9989;|Specifying a file opens it.|
+|[fman](https://fman.io/)|Windows, Linux, macOS|`fman path1 path2`|&#9989;|&#9888;|A double panel file manager accepting up to two paths. Cannot select folders. Does not accept URIs.|
+
 
 ## Usage
 

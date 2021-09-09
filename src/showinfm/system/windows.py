@@ -10,6 +10,24 @@ except ImportError:
     pass
 
 from .tools import is_uri, path_to_file_url, file_url_to_path, directories_and_their_files
+from ..constants import FileManagerType
+
+
+WindowsFileManagerBehavior = {}
+WindowsFileManagerBehavior['doublecmd.exe'] = FileManagerType.dual_panel
+WindowsFileManagerBehavior['fman.exe'] = FileManagerType.dual_panel
+
+
+def windows_file_manager_type(file_manager: str) -> FileManagerType:
+    """
+    Determine the type of command line arguments the Windows file manager expects
+    :param file_manager: executable name
+    :return: FileManagerType matching with the executable name, else FileManagerType.regular as a fallback
+    """
+
+    if file_manager == 'explorer.exe':
+        return FileManagerType.win_select
+    return WindowsFileManagerBehavior.get(file_manager, FileManagerType.regular)
 
 
 def parse_command_line_arguments(path_or_uri: List[str]) -> List[str]:

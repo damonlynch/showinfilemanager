@@ -1,7 +1,15 @@
 Changelog for Show in File Manager
 ==================================
 
-0.0.8 (2012-08-31)
+0.9.0 (2021-09-08)
+------------------
+ - Add option to specify file manager to use from command line
+ - Support [Double Commander](https://doublecmd.sourceforge.io/)
+ - Support [Krusader](https://krusader.org/)
+ - Support [SpaceFM](https://ignorantguru.github.io/spacefm/)
+ - Support [fman](https://fman.io/)
+
+0.0.8 (2021-08-31)
 ------------------
  - Support [CutefishOS](https://en.cutefishos.com/).
  - Support [Index File Manager](https://invent.kde.org/maui/index-fm).
@@ -12,12 +20,10 @@ Changelog for Show in File Manager
 
 0.0.6 (2021-08-19)
 ------------------
-
  - Remove get_ prefix from package level function names.
 
 0.0.5 (2021-08-19)
 ------------------
-
  - Add setup.py for man page generation.
  - Improve README to clarify installation and usage.
  - Parse filename globs passed via the command line on Windows.
@@ -43,5 +49,4 @@ Changelog for Show in File Manager
 
 0.0.1 (2021-08-12)
 ------------------
-
  - Initial release.

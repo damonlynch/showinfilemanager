@@ -12,6 +12,7 @@ class FileManagerType(Enum):
     show_items = 5      # file_manager --show-items
     win_select = 6      # explorer.exe /select
     reveal = 7          # open --reveal   (macOS)
+    dual_panel = 8      # file_manager "File1" "File2"
 
 
 class Platform(Enum):
@@ -21,3 +22,4 @@ class Platform(Enum):
 
 
 single_file_only = ('explorer.exe', 'pcmanfm', 'open', 'cutefish-filemanager')
+cannot_open_uris = ('fman', 'fman.exe')

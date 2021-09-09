@@ -23,7 +23,7 @@ from typing import Optional, Union, Sequence, List
 import urllib.parse
 
 
-from .constants import FileManagerType, Platform, single_file_only
+from .constants import FileManagerType, Platform, single_file_only, cannot_open_uris
 from .system import current_platform, is_wsl
 from .system import linux, tools, windows
 
@@ -187,7 +187,7 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
             # Were we passed a URI or simple path?
             if pu:
                 if tools.is_uri(pu):
-                    if current_platform == Platform.windows:
+                    if current_platform == Platform.windows or file_manager in cannot_open_uris:
                         # Convert URI to regular path
                         uri = None
                         path = Path(tools.file_url_to_path(pu))
@@ -195,7 +195,7 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
                         uri = pu
                         path = None
                 else:
-                    if current_platform == Platform.windows:
+                    if current_platform == Platform.windows or file_manager in cannot_open_uris:
                         # Do not convert the path to a URI, as that can mess things up on WSL
                         path = Path(pu)
                         uri = None
@@ -221,11 +221,11 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
                         uri = urllib.parse.urlunparse(parse_result._replace(path=str(path)))
                     else:
                         path = tools.quote_path(path)
-
-                    uris_and_paths.append(uri or path)
+                    uris_and_paths.append(uri or str(path))
                 else:
                     open_directory = False
-                    if open_not_select_directory or file_manager_type == FileManagerType.regular:
+                    if open_not_select_directory and file_manager_type != FileManagerType.dual_panel \
+                            or file_manager_type == FileManagerType.regular:
                         if uri:
                             parse_result = urllib.parse.urlparse(uri)
                             path = Path(parse_result.path)
@@ -246,7 +246,7 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
                                 path = tools.quote_path(path)
                             directories.append(uri or str(path))
                     if not open_directory:
-                        if uri is None and (is_wsl or current_platform != Platform.windows):
+                        if uri is None and (is_wsl or file_manager != "explorer.exe"):
                             path = tools.quote_path(path)
                         uris_and_paths.append(uri or str(path))
 
@@ -262,7 +262,7 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
         elif file_manager_type == FileManagerType.reveal:
             arg = '--reveal '  # trailing space is necessary
 
-    if current_platform == Platform.windows and not is_wsl:
+    if current_platform == Platform.windows and not is_wsl and file_manager == 'explorer.exe':
         if uris_and_paths:
             windows.launch_file_explorer(uris_and_paths, verbose)
         for d in directories:
@@ -317,7 +317,7 @@ def _file_manager_type(fm: str) -> FileManagerType:
     """
 
     if current_platform == Platform.windows:
-        return FileManagerType.win_select
+        return windows.windows_file_manager_type(fm)
     elif current_platform == Platform.linux:
         return linux.linux_file_manager_type(fm)
     elif current_platform == Platform.macos:
@@ -419,6 +419,10 @@ def parser_options(formatter_class=argparse.HelpFormatter):
     )
 
     parser.add_argument(
+        '-f', '--file-manager', help="file manager to run"
+    )
+
+    parser.add_argument(
         '-s', '--select-folder', action='store_true', help="select folder instead of displaying its contents"
     )
 
@@ -450,7 +454,8 @@ def main() -> None:
 
     try:
         show_in_file_manager(
-            path_or_uri=path_or_uri, verbose=verbose, open_not_select_directory=open_not_select_directory
+            file_manager=args.file_manager, path_or_uri=path_or_uri, verbose=verbose,
+            open_not_select_directory=open_not_select_directory
         )
     except Exception as e:
         sys.stderr.write(str(e))

@@ -28,6 +28,9 @@ directory the file is found in.
 **--version** 
 : Show program's version number and exit.
 
+**-f**, **--file-manager** **FILE_MANAGER**
+: File manager to run
+
 **-s**, **--select-folder**
 : Select folder instead of displaying its contents. By default, when a URI or path is a directory and
   not a file, the directory itself is shown in the file manager. This option changes the default and 
@@ -42,6 +45,9 @@ directory the file is found in.
 # EXAMPLES
 **showinfilemanager ~/myfile.txt**
 : Open the system file manager and select *~/myfile.txt* in the user's home directory.
+
+**showinfilemanager -f dolphin \*.txt**
+: Open the dolphin file manager and select all the files with extension *txt* in the current directory.
 
 **showinfilemanager D:\\Documents\\\*.docx**
 : Open the system file manager and select all the Word documents in the Documents directory on the D: drive.

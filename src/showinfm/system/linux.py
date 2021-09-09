@@ -280,6 +280,10 @@ LinuxFileManagerBehavior = dict(
     pcmanfm=FileManagerType.dir_only_uri,
     peony=FileManagerType.show_items,
     index=FileManagerType.dir_only_uri,
+    doublecmd=FileManagerType.dual_panel,
+    krusader=FileManagerType.dir_only_uri,
+    spacefm=FileManagerType.dir_only_uri,
+    fman=FileManagerType.dual_panel,
 )
 LinuxFileManagerBehavior['pcmanfm-qt'] = FileManagerType.dir_only_uri
 LinuxFileManagerBehavior['dde-file-manager'] = FileManagerType.show_item
