@@ -23,7 +23,7 @@ This package aspires to be platform independent, but it currently supports only 
 works with 18 [supported file managers](#supported-file-managers).
 
 
-## How to install and run
+## Install and run
 
 ```bash
 python3 -m pip install show-in-file-manager
