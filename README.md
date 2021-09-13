@@ -98,7 +98,7 @@ like `file:///home/user/file.txt` in addition to regular paths like `/home/user/
 |[Thunar](https://gitlab.xfce.org/xfce/thunar)|XFCE|`thunar URI1 URI2`|&#10060;|&#9888;|Specifying a file opens it. Multiple URIs open multiple Thunar windows.|
 |PCManFM|LXDE|`pcmanfm  URI`|&#10060;|&#10060;|Specifying a file opens it. Multiple URIs open only the first URI.|
 |[PCManFM-Qt](https://github.com/lxqt/pcmanfm-qt)|LXQt|`pcmanfm-qt URI1 URI2`|&#10060;|&#9888;|Specifying a file opens it. Multiple URIs open multiple PCManFM-Qt windows.|
-|[CutefishOS File Manager](https://github.com/cutefishos/filemanager)|CutefishOS|`cutefish-filemanager`|&#10060;|&#10060;|Specifying a file causes File Manager to attempt to open it as if it is a folder. Multiple URIs open only the first URI.|
+|[CutefishOS File Manager](https://github.com/cutefishos/filemanager)|CutefishOS|`cutefish-filemanager URI`|&#10060;|&#10060;|Specifying a file causes File Manager to attempt to open it as if it is a folder. Multiple URIs open only the first URI.|
 |[Index](https://invent.kde.org/maui/index-fm)|Linux|`index URI1 URI2` |&#10060;|&#10060;|Specifying a file has no effect. Multiple URIs open multiple tabs, in addition to the user's home directory, which is always opened.|
 |[Double Commander](https://doublecmd.sourceforge.io/)|Windows, Linux|`doublecmd URI1 URI2`|&#9989;|&#9888;|A double panel file manager accepting up to two URIs. Cannot select folders.|
 |[Krusader](https://krusader.org/)|KDE|`krusader URI`|&#10060;|&#9888;|A double panel file manager accepting one URI. Two URIs can be specified using `--left` and `--right`, but that is unsupported by this package. Specifying a file causes an error.|
