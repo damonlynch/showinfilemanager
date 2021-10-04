@@ -20,7 +20,7 @@ Although this package provides several functions to assist in identifying the th
 circumstances you need to call only one function, the function `show_in_file_manager`, and it should just work.
 
 This package aspires to be platform independent, but it currently supports only Windows 10/11, Linux, WSL, and macOS. It
-works with 18 [supported file managers](#supported-file-managers).
+works with 19 [supported file managers](#supported-file-managers).
 
 
 ## Install and run
@@ -104,6 +104,7 @@ like `file:///home/user/file.txt` in addition to regular paths like `/home/user/
 |[Krusader](https://krusader.org/)|KDE|`krusader URI`|&#10060;|&#9888;|A double panel file manager accepting one URI. Two URIs can be specified using `--left` and `--right`, but that is unsupported by this package. Specifying a file causes an error.|
 |[SpaceFM](https://ignorantguru.github.io/spacefm/)|Linux|`spacefm URI1 URI2`|&#10060;|&#9989;|Specifying a file opens it.|
 |[fman](https://fman.io/)|Windows, Linux, macOS|`fman path1 path2`|&#9989;|&#9888;|A double panel file manager accepting up to two paths. Cannot select folders. Does not accept URIs.|
+|[Insight](https://github.com/lumina-desktop/lumina/tree/master/src-qt5/desktop-utils/lumina-fm)|Lumina Desktop|`lumina-fm path1 path2`|&#10060;|&#9989;|Specifying a file displays it in the left pane as if it were a folder. Does not accept URIs.|
 
 
 ## Usage

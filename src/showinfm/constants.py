@@ -22,4 +22,4 @@ class Platform(Enum):
 
 
 single_file_only = ('explorer.exe', 'pcmanfm', 'open', 'cutefish-filemanager')
-cannot_open_uris = ('fman', 'fman.exe')
+cannot_open_uris = ('fman', 'fman.exe', 'lumina-fm')

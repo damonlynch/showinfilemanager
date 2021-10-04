@@ -1,6 +1,10 @@
 Changelog for Show in File Manager
 ==================================
 
+1.0.0 (2021-10-04)
+------------------
+ - Support [Lumina](https://lumina-desktop.org/)
+
 0.9.0 (2021-09-08)
 ------------------
  - Add option to specify file manager to use from command line

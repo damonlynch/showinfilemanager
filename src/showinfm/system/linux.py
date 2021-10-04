@@ -242,7 +242,8 @@ class LinuxDesktop(Enum):
     wsl = 16
     wsl2 = 17
     cutefish = 18
-    unknown = 19
+    lumina = 19
+    unknown = 20
 
 
 LinuxDesktopFamily = dict(
@@ -268,6 +269,7 @@ StandardLinuxFileManager = dict(
     wsl='explorer.exe',
     wsl2='explorer.exe',
     cutefish='cutefish-filemanager',
+    lumina='lumina-fm'
 )
 
 
@@ -289,6 +291,7 @@ LinuxFileManagerBehavior['pcmanfm-qt'] = FileManagerType.dir_only_uri
 LinuxFileManagerBehavior['dde-file-manager'] = FileManagerType.show_item
 LinuxFileManagerBehavior['io.elementary.files'] = FileManagerType.regular
 LinuxFileManagerBehavior['cutefish-filemanager'] = FileManagerType.dir_only_uri
+LinuxFileManagerBehavior['lumina-fm'] = FileManagerType.dir_only_uri
 
 
 def wsl_version() -> Optional[LinuxDesktop]:
