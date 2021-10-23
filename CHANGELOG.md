@@ -1,7 +1,7 @@
 Changelog for Show in File Manager
 ==================================
 
-1.01 (2021-10-23)
+1.0.1 (2021-10-23)
 -----------------
  - Reformat code with black.
 
