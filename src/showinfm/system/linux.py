@@ -61,19 +61,21 @@ def user_linux_file_manager() -> str:
     :return: executable name
     """
 
-    xdg_cmd = 'xdg-mime query default inode/directory'
+    xdg_cmd = "xdg-mime query default inode/directory"
     cmd = shlex.split(xdg_cmd)
     try:
-        desktop_file = subprocess.check_output(cmd, universal_newlines=True)  # type: str
+        desktop_file = subprocess.check_output(
+            cmd, universal_newlines=True
+        )  # type: str
     except:
         raise Exception("Could not determine file manager using {}".format(xdg_cmd))
 
     # Remove new line character from output
     desktop_file = desktop_file[:-1]
-    if desktop_file.endswith(';'):
+    if desktop_file.endswith(";"):
         desktop_file = desktop_file[:-1]
 
-    for desktop_path in (Path(d) / 'applications' for d in BaseDirectory.xdg_data_dirs):
+    for desktop_path in (Path(d) / "applications" for d in BaseDirectory.xdg_data_dirs):
         path = desktop_path / desktop_file
         if path.exists():
             p = str(path)
@@ -95,39 +97,40 @@ def user_linux_file_manager() -> str:
             # Strip away any path information
             fm_cmd = Path(fm_cmd).name
             # Strip away any quotes
-            fm_cmd = fm_cmd.replace('"', '')
-            fm_cmd = fm_cmd.replace("'", '')
+            fm_cmd = fm_cmd.replace('"', "")
+            fm_cmd = fm_cmd.replace("'", "")
 
             return fm_cmd
 
-    return ''
+    return ""
 
 
 def valid_linux_file_manager() -> str:
     """
-    Get user's file manager, falling back to using sensible defaults for the particular desktop environment.
+    Get user's file manager, falling back to using sensible defaults for the particular
+    desktop environment.
 
     All exceptions are caught.
 
-    :return: If the user's default file manager is set and it is known by this module, then
-    return it. Otherwise return the stock file manager, if it exists.
+    :return: If the user's default file manager is set and it is known by this module,
+     then return it. Otherwise return the stock file manager, if it exists.
     """
 
     try:
         stock = stock_linux_file_manager()
     except:
-        stock = ''
+        stock = ""
 
     try:
         user_fm = user_linux_file_manager()
     except:
-        user_fm = ''
+        user_fm = ""
     else:
         if user_fm not in known_linux_file_managers():
-            user_fm = ''
+            user_fm = ""
 
     if not (user_fm or stock):
-        return ''
+        return ""
 
     if not user_fm:
         fm = stock
@@ -137,7 +140,7 @@ def valid_linux_file_manager() -> str:
     if fm and shutil.which(fm):
         return fm
     else:
-        return ''
+        return ""
 
 
 def known_linux_file_managers() -> Tuple[str]:
@@ -154,10 +157,11 @@ def linux_file_manager_type(file_manager: str) -> FileManagerType:
     """
     Determine the type of command line arguments the Linux file manager expects
     :param file_manager: executable name
-    :return: FileManagerType matching with the executable name, else FileManagerType.regular as a fallback
+    :return: FileManagerType matching with the executable name, else
+     FileManagerType.regular as a fallback
     """
 
-    if file_manager == 'caja' and caja_supports_select():
+    if file_manager == "caja" and caja_supports_select():
         return FileManagerType.select
     return LinuxFileManagerBehavior.get(file_manager, FileManagerType.regular)
 
@@ -169,17 +173,19 @@ def caja_version() -> Optional[packaging.version.Version]:
     """
 
     try:
-        version_string = subprocess.run(
-            ['caja', '--version'], stdout=subprocess.PIPE, check=True
-        ).stdout.decode().strip()
+        version_string = (
+            subprocess.run(["caja", "--version"], stdout=subprocess.PIPE, check=True)
+            .stdout.decode()
+            .strip()
+        )
     except subprocess.CalledProcessError:
         raise Exception("Failed to get version number from caja")
 
-    result = re.search('\d', version_string)
+    result = re.search("\d", version_string)
     if result is None:
         return None
 
-    version = version_string[result.start():]
+    version = version_string[result.start() :]
     return packaging.version.parse(version)
 
 
@@ -196,14 +202,15 @@ def caja_supports_select() -> bool:
         return False
     if version is None:
         return False
-    return version >= packaging.version.Version('1.26')
+    return version >= packaging.version.Version("1.26")
 
 
 def wsl_path_is_directory(path: Path) -> bool:
     """
     When running in WSL, detect if the path being passed is a directory
 
-    :param path: can be a Windows path e.g. C:/Windows, or a Linux path e.g. /mnt/c/Windows
+    :param path: can be a Windows path e.g. C:/Windows, or a Linux path
+     e.g. /mnt/c/Windows
     :return: True if a Windows or Linux directory, else False
     """
 
@@ -215,9 +222,16 @@ def wsl_path_is_directory(path: Path) -> bool:
         return False
     # Potential windows path: let's try convert it from a Windows path to a WSL path
     try:
-        linux_path = subprocess.run(
-            ['wslpath', '-u', str(path)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True
-        ).stdout.decode().strip()
+        linux_path = (
+            subprocess.run(
+                ["wslpath", "-u", str(path)],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=True,
+            )
+            .stdout.decode()
+            .strip()
+        )
     except subprocess.CalledProcessError:
         return False
     return Path(linux_path).is_dir()
@@ -247,29 +261,29 @@ class LinuxDesktop(Enum):
 
 
 LinuxDesktopFamily = dict(
-    ubuntugnome='gnome',
-    popgnome='gnome',
-    zorin='gnome',
-    unity='gnome',
- )
+    ubuntugnome="gnome",
+    popgnome="gnome",
+    zorin="gnome",
+    unity="gnome",
+)
 
 
 StandardLinuxFileManager = dict(
-    gnome='nautilus',
-    kde='dolphin',
-    cinnamon='nemo',
-    mate='caja',
-    xfce='thunar',
-    lxde='pcmanfm',
-    lxqt='pcmanfm-qt',
-    deepin='dde-file-manager',
-    pantheon='io.elementary.files',
-    ukui='peony',
-    enlightenment='pcmanfm',
-    wsl='explorer.exe',
-    wsl2='explorer.exe',
-    cutefish='cutefish-filemanager',
-    lumina='lumina-fm'
+    gnome="nautilus",
+    kde="dolphin",
+    cinnamon="nemo",
+    mate="caja",
+    xfce="thunar",
+    lxde="pcmanfm",
+    lxqt="pcmanfm-qt",
+    deepin="dde-file-manager",
+    pantheon="io.elementary.files",
+    ukui="peony",
+    enlightenment="pcmanfm",
+    wsl="explorer.exe",
+    wsl2="explorer.exe",
+    cutefish="cutefish-filemanager",
+    lumina="lumina-fm",
 )
 
 
@@ -287,27 +301,27 @@ LinuxFileManagerBehavior = dict(
     spacefm=FileManagerType.dir_only_uri,
     fman=FileManagerType.dual_panel,
 )
-LinuxFileManagerBehavior['pcmanfm-qt'] = FileManagerType.dir_only_uri
-LinuxFileManagerBehavior['dde-file-manager'] = FileManagerType.show_item
-LinuxFileManagerBehavior['io.elementary.files'] = FileManagerType.regular
-LinuxFileManagerBehavior['cutefish-filemanager'] = FileManagerType.dir_only_uri
-LinuxFileManagerBehavior['lumina-fm'] = FileManagerType.dir_only_uri
+LinuxFileManagerBehavior["pcmanfm-qt"] = FileManagerType.dir_only_uri
+LinuxFileManagerBehavior["dde-file-manager"] = FileManagerType.show_item
+LinuxFileManagerBehavior["io.elementary.files"] = FileManagerType.regular
+LinuxFileManagerBehavior["cutefish-filemanager"] = FileManagerType.dir_only_uri
+LinuxFileManagerBehavior["lumina-fm"] = FileManagerType.dir_only_uri
 
 
 def wsl_version() -> Optional[LinuxDesktop]:
-    with open('/proc/version') as f:
+    with open("/proc/version") as f:
         p = f.read()
-    if p.find('microsoft') > 0 and p.find('WSL2'):
+    if p.find("microsoft") > 0 and p.find("WSL2"):
         return LinuxDesktop.wsl2
-    if p.find('Microsoft') > 0:
+    if p.find("Microsoft") > 0:
         return LinuxDesktop.wsl
     return None
 
 
 def detect_wsl() -> bool:
-    with open('/proc/version') as f:
+    with open("/proc/version") as f:
         p = f.read()
-    return p.lower().find('microsoft') > 0
+    return p.lower().find("microsoft") > 0
 
 
 def linux_desktop() -> LinuxDesktop:
@@ -318,7 +332,7 @@ def linux_desktop() -> LinuxDesktop:
     """
 
     try:
-        env = os.getenv('XDG_CURRENT_DESKTOP').lower()
+        env = os.getenv("XDG_CURRENT_DESKTOP").lower()
     except AttributeError:
         wsl = wsl_version()
         if wsl is not None:
@@ -326,24 +340,22 @@ def linux_desktop() -> LinuxDesktop:
         else:
             raise Exception("The value for XDG_CURRENT_DESKTOP is not set")
 
-    if env == 'unity:unity7':
-        env = 'unity'
-    elif env == 'x-cinnamon':
-        env = 'cinnamon'
-    elif env == 'ubuntu:gnome':
-        env = 'ubuntugnome'
-    elif env == 'pop:gnome':
-        env = 'popgnome'
-    elif env == 'gnome-classic:gnome':
-        env = 'gnome'
-    elif env == 'budgie:gnome':
-        env = 'gnome'
-    elif env == 'zorin:gnome':
-        env = 'zorin'
+    if env == "unity:unity7":
+        env = "unity"
+    elif env == "x-cinnamon":
+        env = "cinnamon"
+    elif env == "ubuntu:gnome":
+        env = "ubuntugnome"
+    elif env == "pop:gnome":
+        env = "popgnome"
+    elif env == "gnome-classic:gnome":
+        env = "gnome"
+    elif env == "budgie:gnome":
+        env = "gnome"
+    elif env == "zorin:gnome":
+        env = "zorin"
 
     try:
         return LinuxDesktop[env]
     except KeyError:
         raise Exception("The desktop environment {} is unknown".format(env))
-
-

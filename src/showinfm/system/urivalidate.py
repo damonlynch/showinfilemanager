@@ -1,5 +1,6 @@
 # Source: https://gist.github.com/mnot/138549
 # Converted from Python2 using https://www.pythonconverter.com/
+# Not formatted using black
 
 """
 Regex for URIs

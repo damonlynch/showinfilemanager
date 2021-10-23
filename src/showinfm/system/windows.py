@@ -9,31 +9,37 @@ try:
 except ImportError:
     pass
 
-from .tools import is_uri, path_to_file_url, file_url_to_path, directories_and_their_files
+from .tools import (
+    is_uri,
+    path_to_file_url,
+    file_url_to_path,
+    directories_and_their_files,
+)
 from ..constants import FileManagerType
 
 
 WindowsFileManagerBehavior = {}
-WindowsFileManagerBehavior['doublecmd.exe'] = FileManagerType.dual_panel
-WindowsFileManagerBehavior['fman.exe'] = FileManagerType.dual_panel
+WindowsFileManagerBehavior["doublecmd.exe"] = FileManagerType.dual_panel
+WindowsFileManagerBehavior["fman.exe"] = FileManagerType.dual_panel
 
 
 def windows_file_manager_type(file_manager: str) -> FileManagerType:
     """
     Determine the type of command line arguments the Windows file manager expects
     :param file_manager: executable name
-    :return: FileManagerType matching with the executable name, else FileManagerType.regular as a fallback
+    :return: FileManagerType matching with the executable name, else
+     FileManagerType.regular as a fallback
     """
 
-    if file_manager == 'explorer.exe':
+    if file_manager == "explorer.exe":
         return FileManagerType.win_select
     return WindowsFileManagerBehavior.get(file_manager, FileManagerType.regular)
 
 
 def parse_command_line_arguments(path_or_uri: List[str]) -> List[str]:
     """
-    Convert any glob component in the filename component of Windows paths, which the Windows shell does not
-    do itself
+    Convert any glob component in the filename component of Windows paths, which the
+    Windows shell does not do itself
 
     :param path_or_uri: list of paths or URIs
     :return: list of paths or URIs with resolved paths and no glob components
@@ -76,14 +82,22 @@ def launch_file_explorer(paths: List[str], verbose: Optional[bool] = False) -> N
         desktop = shell.SHGetDesktopFolder()
         for folder in folder_contents.keys():
             folder_pidl = shell.SHILCreateFromPath(folder, 0)[0]
-            shell_folder = desktop.BindToObject(folder_pidl, None, shell.IID_IShellFolder)
-            win_items = {desktop.GetDisplayNameOf(item, 0): item for item in shell_folder}
-            to_select = [win_items[file] for file in folder_contents[folder] if file in win_items]
+            shell_folder = desktop.BindToObject(
+                folder_pidl, None, shell.IID_IShellFolder
+            )
+            win_items = {
+                desktop.GetDisplayNameOf(item, 0): item for item in shell_folder
+            }
+            to_select = [
+                win_items[file] for file in folder_contents[folder] if file in win_items
+            ]
             if verbose:
                 files = '", "'.join(folder_contents[folder])
                 if files:
                     files = '"{}"'.format(files)
                 print(
-                    'Executing Windows shell to open file explorer at "{}", selecting {}'.format(folder, files)
+                    'Executing Windows shell to open file explorer at "{}", selecting {}'.format(
+                        folder, files
+                    )
                 )
             shell.SHOpenFolderAndSelectItems(folder_pidl, to_select, 0)

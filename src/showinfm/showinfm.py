@@ -8,6 +8,7 @@ Open the system file manager and optionally select files in it.
 """
 
 import argparse
+
 try:
     import importlib.metadata as importlib_metadata
 except ImportError:
@@ -47,11 +48,11 @@ def stock_file_manager() -> str:
     """
 
     if current_platform == Platform.windows:
-        file_manager = 'explorer.exe'
+        file_manager = "explorer.exe"
     elif current_platform == Platform.linux:
         file_manager = linux.stock_linux_file_manager()
     elif current_platform == Platform.macos:
-        file_manager = 'open'
+        file_manager = "open"
     else:
         raise NotImplementedError
 
@@ -71,11 +72,11 @@ def user_file_manager() -> str:
     """
 
     if current_platform == Platform.windows:
-        file_manager = 'explorer.exe'
+        file_manager = "explorer.exe"
     elif current_platform == Platform.linux:
         file_manager = linux.user_linux_file_manager()
     elif current_platform == Platform.macos:
-        file_manager = 'open'
+        file_manager = "open"
     else:
         raise NotImplementedError
 
@@ -100,20 +101,22 @@ def valid_file_manager() -> str:
     """
 
     if current_platform == Platform.windows:
-        file_manager = 'explorer.exe'
+        file_manager = "explorer.exe"
     elif current_platform == Platform.linux:
         file_manager = linux.valid_linux_file_manager()
     elif current_platform == Platform.macos:
-        file_manager = 'open'
+        file_manager = "open"
     else:
         raise NotImplementedError
     return file_manager
 
 
-def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None,
-                         open_not_select_directory: Optional[bool] = True,
-                         file_manager: Optional[str] = None,
-                         verbose: bool = False) -> None:
+def show_in_file_manager(
+    path_or_uri: Optional[Union[str, Sequence[str]]] = None,
+    open_not_select_directory: Optional[bool] = True,
+    file_manager: Optional[str] = None,
+    verbose: bool = False,
+) -> None:
     """
     Open the file manager and show zero or more directories or files in it.
 
@@ -173,21 +176,24 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
     if not path_or_uri:
         if current_platform == Platform.macos:
             # macOS finder requires a path to be able to launch it from the command line
-            path_or_uri = 'file:///'
+            path_or_uri = "file:///"
         else:
-            arg = ''
+            arg = ""
             uris_and_paths = []
     if path_or_uri:
         if isinstance(path_or_uri, str):
             # turn the single path / URI into a Tuple
-            path_or_uri = path_or_uri,
+            path_or_uri = (path_or_uri,)
 
         uris_and_paths = []
         for pu in path_or_uri:
             # Were we passed a URI or simple path?
             if pu:
                 if tools.is_uri(pu):
-                    if current_platform == Platform.windows or file_manager in cannot_open_uris:
+                    if (
+                        current_platform == Platform.windows
+                        or file_manager in cannot_open_uris
+                    ):
                         # Convert URI to regular path
                         uri = None
                         path = Path(tools.file_url_to_path(pu))
@@ -195,7 +201,10 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
                         uri = pu
                         path = None
                 else:
-                    if current_platform == Platform.windows or file_manager in cannot_open_uris:
+                    if (
+                        current_platform == Platform.windows
+                        or file_manager in cannot_open_uris
+                    ):
                         # Do not convert the path to a URI, as that can mess things up on WSL
                         path = Path(pu)
                         uri = None
@@ -218,14 +227,19 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
                     if not path.is_dir() or not open_not_select_directory:
                         path = path.parent
                     if uri:
-                        uri = urllib.parse.urlunparse(parse_result._replace(path=str(path)))
+                        uri = urllib.parse.urlunparse(
+                            parse_result._replace(path=str(path))
+                        )
                     else:
                         path = tools.quote_path(path)
                     uris_and_paths.append(uri or str(path))
                 else:
                     open_directory = False
-                    if open_not_select_directory and file_manager_type != FileManagerType.dual_panel \
-                            or file_manager_type == FileManagerType.regular:
+                    if (
+                        open_not_select_directory
+                        and file_manager_type != FileManagerType.dual_panel
+                        or file_manager_type == FileManagerType.regular
+                    ):
                         if uri:
                             parse_result = urllib.parse.urlparse(uri)
                             path = Path(parse_result.path)
@@ -235,13 +249,20 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
                         else:
                             open_directory = path.is_dir()
                         if open_directory:
-                            if file_manager_type == FileManagerType.regular and not open_not_select_directory:
-                                # This type of file manger cannot select directories, because it provides no mechanism
-                                # to distinguish between selecting and opening a directory.
+                            if (
+                                file_manager_type == FileManagerType.regular
+                                and not open_not_select_directory
+                            ):
+                                # This type of file manger cannot select directories,
+                                # because it provides no mechanism
+                                # to distinguish between selecting and opening a
+                                # directory.
                                 # So open the parent instead.
                                 path = path.parent
                                 if uri:
-                                    uri = urllib.parse.urlunparse(parse_result._replace(path=str(path)))
+                                    uri = urllib.parse.urlunparse(
+                                        parse_result._replace(path=str(path))
+                                    )
                             if uri is None:
                                 path = tools.quote_path(path)
                             directories.append(uri or str(path))
@@ -250,19 +271,23 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
                             path = tools.quote_path(path)
                         uris_and_paths.append(uri or str(path))
 
-        arg = ''
+        arg = ""
         if file_manager_type == FileManagerType.win_select:
-            arg = '/select,'  # no trailing space is necessary on Windows
+            arg = "/select,"  # no trailing space is necessary on Windows
         elif file_manager_type == FileManagerType.select:
-            arg = '--select '  # trailing space is necessary
+            arg = "--select "  # trailing space is necessary
         elif file_manager_type == FileManagerType.show_item:
-            arg = '--show-item '  # trailing space is necessary
+            arg = "--show-item "  # trailing space is necessary
         elif file_manager_type == FileManagerType.show_items:
-            arg = '--show-items '  # trailing space is necessary
+            arg = "--show-items "  # trailing space is necessary
         elif file_manager_type == FileManagerType.reveal:
-            arg = '--reveal '  # trailing space is necessary
+            arg = "--reveal "  # trailing space is necessary
 
-    if current_platform == Platform.windows and not is_wsl and file_manager == 'explorer.exe':
+    if (
+        current_platform == Platform.windows
+        and not is_wsl
+        and file_manager == "explorer.exe"
+    ):
         if uris_and_paths:
             windows.launch_file_explorer(uris_and_paths, verbose)
         for d in directories:
@@ -273,20 +298,34 @@ def show_in_file_manager(path_or_uri: Optional[Union[str, Sequence[str]]] = None
         if uris_and_paths:
             # Some file managers must be passed only one or zero paths / URIs
             if file_manager not in single_file_only:
-                uris_and_paths = [' '.join(uris_and_paths)]
+                uris_and_paths = [" ".join(uris_and_paths)]
 
-            _launch_file_manager(uris_or_paths=uris_and_paths, arg=arg, file_manager=file_manager, verbose=verbose)
+            _launch_file_manager(
+                uris_or_paths=uris_and_paths,
+                arg=arg,
+                file_manager=file_manager,
+                verbose=verbose,
+            )
 
         if directories:
             if file_manager not in single_file_only:
-                directories = [' '.join(directories)]
-            _launch_file_manager(uris_or_paths=directories, arg='', file_manager=file_manager, verbose=verbose)
+                directories = [" ".join(directories)]
+            _launch_file_manager(
+                uris_or_paths=directories,
+                arg="",
+                file_manager=file_manager,
+                verbose=verbose,
+            )
 
     if not uris_and_paths and not directories:
-        _launch_file_manager(uris_or_paths=[''], arg='', file_manager=file_manager, verbose=verbose)
+        _launch_file_manager(
+            uris_or_paths=[""], arg="", file_manager=file_manager, verbose=verbose
+        )
 
 
-def _launch_file_manager(uris_or_paths: List[str], arg: str, file_manager: str, verbose: bool) -> None:
+def _launch_file_manager(
+    uris_or_paths: List[str], arg: str, file_manager: str, verbose: bool
+) -> None:
     """
     Launch the file manager
 
@@ -298,7 +337,7 @@ def _launch_file_manager(uris_or_paths: List[str], arg: str, file_manager: str, 
     """
 
     for u in uris_or_paths:
-        cmd = '{} {}{}'.format(file_manager, arg, u)
+        cmd = "{} {}{}".format(file_manager, arg, u)
         if verbose:
             print("Executing", cmd)
         # Do not check current_platform here, it makes no sense
@@ -328,7 +367,8 @@ def _file_manager_type(fm: str) -> FileManagerType:
 
 def _set_valid_file_manager() -> None:
     """
-    Set module level global variables to set a valid file manager for this user in this desktop environment.
+    Set module level global variables to set a valid file manager for this user in this
+    desktop environment.
     """
 
     global _valid_file_manager_probed
@@ -368,14 +408,14 @@ class Diagnostics:
             except:
                 self.desktop = linux.LinuxDesktop.unknown
         else:
-            self.desktop = ''
+            self.desktop = ""
 
     def __str__(self) -> str:
-        desktop = "Linux Desktop: {}\n".format(self.desktop.name) if self.desktop else ""
+        desktop = (
+            "Linux Desktop: {}\n".format(self.desktop.name) if self.desktop else ""
+        )
         file_managers = "Stock: {}\nUser's choice: {}\nValid: {}".format(
-                    self.stock_file_manager,
-                    self.user_file_manager,
-                    self.valid_file_manager
+            self.stock_file_manager, self.user_file_manager, self.valid_file_manager
         )
         return desktop + file_managers
 
@@ -388,14 +428,17 @@ def package_metadata():
     """
 
     try:
-        version = importlib_metadata.version('show-in-file-manager')
+        version = importlib_metadata.version("show-in-file-manager")
     except:
-       version = "Unknown version"
-       summary = "Platform independent Python module to open the system file manager and optionally select files in it"
+        version = "Unknown version"
+        summary = (
+            "Platform independent Python module to open the system file manager "
+            "and optionally select files in it "
+        )
 
     else:
-        metadata = importlib_metadata.metadata('show-in-file-manager')
-        summary = metadata['summary']
+        metadata = importlib_metadata.metadata("show-in-file-manager")
+        summary = metadata["summary"]
 
     return version, summary
 
@@ -411,26 +454,33 @@ def parser_options(formatter_class=argparse.HelpFormatter):
     version, summary = package_metadata()
 
     parser = argparse.ArgumentParser(
-        prog='showinfilemanager', description=summary, formatter_class=formatter_class
+        prog="showinfilemanager", description=summary, formatter_class=formatter_class
     )
 
     parser.add_argument(
-        '--version', action='version', version='%(prog)s {}'.format(version)
+        "--version", action="version", version="%(prog)s {}".format(version)
+    )
+
+    parser.add_argument("-f", "--file-manager", help="file manager to run")
+
+    parser.add_argument(
+        "-s",
+        "--select-folder",
+        action="store_true",
+        help="select folder instead of displaying its contents",
     )
 
     parser.add_argument(
-        '-f', '--file-manager', help="file manager to run"
+        "--verbose", action="store_true", help="display command being run to stdout"
     )
 
     parser.add_argument(
-        '-s', '--select-folder', action='store_true', help="select folder instead of displaying its contents"
+        "--debug", action="store_true", help="output debugging information to stdout"
     )
 
-    parser.add_argument('--verbose', action='store_true', help="display command being run to stdout")
-
-    parser.add_argument('--debug', action='store_true', help="output debugging information to stdout")
-
-    parser.add_argument('path', nargs='*', help="zero or more URIs or paths of files or directories")
+    parser.add_argument(
+        "path", nargs="*", help="zero or more URIs or paths of files or directories"
+    )
 
     return parser
 
@@ -454,12 +504,12 @@ def main() -> None:
 
     try:
         show_in_file_manager(
-            file_manager=args.file_manager, path_or_uri=path_or_uri, verbose=verbose,
-            open_not_select_directory=open_not_select_directory
+            file_manager=args.file_manager,
+            path_or_uri=path_or_uri,
+            verbose=verbose,
+            open_not_select_directory=open_not_select_directory,
         )
     except Exception as e:
         sys.stderr.write(str(e))
         if args.debug:
             raise
-
-

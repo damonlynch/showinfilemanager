@@ -1,17 +1,21 @@
 Changelog for Show in File Manager
 ==================================
 
+1.01 (2021-10-23)
+-----------------
+ - Reformat code with black.
+
 1.0.0 (2021-10-04)
 ------------------
- - Support [Lumina](https://lumina-desktop.org/)
+ - Support [Lumina](https://lumina-desktop.org/).
 
 0.9.0 (2021-09-08)
 ------------------
- - Add option to specify file manager to use from command line
- - Support [Double Commander](https://doublecmd.sourceforge.io/)
- - Support [Krusader](https://krusader.org/)
- - Support [SpaceFM](https://ignorantguru.github.io/spacefm/)
- - Support [fman](https://fman.io/)
+ - Add option to specify file manager to use from command line.
+ - Support [Double Commander](https://doublecmd.sourceforge.io/).
+ - Support [Krusader](https://krusader.org/).
+ - Support [SpaceFM](https://ignorantguru.github.io/spacefm/).
+ - Support [fman](https://fman.io/).
 
 0.0.8 (2021-08-31)
 ------------------

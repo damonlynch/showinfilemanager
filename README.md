@@ -1,5 +1,7 @@
 # Show in File Manager
 
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 **Show in File Manager** is a Python package to open the system file manager and optionally select
 files in it. The point is not to _open_ the files, but to _select_ them in the file manager, thereby highlighting the
 files and allowing the user to quickly do something with them.
