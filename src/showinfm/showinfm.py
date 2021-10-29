@@ -268,9 +268,8 @@ def show_in_file_manager(
                         # In any case, this code block is not run under Windows, so
                         # there is no need to use tools.file_url_to_path() to handle the
                         # file:/// case that urllib.parse.urlparse fails with.
-
                         parse_result = urllib.parse.urlparse(uri)
-                        path = Path(path)
+                        path = Path(parse_result.path)
 
                     if not (path.is_dir() and open_not_select_directory):
                         path = path.parent

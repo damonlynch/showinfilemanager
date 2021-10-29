@@ -98,7 +98,7 @@ This package takes care of calling the file managers with the correct
 arguments for you. The command line arguments shown here are for reference. 
 
 All but two file managers accept [URIs](https://en.wikipedia.org/wiki/Uniform_Resource_Identifier)
-like `file:///home/user/file.txt` in addition to regular paths like 
+like `file:///home/user/file.txt` in addition to regular paths like
 `/home/user/file.txt`. 
 
 |File Manager|Used by|Command line       |Can Select Files|Handles Multiple Files / Directories|Notes|
