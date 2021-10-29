@@ -8,13 +8,18 @@ from pathlib import Path
 import re
 import shlex
 import sys
-from typing import List, DefaultDict
-import urllib.parse
-import urllib.request
+from typing import List, DefaultDict, Optional
+
+from urllib.parse import urlparse, unquote, urljoin
+from urllib.request import url2pathname, pathname2url
 
 from . import urivalidate
-from . import current_platform
-from ..constants import Platform
+from . import current_platform, is_wsl2
+from ..constants import Platform, cannot_open_uris
+
+
+def filemanager_requires_path(file_manager: str) -> bool:
+    return current_platform == Platform.windows or file_manager in cannot_open_uris
 
 
 def is_uri(path_uri: str) -> bool:
@@ -39,6 +44,7 @@ def quote_path(path: Path) -> Path:
     not already quoted.
 
     :param path: path to quote, if necessary
+    :param target_platform: platform the file manager command will be executed on
     :return: double quoted path
     """
 
@@ -58,7 +64,7 @@ def quote_path(path: Path) -> Path:
     return path
 
 
-def path_to_file_url(path: str) -> str:
+def path_to_file_uri(path: str) -> str:
     """
     Convert a path to a file: URL.  The path will be made absolute and have
     quoted path parts.
@@ -68,40 +74,25 @@ def path_to_file_url(path: str) -> str:
     """
 
     path = os.path.normpath(os.path.abspath(path))
-    url = urllib.parse.urljoin("file:", urllib.request.pathname2url(path))
+    url = urljoin("file:", pathname2url(path))
     return url
 
 
-def file_url_to_path(url: str) -> str:
+def file_uri_to_path(uri: str) -> str:
     """
     Convert a file: URL to a path.
 
-    On Windows this is more reliable than urllib.parse.urlparse, because that fails when run with a URI like
-    file:///D:/somedirectory
+    On Windows this is more reliable than urllib.parse.urlparse, because that fails when
+    run with a URI like file:///D:/some/directory
 
-    Taken from pip: https://github.com/pypa/pip/blob/main/src/pip/_internal/utils/urls.py
-    Copyright (c) 2008-2021 The pip developers
+    Taken from https://stackoverflow.com/a/61922504/592623
+    and modified by Damon Lynch 2021
     """
 
-    assert url.startswith(
-        "file:"
-    ), f"You can only turn file: urls into filenames (not {url!r})"
-
-    _, netloc, path, _, _ = urllib.parse.urlsplit(url)
-
-    if not netloc or netloc == "localhost":
-        # According to RFC 8089, same as empty authority.
-        netloc = ""
-    elif sys.platform == "win32":
-        # If we have a UNC path, prepend UNC share notation.
-        netloc = "\\\\" + netloc
-    else:
-        raise ValueError(
-            f"non-local file URIs are not supported on this platform: {url!r}"
-        )
-
-    path = urllib.request.url2pathname(netloc + path)
-    return path
+    parsed = urlparse(uri)
+    host = "{0}{0}{mnt}{0}".format(os.path.sep, mnt=parsed.netloc)
+    p = os.path.normpath(os.path.join(host, url2pathname(parsed.path)))
+    return p
 
 
 def directories_and_their_files(paths: List[str]) -> DefaultDict[str, List[str]]:

@@ -11,8 +11,8 @@ except ImportError:
 
 from .tools import (
     is_uri,
-    path_to_file_url,
-    file_url_to_path,
+    path_to_file_uri,
+    file_uri_to_path,
     directories_and_their_files,
 )
 from ..constants import FileManagerType
@@ -49,19 +49,19 @@ def parse_command_line_arguments(path_or_uri: List[str]) -> List[str]:
     for pu in path_or_uri:
         if is_uri(pu):
             uri = pu
-            path = Path(file_url_to_path(uri))
+            path = Path(file_uri_to_path(uri=uri))
         else:
             uri = None
             path = Path(pu)
         if not path.is_dir():
             for globbed_pu in path.parent.resolve().glob(path.name):
                 if uri:
-                    paths.append(path_to_file_url(str(globbed_pu)))
+                    paths.append(path_to_file_uri(str(globbed_pu)))
                 else:
                     paths.append(str(globbed_pu))
         else:
             if uri:
-                paths.append(path_to_file_url(str(path)))
+                paths.append(path_to_file_uri(str(path)))
             else:
                 paths.append(str(path.resolve()))
 
@@ -96,8 +96,7 @@ def launch_file_explorer(paths: List[str], verbose: Optional[bool] = False) -> N
                 if files:
                     files = '"{}"'.format(files)
                 print(
-                    'Executing Windows shell to open file explorer at "{}", selecting {}'.format(
-                        folder, files
-                    )
+                    "Executing Windows shell to open file "
+                    'explorer at "{}", selecting {}'.format(folder, files)
                 )
             shell.SHOpenFolderAndSelectItems(folder_pidl, to_select, 0)

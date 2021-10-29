@@ -1,6 +1,18 @@
 Changelog for Show in File Manager
 ==================================
 
+1.1.0 (2022-10-XX)
+------------------
+ - On WSL2, use a Linux file manager (if set) for WSL paths, and Windows 
+   Explorer for Windows paths. If no Linux file manager is installed, use 
+   Windows Explorer. To override the default choice of using Explorer for 
+   Windows paths, simply specify a file manager of your choice.
+ - On both WSL1 and WSL2, use Windows style URIs to work around a
+   [bug](https://github.com/microsoft/WSL/issues/7603) in WSL where using 
+   the /select switch while passing a path with spaces in it fails.
+ - Don't mess up the terminal when launching Windows Explorer from WSL 
+   on Windows Terminal.
+ 
 1.0.1 (2021-10-23)
 -----------------
  - Reformat code with black.

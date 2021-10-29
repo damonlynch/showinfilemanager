@@ -25,7 +25,7 @@ import urllib.parse
 
 
 from .constants import FileManagerType, Platform, single_file_only, cannot_open_uris
-from .system import current_platform, is_wsl
+from .system import current_platform, is_wsl, is_wsl2, is_wsl1
 from .system import linux, tools, windows
 
 _valid_file_manager_probed = False
@@ -47,7 +47,7 @@ def stock_file_manager() -> str:
     :return: executable name
     """
 
-    if current_platform == Platform.windows:
+    if current_platform == Platform.windows or is_wsl1:
         file_manager = "explorer.exe"
     elif current_platform == Platform.linux:
         file_manager = linux.stock_linux_file_manager()
@@ -71,7 +71,7 @@ def user_file_manager() -> str:
     :return: executable name
     """
 
-    if current_platform == Platform.windows:
+    if current_platform == Platform.windows or is_wsl1:
         file_manager = "explorer.exe"
     elif current_platform == Platform.linux:
         file_manager = linux.user_linux_file_manager()
@@ -86,21 +86,23 @@ def user_file_manager() -> str:
 
 def valid_file_manager() -> str:
     """
-    Get user's file manager, falling back to using sensible defaults for the desktop / OS.
+    Get user's file manager, falling back to using sensible defaults.
 
-    The user's choice of file manager is the default choice. However, this is not always
-    set correctly. On Linux, it most likely is because the user's distro has not correctly
-    set the default file manager. If the user's choice is unrecognized by this package,
-    then reject it and choose the standard file manager for the detected desktop
-    environment.
+    The user's choice of file manager is the default choice. However, this is
+    not always set correctly. On Linux, it most likely is because the user's
+    distro has not correctly set the default file manager. If the user's choice
+    is unrecognized by this package, then reject it and choose the standard file
+    manager for the detected desktop environment.
 
-    All exceptions are caught, except those if this platform is not supported by this package.
+    All exceptions are caught, except those if this platform is not supported by
+    this package.
 
-    :return: If the user's default file manager is set and it is known by this package, then
-    return it. Otherwise return the stock file manager, if it exists.
+    :return: If the user's default file manager is set and it is known by this
+     package, then return it. Otherwise return the stock file manager, if it
+     exists.
     """
 
-    if current_platform == Platform.windows:
+    if current_platform == Platform.windows or is_wsl1:
         file_manager = "explorer.exe"
     elif current_platform == Platform.linux:
         file_manager = linux.valid_linux_file_manager()
@@ -116,6 +118,7 @@ def show_in_file_manager(
     open_not_select_directory: Optional[bool] = True,
     file_manager: Optional[str] = None,
     verbose: bool = False,
+    debug: bool = False,
 ) -> None:
     """
     Open the file manager and show zero or more directories or files in it.
@@ -123,16 +126,25 @@ def show_in_file_manager(
     The path_or_uri is a sequence of items, or a single item. An item can
     be regular path, or a URI.
 
-    On non-Windows platforms, regular paths will be converted to URIs
-    when passed as command line arguments to the file manager, because
-    some file mangers do not handle regular paths correctly.
+    On non-Windows platforms, regular paths will be converted to URIs when
+    passed as command line arguments to the file manager, because some file
+    managers do not handle regular paths correctly. However, URIs will be
+    convereted to paths to handle file managers that do not accepts URIs.
 
-    On Windows or WSL, regular paths are not converted to URIs, but they
-    are quoted.
+    On Windows, Explorer is called using the Win32 API.
+
+    On WSL1, all paths are opened using Windows Explorer. URIs and can be
+    specified using Linux or Windows formats. All formats are automatically
+    converted to use the Windows URI format.
+
+    WSL2 functions the same as WSL1, except if the WSL2 instance has a Linux
+    file manager installed. On these systems, if a path on Linux is
+    specified, that file manager will be used instead of Windows Explorer. You
+    can override this default behavior by using the parameter file_manager.
 
     The most common use of this function is to call it without specifying
     the file manager to use, which defaults to the value returned by
-    valid_file_manager().
+    valid_file_manager()
 
     For file managers unable to select files to display, the file manager
     will instead display the contents of the path.
@@ -153,10 +165,13 @@ def show_in_file_manager(
      valid_file_manager() will determine which file manager to use.
     :param verbose: if True print command to be executed before launching
      it
+    :param debug: if True print debugging information to stderr
     """
 
     global _valid_file_manager
     global _valid_file_manager_type
+
+    file_manager_specified = file_manager is not None
 
     if not file_manager:
         _set_valid_file_manager()
@@ -168,10 +183,16 @@ def show_in_file_manager(
         except:
             file_manager_type = None
 
-    if not file_manager:
+    if not (file_manager or is_wsl2):
+        # We are not running WSL2 and there is no file manager: there is nothing
+        # to be done
         return
 
-    directories = []  # Used for directories when open_not_select_directory is True
+    # Used for directories when open_not_select_directory is True
+    directories = []
+    # Used for paths that will be opened in Windows explorer called from WSL2
+    wsl_windows_paths = []
+    wsl_windows_directories = []
 
     if not path_or_uri:
         if current_platform == Platform.macos:
@@ -189,63 +210,92 @@ def show_in_file_manager(
         for pu in path_or_uri:
             # Were we passed a URI or simple path?
             if pu:
-                if tools.is_uri(pu):
-                    if (
-                        current_platform == Platform.windows
-                        or file_manager in cannot_open_uris
-                    ):
-                        # Convert URI to regular path
-                        uri = None
-                        path = Path(tools.file_url_to_path(pu))
+                uri = path = ""
+                # target_platform = current_platform
+                if is_wsl:
+                    # Running WSL1 or WSL2. Is the path on the Windows file system, or
+                    # alternately is Windows explorer going to be used to view the
+                    # files? Also, what kind of path or URI has been passed?
+                    require_win_path = file_manager == "explorer.exe"
+                    wsl_details = linux.wsl_transform_path_uri(pu, require_win_path)
+                    if not wsl_details.exists:
+                        continue
+                    use_windows_explorer_via_wsl = (
+                        wsl_details.is_win_location and not file_manager_specified
+                    ) or file_manager == "explorer.exe"
+                    if use_windows_explorer_via_wsl:
+                        if debug:
+                            print(
+                                f"Converted '{pu}' to '{wsl_details.win_uri}'",
+                                file=sys.stderr,
+                            )
+                        if not (wsl_details.is_dir and open_not_select_directory):
+                            wsl_windows_paths.append(wsl_details.win_uri)
+                        else:
+                            wsl_windows_directories.append(wsl_details.win_uri)
+                        continue
                     else:
-                        uri = pu
-                        path = None
+                        if tools.filemanager_requires_path(file_manager=file_manager):
+                            path = Path(wsl_details.linux_path).resolve()
+                            uri = None
+                        else:
+                            path = None
+                            uri = Path(wsl_details.linux_path).resolve().as_uri()
                 else:
-                    if (
-                        current_platform == Platform.windows
-                        or file_manager in cannot_open_uris
-                    ):
-                        # Do not convert the path to a URI, as that can mess things up on WSL
-                        path = Path(pu)
-                        uri = None
+                    if tools.is_uri(pu):
+                        if tools.filemanager_requires_path(file_manager=file_manager):
+                            # Convert URI to regular path
+                            uri = None
+                            path = Path(path or tools.file_uri_to_path(pu))
+                        else:
+                            uri = pu
+                            path = None
                     else:
-                        uri = Path(pu).resolve().as_uri()
-                        path = None
+                        if tools.filemanager_requires_path(file_manager=file_manager):
+                            path = Path(pu)
+                            uri = None
+                        else:
+                            uri = Path(pu).resolve().as_uri()
+                            path = None
 
                 if file_manager_type == FileManagerType.dir_only_uri:
-                    # Show only the directory: do not attempt to select the file, because the file manager cannot
-                    # handle it.
+                    assert current_platform != Platform.windows
+                    # Show only the directory: do not attempt to select the file,
+                    # because the file manager cannot handle it.
                     if uri:
-                        # Do not use tools.file_url_to_path() here, because we need the parse_result,
-                        # and file_url_to_path() assumes file:// URIs.
-                        # In any case, this code block is not run under Windows, so there is no need
-                        # to use tools.file_url_to_path() to handle the file:/// case that urllib.parse.urlparse fails
-                        # with.
-                        parse_result = urllib.parse.urlparse(uri)
-                        path = Path(parse_result.path)
+                        # Do not use tools.file_url_to_path() here, because we need the
+                        # parse_result, and file_url_to_path() assumes file:// URIs.
+                        # In any case, this code block is not run under Windows, so
+                        # there is no need to use tools.file_url_to_path() to handle the
+                        # file:/// case that urllib.parse.urlparse fails with.
 
-                    if not path.is_dir() or not open_not_select_directory:
+                        parse_result = urllib.parse.urlparse(uri)
+                        path = Path(path)
+
+                    if not (path.is_dir() and open_not_select_directory):
                         path = path.parent
                     if uri:
                         uri = urllib.parse.urlunparse(
                             parse_result._replace(path=str(path))
                         )
                     else:
-                        path = tools.quote_path(path)
+                        path = tools.quote_path(path=path)
                     uris_and_paths.append(uri or str(path))
                 else:
+                    # whether to open the directory, or
+                    # select it (depends on file manager capabilities and option
+                    # open_not_select_directory):
                     open_directory = False
+
                     if (
                         open_not_select_directory
                         and file_manager_type != FileManagerType.dual_panel
                         or file_manager_type == FileManagerType.regular
                     ):
                         if uri:
-                            parse_result = urllib.parse.urlparse(uri)
-                            path = Path(parse_result.path)
+                            path = tools.file_uri_to_path(uri=uri)
+                            path = Path(path)
                             open_directory = path.is_dir()
-                        elif is_wsl:
-                            open_directory = linux.wsl_path_is_directory(path)
                         else:
                             open_directory = path.is_dir()
                         if open_directory:
@@ -264,11 +314,11 @@ def show_in_file_manager(
                                         parse_result._replace(path=str(path))
                                     )
                             if uri is None:
-                                path = tools.quote_path(path)
+                                path = tools.quote_path(path=path)
                             directories.append(uri or str(path))
                     if not open_directory:
-                        if uri is None and (is_wsl or file_manager != "explorer.exe"):
-                            path = tools.quote_path(path)
+                        if uri is None and file_manager != "explorer.exe":
+                            path = tools.quote_path(path=path)
                         uris_and_paths.append(uri or str(path))
 
         arg = ""
@@ -306,7 +356,6 @@ def show_in_file_manager(
                 file_manager=file_manager,
                 verbose=verbose,
             )
-
         if directories:
             if file_manager not in single_file_only:
                 directories = [" ".join(directories)]
@@ -316,10 +365,32 @@ def show_in_file_manager(
                 file_manager=file_manager,
                 verbose=verbose,
             )
+        if wsl_windows_paths:
+            _launch_file_manager(
+                uris_or_paths=wsl_windows_paths,
+                arg="/select,",
+                file_manager="explorer.exe",
+                verbose=verbose,
+            )
+        if wsl_windows_directories:
+            _launch_file_manager(
+                uris_or_paths=wsl_windows_directories,
+                arg="",
+                file_manager="explorer.exe",
+                verbose=verbose,
+            )
 
-    if not uris_and_paths and not directories:
+    if (
+        not uris_and_paths
+        and not directories
+        and not wsl_windows_paths
+        and not wsl_windows_directories
+    ):
         _launch_file_manager(
-            uris_or_paths=[""], arg="", file_manager=file_manager, verbose=verbose
+            uris_or_paths=[""],
+            arg="",
+            file_manager=file_manager,
+            verbose=verbose,
         )
 
 
@@ -345,7 +416,9 @@ def _launch_file_manager(
             args = shlex.split(cmd)
         else:
             args = cmd
-        subprocess.Popen(args)
+        proc = subprocess.Popen(args)
+        if is_wsl2 and file_manager == "explorer.exe":
+            proc.wait()
 
 
 def _file_manager_type(fm: str) -> FileManagerType:
@@ -355,7 +428,7 @@ def _file_manager_type(fm: str) -> FileManagerType:
     :return:
     """
 
-    if current_platform == Platform.windows:
+    if current_platform == Platform.windows or is_wsl1:
         return windows.windows_file_manager_type(fm)
     elif current_platform == Platform.linux:
         return linux.linux_file_manager_type(fm)
@@ -410,14 +483,23 @@ class Diagnostics:
         else:
             self.desktop = ""
 
+        if is_wsl:
+            if is_wsl2:
+                self.wsl_version = "2"
+            else:
+                self.wsl_version = "1"
+        else:
+            self.wsl_version = ""
+
     def __str__(self) -> str:
         desktop = (
             "Linux Desktop: {}\n".format(self.desktop.name) if self.desktop else ""
         )
+        wsl = "WSL version {}\n".format(self.wsl_version) if self.wsl_version else ""
         file_managers = "Stock: {}\nUser's choice: {}\nValid: {}".format(
             self.stock_file_manager, self.user_file_manager, self.valid_file_manager
         )
-        return desktop + file_managers
+        return desktop + wsl + file_managers
 
 
 def package_metadata():
@@ -491,7 +573,8 @@ def main() -> None:
     args = parser.parse_args()
 
     verbose = args.verbose
-    if args.debug:
+    debug = args.debug
+    if debug:
         print(Diagnostics())
         verbose = True
 
@@ -508,6 +591,7 @@ def main() -> None:
             path_or_uri=path_or_uri,
             verbose=verbose,
             open_not_select_directory=open_not_select_directory,
+            debug=debug,
         )
     except Exception as e:
         sys.stderr.write(str(e))

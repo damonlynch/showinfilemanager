@@ -4,12 +4,14 @@
 
 from enum import Enum
 import os
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import re
 import shlex
 import shutil
 import subprocess
-from typing import Optional, Tuple
+from typing import Optional, Tuple, NamedTuple
+from urllib.parse import urlparse, unquote, quote
+import urllib.request
 
 import packaging.version
 
@@ -205,36 +207,433 @@ def caja_supports_select() -> bool:
     return version >= packaging.version.Version("1.26")
 
 
-def wsl_path_is_directory(path: Path) -> bool:
+def translate_wsl_path(path: str, from_windows_to_wsl: bool) -> str:
     """
-    When running in WSL, detect if the path being passed is a directory
+    Use the WSL command wslpath to translate between Windows and WSL paths.
 
-    :param path: can be a Windows path e.g. C:/Windows, or a Linux path
-     e.g. /mnt/c/Windows
-    :return: True if a Windows or Linux directory, else False
+    Uses subprocesss. Exceptions not caught.
+
+    :param path: path to convert in string format
+    :param from_windows_to_wsl: whether to translate from Windows to WSL (True),
+     or WSL to Windows (False)
+    :return: the translated path
     """
-
-    # Simple case: Linux path
-    if path.is_dir():
-        return True
-    # Simple case: Linux file
-    if path.is_file():
-        return False
-    # Potential windows path: let's try convert it from a Windows path to a WSL path
-    try:
-        linux_path = (
-            subprocess.run(
-                ["wslpath", "-u", str(path)],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                check=True,
-            )
-            .stdout.decode()
-            .strip()
+    if from_windows_to_wsl:
+        arg = "-u"
+    else:
+        arg = "-w"
+    return (
+        subprocess.run(
+            ["wslpath", arg, path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=True,
         )
-    except subprocess.CalledProcessError:
+        .stdout.decode()
+        .strip()
+    )
+
+
+def wsl_path_is_for_windows(path_or_uri: str) -> bool:
+    """
+    When running in WSL, detect if the path being passed is in Windows or Linux
+
+    Reference: https://docs.microsoft.com/en-us/windows/wsl/filesystems
+
+    :param path_or_uri:
+    :return:
+    """
+
+    if path_or_uri.startswith("file://"):
+        # Assume valid URI
+        # Look for drive letter, windows style
+        if path_or_uri[3:4].isalpha() and path_or_uri[4:5] == ":":
+            return True
+        # Look for UNC host name: anything that does not start with a leading /
+        elif path_or_uri[7].isalpha():
+            return True
         return False
-    return Path(linux_path).is_dir()
+    else:
+        drive = PureWindowsPath(path_or_uri).drive
+        if drive:
+            # C:\
+            if drive[0].isalpha() and drive[1] == ":":
+                return True
+            # UNC share
+            if drive[:2] == r"\\":
+                return True
+        # Assume anything under /mnt is Windows
+        return path_or_uri.startswith("/mnt")
+
+
+class WSLTransformPathURI(NamedTuple):
+    is_win_location: bool
+    win_uri: str
+    win_path: str
+    linux_path: str
+    is_dir: bool
+    exists: bool
+
+
+def wsl_transform_path_uri(
+    path_or_uri: str, generate_win_path: bool
+) -> WSLTransformPathURI:
+    r"""
+    Transforms URI or path into path and URI suitable for working with WSL.
+
+    Detects if working with path or URI, and whether it is POSIX or Windows
+    Assumes all paths mounted on /mnt are located in Windows.
+
+    :param path_or_uri: path or URI to examine
+    :param generate_win_path: if passed a Linux path, generate path and URI for use in
+     Windows. Will do so anyway if path is located in Windows, not the Linux instance.
+    :return: Named Tuple containing values in WSLTranformPathURI
+
+    >>> import platform
+    >>> assert platform.system() == "Linux"
+    >>> r = wsl_transform_path_uri("file:///c:/Program%20Files/Common%20Files/", True)
+    >>> r.win_path
+    'C:\\Program Files\\Common Files'
+    >>> r.is_win_location
+    True
+    >>> r.linux_path
+    '/mnt/c/Program Files/Common Files'
+    >>> r.win_uri
+    'file:///c:/Program%20Files/Common%20Files/'
+    >>> r.is_win_location
+    True
+    >>> r.is_dir if r.exists else True
+    True
+    >>> r = wsl_transform_path_uri("file:///c:/Program%20Files/Common%20Files", True)
+    >>> r.win_uri
+    'file:///c:/Program%20Files/Common%20Files/'
+    >>> r = wsl_transform_path_uri("file:///c:/Program Files/Common Files", True)
+    >>> r.win_uri
+    'file:///c:/Program%20Files/Common%20Files/'
+    >>> r = wsl_transform_path_uri("file:///c:/Program%20Files/Barrier/barrier.conf", True)
+    >>> r.win_path
+    'C:\\Program Files\\Barrier\\barrier.conf'
+    >>> r.is_win_location
+    True
+    >>> r.linux_path
+    '/mnt/c/Program Files/Barrier/barrier.conf'
+    >>> r.is_dir if r.exists else False
+    False
+    >>> r.win_uri
+    'file:///c:/Program%20Files/Barrier/barrier.conf'
+    >>> from pathlib import Path
+    >>> home = Path.home()
+    >>> r = wsl_transform_path_uri(f"file://localhost{home}/.bashrc", True)
+    >>> r.is_dir if r.exists else False
+    False
+    >>> r.is_win_location
+    False
+    >>> r.linux_path # doctest: +ELLIPSIS
+    '/home/.../.bashrc'
+    >>> r.win_path  # doctest: +ELLIPSIS
+    '\\\\...\\...\\home\\...\\.bashrc'
+    >>> r.win_uri  # doctest: +ELLIPSIS
+    'file://.../.../home/.../.bashrc'
+    >>> r = wsl_transform_path_uri(f"file://{home}/.bashrc", True)
+    >>> r.is_dir
+    False
+    >>> r.is_win_location
+    False
+    >>> r.linux_path # doctest: +ELLIPSIS
+    '/home/.../.bashrc'
+    >>> r.win_path  # doctest: +ELLIPSIS
+    '\\\\...\\...\\home\\...\\.bashrc'
+    >>> r.win_uri  # doctest: +ELLIPSIS
+    'file://.../.../home/.../.bashrc'
+    >>> r = wsl_transform_path_uri(f"file://localhost{home}/my%20file.txt", True)
+    >>> r.is_dir if r.exists else False
+    False
+    >>> r.win_path if r.exists else r'\\wsl.localhost\Ubuntu-20.04\home\damon\my file.txt' # doctest: +ELLIPSIS
+    '\\\\...\\...\\home\\...\\my file.txt'
+    >>> r.is_win_location
+    False
+    >>> r.win_uri if r.exists else 'file://wsl$/Ubuntu-20.04/home/damon/my%20file.txt' # doctest: +ELLIPSIS
+    'file://.../.../home/.../my%20file.txt'
+    >>> r = wsl_transform_path_uri("file:///etc/fstab", True)
+    >>> r.exists
+    True
+    >>> r.is_dir
+    False
+    >>> r.linux_path
+    '/etc/fstab'
+    >>> r.is_win_location
+    False
+    >>> r.win_path  # doctest: +ELLIPSIS
+    '\\\\...\\...\\etc\\fstab'
+    >>> r.win_uri  # doctest: +ELLIPSIS
+    'file://.../.../etc/fstab'
+    >>> r = wsl_transform_path_uri("file:/etc/fstab", True)
+    >>> r.exists
+    True
+    >>> r.is_dir
+    False
+    >>> r.linux_path
+    '/etc/fstab'
+    >>> r.is_win_location
+    False
+    >>> r.win_path  # doctest: +ELLIPSIS
+    '\\\\...\\...\\etc\\fstab'
+    >>> r.win_uri  # doctest: +ELLIPSIS
+    'file://.../.../etc/fstab'
+    >>> r = wsl_transform_path_uri("file:///etc", True)
+    >>> r.exists
+    True
+    >>> r.is_dir
+    True
+    >>> r.linux_path
+    '/etc'
+    >>> r.is_win_location
+    False
+    >>> r.win_path  # doctest: +ELLIPSIS
+    '\\\\...\\...\\etc'
+    >>> r.win_uri  # doctest: +ELLIPSIS
+    'file://.../.../etc/'
+    >>> r = wsl_transform_path_uri("file:///etc", False)
+    >>> r.win_path
+    >>> r.win_uri
+    >>> r = wsl_transform_path_uri(f"file://{home}/dir with spaces", True)
+    >>> r.is_dir if r.exists else True
+    True
+    >>> r.linux_path  # doctest: +ELLIPSIS
+    '/home/.../dir with spaces'
+    >>> r.is_win_location
+    False
+    >>> r.win_path if r.exists else '\\\\wsl.localhost\\openSUSE-Leap-15.3\\home\\damon\\dir with spaces'  # doctest: +ELLIPSIS
+    '\\\\...\\...\\home\\...\\dir with spaces'
+    >>> r.win_uri if r.exists else 'file://wsl.localhost/openSUSE-Leap-15.3/home/damon/dir%20with%20spaces/'  # doctest: +ELLIPSIS
+    'file://.../.../home/.../dir%20with%20spaces/'
+    >>> r = wsl_transform_path_uri("file:///c:/Program%20Files/Common%20Files", True)
+    >>> r.is_win_location
+    True
+    >>> r.win_path
+    'C:\\Program Files\\Common Files'
+    >>> r.linux_path
+    '/mnt/c/Program Files/Common Files'
+    >>> r = wsl_transform_path_uri("file:///mnt/c/Program%20Files/", True)
+    >>> r.is_win_location
+    True
+    >>> r.exists
+    True
+    >>> r.is_dir
+    True
+    >>> r.win_path
+    'C:\\Program Files'
+    >>> r.linux_path
+    '/mnt/c/Program Files'
+    >>> r.win_uri
+    'file:///c:/Program%20Files/'
+    >>> r = wsl_transform_path_uri(r"C:\Program Files", True)
+    >>> r.is_win_location
+    True
+    >>> r.exists
+    True
+    >>> r.is_dir
+    True
+    >>> r.win_path
+    'C:\\Program Files'
+    >>> r.linux_path
+    '/mnt/c/Program Files'
+    >>> r.win_uri
+    'file:///c:/Program%20Files/'
+    >>> import os
+    >>> import pwd
+    >>> user = pwd.getpwuid(os.getuid())[0]
+    >>> r = wsl_transform_path_uri(f"\\\\wsl.localhost\\openSUSE-Leap-15.3\\home\\{user}\\My Photos", True)
+    >>> r.is_win_location if r.exists else False
+    False
+    >>> r.win_path # doctest: +ELLIPSIS
+    '\\\\wsl.localhost\\openSUSE-Leap-15.3\\home\\...\\My Photos'
+    >>> r.win_uri  # doctest: +ELLIPSIS
+    'file://wsl.localhost/openSUSE-Leap-15.3/home/.../My%20Photos...'
+    >>> r.linux_path if r.exists else "/home/damon/My Photos"  # doctest: +ELLIPSIS
+    '/home/.../My Photos'
+    >>> r = wsl_transform_path_uri("/mnt/c/Program Files/", True)
+    >>> r.is_win_location
+    True
+    >>> r.exists
+    True
+    >>> r.is_dir
+    True
+    >>> r.win_path
+    'C:\\Program Files'
+    >>> r.linux_path
+    '/mnt/c/Program Files'
+    >>> r.win_uri
+    'file:///c:/Program%20Files/'
+    >>> r = wsl_transform_path_uri(str(home), True)
+    >>> r.is_win_location
+    False
+    >>> r.exists
+    True
+    >>> r.is_dir
+    True
+    >>> r.win_path  # doctest: +ELLIPSIS
+    '\\\\...\\...\\home\\...'
+    >>> r.linux_path  # doctest: +ELLIPSIS
+    '/home/...'
+    >>> r.win_uri   # doctest: +ELLIPSIS
+    'file://.../.../home/.../'
+    >>> r = wsl_transform_path_uri(f"{home}/dir with spaces", True)
+    >>> r.is_win_location
+    False
+    >>> r.is_dir if r.exists else True
+    True
+    >>> r.linux_path  # doctest: +ELLIPSIS
+    '/home/.../dir with spaces'
+    >>> r.win_path if r.exists else '\\\\wsl.localhost\\openSUSE-Leap-15.3\\home\\damon\\dir with spaces'  # doctest: +ELLIPSIS
+    '\\\\...\\...\\home\\...\dir with spaces'
+    >>> r.win_uri  if r.exists else 'file://wsl.localhost/openSUSE-Leap-15.3/home/damon/dir%20with%20spaces/'  # doctest: +ELLIPSIS
+    'file://.../.../home/.../dir%20with%20spaces/'
+    >>> r = wsl_transform_path_uri(f"{home}/.bashrc", True)
+    >>> r.is_win_location
+    False
+    >>> r.is_dir if r.exists else False
+    False
+    >>> r.linux_path  # doctest: +ELLIPSIS
+    '/home/.../.bashrc'
+    >>> r.win_path  # doctest: +ELLIPSIS
+    '\\\\...\\...\\home\\...\.bashrc'
+    >>> r.win_uri  # doctest: +ELLIPSIS
+    'file://.../.../home/.../.bashrc'
+    >>> cwd = os.getcwd()
+    >>> os.chdir(home)
+    >>> r = wsl_transform_path_uri(".bashrc", True)
+    >>> r.linux_path   # doctest: +ELLIPSIS
+    '/home/.../.bashrc'
+    >>> r.win_path  # doctest: +ELLIPSIS
+    '\\\\...\\...\\home\\...\.bashrc'
+    >>> r.is_dir if r.exists else False
+    False
+    >>> r.is_win_location
+    False
+    >>> r.win_uri  # doctest: +ELLIPSIS
+    'file://.../.../home/.../.bashrc'
+    >>> os.chdir(cwd)
+    """
+
+    win_uri = None
+    win_path = None
+    linux_path = None
+    is_dir = None
+    exists = None
+    if path_or_uri.startswith("file:/"):
+        is_win_uri = False
+        parsed = urlparse(url=path_or_uri)
+        path = unquote(parsed.path)
+        netloc = parsed.netloc
+        if len(path) > 2 and path[0] == "/" and path[1].isalpha() and path[2] == ":":
+            is_win_uri = True
+            # Remove first forward slash from e.g. /c:/Program Files
+            path = path[1:]
+        elif netloc and netloc != "localhost":
+            is_win_uri = True
+
+        if is_win_uri:
+            win_uri = path_or_uri.replace(" ", "%20")
+            win_path = path
+            try:
+                linux_path = translate_wsl_path(path, from_windows_to_wsl=True)
+            except subprocess.CalledProcessError as e:
+                exists = False
+        else:
+            linux_path = path
+
+    else:
+        path = path_or_uri
+        if path.startswith("/") and not path.startswith("/mnt"):
+            linux_path = path
+        else:
+            # Path must be either a Windows style path, or a relative path on Posix.
+            # First, check if the path is Windows style, e.g. C:\Program Files
+            # Note that UNC shares are also considered drives
+            drive = PureWindowsPath(path).drive
+            is_unc = drive.startswith("\\\\")
+            if (drive and drive[0].isalpha() and drive[1] == ":") or is_unc:
+                win_path = path
+                try:
+                    linux_path = translate_wsl_path(path=path, from_windows_to_wsl=True)
+                except subprocess.CalledProcessError as e:
+                    exists = False
+
+                # Generate Windows URI
+                if is_unc:
+                    wuri = urllib.request.pathname2url(path.replace("\\", "/"))
+                    win_uri = f"file:{wuri}"
+                else:
+                    win_uri = wsl_path_to_uri_for_windows_explorer(linux_path)
+            else:
+                # relative path was passed
+                linux_path = str(Path(path).resolve())
+
+    if linux_path is None:
+        is_win_location = None
+    else:
+        lpath = Path(linux_path)
+        exists = lpath.exists()
+
+        is_win_location = linux_path.startswith("/mnt/")
+
+        if exists:
+            is_dir = lpath.is_dir()
+            if generate_win_path or is_win_location:
+                try:
+                    win_path = translate_wsl_path(
+                        path=linux_path, from_windows_to_wsl=False
+                    )
+                except subprocess.CalledProcessError as e:
+                    exists = False
+                if win_path and not win_uri:
+                    if not is_win_location:
+                        wuri = urllib.request.pathname2url(win_path.replace("\\", "/"))
+                        win_uri = f"file:{wuri}"
+                    else:
+                        win_uri = wsl_path_to_uri_for_windows_explorer(linux_path)
+
+    if is_dir:
+        if linux_path is not None:
+            if linux_path[-1] == "/":
+                linux_path = linux_path[:-1]
+        if win_path is not None:
+            if win_path[-1] == "\\":
+                win_path = win_path[:-1]
+        if win_uri is not None:
+            if win_uri[-1] != "/":
+                win_uri = f"{win_uri}/"
+
+    return WSLTransformPathURI(
+        is_win_location=is_win_location,
+        win_uri=win_uri,
+        win_path=win_path,
+        linux_path=linux_path,
+        is_dir=is_dir,
+        exists=exists,
+    )
+
+
+def wsl_path_to_uri_for_windows_explorer(path: str) -> str:
+    r"""
+    Convert a path to a URI accepted by Windows Explorer.
+
+    Windows URIs are different from Linux URIs. As Wikipedia points out, Window
+    specifies file:///c:/path/to/the%20file.txt
+    (note the three slashes after file:), and
+    file://hostname/path/to/the%20file.txt
+
+    :param path: path format like '/mnt/c/some/path', '/home/user', 'C:\some\path'
+    :return: a file URI accepted by Windows Explorer
+    """
+
+    assert not path.startswith("\\\\")
+    assert path.startswith("/mnt/")
+
+    path = urllib.request.pathname2url(path)
+    # Remove the /mnt portion, keep the drive letter, and insert a colon
+    return f"file://{path[4:6]}:{path[6:]}"
 
 
 class LinuxDesktop(Enum):
