@@ -1,7 +1,7 @@
 Changelog for Show in File Manager
 ==================================
 
-1.1.0 (2022-10-XX)
+1.1.0 (2022-10-29)
 ------------------
  - On WSL2, use a Linux file manager (if set) for WSL paths, and Windows 
    Explorer for Windows paths. If no Linux file manager is installed, use 

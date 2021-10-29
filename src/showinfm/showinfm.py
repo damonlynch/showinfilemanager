@@ -309,9 +309,7 @@ def show_in_file_manager(
                                 # So open the parent instead.
                                 path = path.parent
                                 if uri:
-                                    uri = urllib.parse.urlunparse(
-                                        parse_result._replace(path=str(path))
-                                    )
+                                    uri = path.as_uri()
                             if uri is None:
                                 path = tools.quote_path(path=path)
                             directories.append(uri or str(path))
