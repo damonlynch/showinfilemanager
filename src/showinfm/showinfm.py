@@ -97,9 +97,9 @@ def valid_file_manager() -> str:
     All exceptions are caught, except those if this platform is not supported by
     this package.
 
-    :return: If the user's default file manager is set and it is known by this
-     package, then return it. Otherwise return the stock file manager, if it
-     exists.
+    :return: If the user's default file manager is set and it is recognized
+     as valid by this package, then return it. Otherwise return the stock file
+     manager, if it exists.
     """
 
     if current_platform == Platform.windows or is_wsl1:
