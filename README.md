@@ -179,6 +179,9 @@ def show_in_file_manager(
      selecting it and displaying it in its parent directory.
     :param file_manager: executable name to use. If not specified, then
      valid_file_manager() will determine which file manager to use.
+    :param allow_conversion: allow this function to automatically convert paths
+     and URIs to the format needed by the file manager that will be called. Set
+     to False if passing non-standard URIs. Ignored when running under WSL.
     :param verbose: if True print command to be executed before launching
      it
     :param debug: if True print debugging information to stderr     

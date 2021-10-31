@@ -29,6 +29,8 @@ def is_uri(path_uri: str) -> bool:
     :return: True if probably a URI, else False
     """
 
+    if path_uri and path_uri.startswith('camera:/'):
+        return True
     return re.match("^%s$" % urivalidate.URI, path_uri, re.VERBOSE) is not None
 
 

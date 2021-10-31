@@ -1,6 +1,14 @@
 Changelog for Show in File Manager
 ==================================
 
+1.1.1 (2022-10-31)
+------------------
+ - Add `allow_conversion` switch to `show_in_file_manager()`. Set to False 
+   if passing non-standard URIs.
+ - Recognize non-standard URI prefix 'camera:/', used by KDE.
+ - Added function linux_desktop_humanize(), to make Linux desktop environment 
+   variable name values human friendly.
+
 1.1.0 (2022-10-29)
 ------------------
  - On WSL2, use a Linux file manager (if set) for WSL paths, and Windows 

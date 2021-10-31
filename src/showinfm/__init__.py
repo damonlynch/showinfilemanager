@@ -7,3 +7,5 @@ from showinfm.showinfm import (
     user_file_manager,
     stock_file_manager,
 )
+from showinfm.system.linux import linux_desktop, LinuxDesktop, linux_desktop_humanize
+from showinfm.constants import single_file_only, cannot_open_uris

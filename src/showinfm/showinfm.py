@@ -8,7 +8,6 @@ Open the system file manager and optionally select files in it.
 """
 
 import argparse
-
 try:
     import importlib.metadata as importlib_metadata
 except ImportError:
@@ -117,6 +116,7 @@ def show_in_file_manager(
     path_or_uri: Optional[Union[str, Sequence[str]]] = None,
     open_not_select_directory: Optional[bool] = True,
     file_manager: Optional[str] = None,
+    allow_conversion: bool = True,
     verbose: bool = False,
     debug: bool = False,
 ) -> None:
@@ -163,6 +163,9 @@ def show_in_file_manager(
      selecting it and displaying it in its parent directory.
     :param file_manager: executable name to use. If not specified, then
      valid_file_manager() will determine which file manager to use.
+    :param allow_conversion: allow this function to automatically convert paths
+     and URIs to the format needed by the file manager that will be called. Set
+     to False if passing non-standard URIs. Ignored when running under WSL.
     :param verbose: if True print command to be executed before launching
      it
     :param debug: if True print debugging information to stderr
@@ -243,7 +246,10 @@ def show_in_file_manager(
                             uri = Path(wsl_details.linux_path).resolve().as_uri()
                 else:
                     if tools.is_uri(pu):
-                        if tools.filemanager_requires_path(file_manager=file_manager):
+                        if (
+                            tools.filemanager_requires_path(file_manager=file_manager)
+                            and allow_conversion
+                        ):
                             # Convert URI to regular path
                             uri = None
                             path = Path(path or tools.file_uri_to_path(pu))
@@ -251,7 +257,10 @@ def show_in_file_manager(
                             uri = pu
                             path = None
                     else:
-                        if tools.filemanager_requires_path(file_manager=file_manager):
+                        if (
+                            tools.filemanager_requires_path(file_manager=file_manager)
+                            or not allow_conversion
+                        ):
                             path = Path(pu)
                             uri = None
                         else:

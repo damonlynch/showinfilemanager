@@ -3,6 +3,7 @@
 
 
 from enum import Enum
+import functools
 import os
 from pathlib import Path, PureWindowsPath
 import re
@@ -10,7 +11,7 @@ import shlex
 import shutil
 import subprocess
 from typing import Optional, Tuple, NamedTuple
-from urllib.parse import urlparse, unquote, quote
+from urllib.parse import urlparse, unquote
 import urllib.request
 
 import packaging.version
@@ -659,6 +660,30 @@ class LinuxDesktop(Enum):
     unknown = 20
 
 
+LinuxDesktopHumanize = dict(
+    gnome="Gnome",
+    unity="Unity",
+    cinnamon="Cinnamon",
+    kde="KDE",
+    xfce="XFCE",
+    mate="Mate",
+    lxde="LXDE",
+    lxqt="LxQt",
+    ubuntugnome="Ubuntu Gnome",
+    popgnome="Pop Gnome",
+    deepin="Deepin",
+    zorin="Zorin",
+    ukui="UKUI",
+    pantheon="Pantheon",
+    enlightenment="Enlightenment",
+    wsl="WSL1",
+    wsl2="WSL2",
+    cutefish="Cutefish",
+    lumina="Lumina",
+    unknown="Unknown",
+)
+
+
 LinuxDesktopFamily = dict(
     ubuntugnome="gnome",
     popgnome="gnome",
@@ -723,6 +748,7 @@ def detect_wsl() -> bool:
     return p.lower().find("microsoft") > 0
 
 
+@functools.lru_cache(maxsize=None)
 def linux_desktop() -> LinuxDesktop:
     """
     Determine Linux desktop environment
@@ -758,3 +784,12 @@ def linux_desktop() -> LinuxDesktop:
         return LinuxDesktop[env]
     except KeyError:
         raise Exception("The desktop environment {} is unknown".format(env))
+
+
+def linux_desktop_humanize(desktop: LinuxDesktop) -> str:
+    """
+    Make LinuxDesktop name human readable.
+    :return: desktop name spelled out
+    """
+
+    return LinuxDesktopHumanize[desktop.name]
