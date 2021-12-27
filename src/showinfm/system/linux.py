@@ -765,7 +765,7 @@ def linux_desktop() -> LinuxDesktop:
         else:
             raise Exception("The value for XDG_CURRENT_DESKTOP is not set")
 
-    if env == "unity:unity7":
+    if env in ("unity:unity7", "unity:unity7:ubuntu"):
         env = "unity"
     elif env == "x-cinnamon":
         env = "cinnamon"
