@@ -1,0 +1,19 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: Show in File Manager
+Upstream-Contact: Damon Lynch <damonlynch@gmail.com>
+Source: https://github.com/damonlynch/showinfilemanager
+
+Files: *
+Copyright: 2016-2021, Damon Lynch
+License: MIT
+
+Files: showinfm/system/urivalidate.py
+Copyright: 2009-2015, Mark Nottingham
+License: MIT
+
+Files: showinfm/system/tools.py
+Copyright: 2008-2021, The pip developers  (code portions)
+  2021, Damon Lynch
+License: MIT
+
+

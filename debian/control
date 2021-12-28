@@ -1,0 +1,28 @@
+Source: show-in-file-manager
+Section: python
+Priority: optional
+Maintainer: Damon Lynch <damonlynch@gmail.com>
+Uploaders: Damon Lynch <damonlynch@gmail.com>
+Build-Depends:
+ debhelper-compat (= 13),
+ dh-python-pep517,
+ dh-sequence-python3,
+ python3-all,
+ python3-setuptools
+Standards-Version: 4.6.0
+Homepage: https://github.com/damonlynch/showinfilemanager
+Vcs-Git: https://github.com/damonlynch/showinfilemanager.git
+Vcs-Browser: https://github.com/damonlynch/showinfilemanager
+Rules-Requires-Root: no
+
+Package: python3-showinfilemanager
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends}, ${python3:Depends}
+Description: open the system file manager and optionally select files in it. The
+ point is not to open the files, but to select them in the file manager, thereby
+ highlighting the files and allowing the user to quickly do something with them.
+ .
+ Functions when called from the command line or within a Python 3 script. Cross-
+ platform, it supports 19 file managers, and works within the Windows Subsystem
+ for Linux (WSL) versions 1 and 2.
