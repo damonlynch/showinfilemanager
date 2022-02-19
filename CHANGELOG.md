@@ -1,12 +1,16 @@
 Changelog for Show in File Manager
 ==================================
 
+1.1.3 (2022-02-18)
+------------------
+ - Fix bug [#3](https://github.com/damonlynch/showinfilemanager/issues/3):
+   Missing dependency on packaging.
+
 1.1.2 (2021-12-27)
 ------------------
-
  - Add check for "unity:unity7:ubuntu" in environment variable
    XDG_CURRENT_DESKTOP. 
-   See https://github.com/damonlynch/rapid-photo-downloader/issues/46
+   See https://github.com/damonlynch/rapid-photo-downloader/issues/46.
 
 1.1.1 (2021-10-31)
 ------------------
