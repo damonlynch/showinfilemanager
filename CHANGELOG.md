@@ -1,6 +1,10 @@
 Changelog for Show in File Manager
 ==================================
 
+1.1.4 (2022-03-04)
+------------------
+ - Move debian directory into doc
+
 1.1.3 (2022-02-18)
 ------------------
  - Fix bug [#3](https://github.com/damonlynch/showinfilemanager/issues/3):
