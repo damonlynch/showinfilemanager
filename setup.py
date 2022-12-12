@@ -1,5 +1,5 @@
-import distutils  # Deprecated in Python 3.10, but no replacement for distutils.log as yet
 import os
+import logging
 from pathlib import Path
 from setuptools import Command, setup
 
@@ -32,9 +32,10 @@ class BuildDocsCommand(Command):
             fn, ext = os.path.splitext(in_file)
             # Assume input directory doc and output directory man
             command = ['pandoc', 'doc/{}'.format(in_file), '-s', '-t', 'man', '-o', 'man/{}'.format(fn)]
-            self.announce('Running command: %s' % ' '.join(command), level=distutils.log.INFO)
+            self.announce('Running command: %s' % ' '.join(command), level=logging.INFO)
             self.spawn(command)
 
 
 if __name__ == "__main__":
     setup(cmdclass={'build_pandoc': BuildDocsCommand})
+    
