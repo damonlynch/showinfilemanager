@@ -2,24 +2,24 @@
 # SPDX - License - Identifier: MIT
 
 
-from enum import Enum
 import functools
 import os
-from pathlib import Path, PureWindowsPath
 import re
 import shlex
 import shutil
 import subprocess
-from typing import Optional, Tuple, NamedTuple
-from urllib.parse import urlparse, unquote
 import urllib.request
+from enum import Enum
+from pathlib import Path, PureWindowsPath
+from typing import NamedTuple, Optional, Tuple
+from urllib.parse import unquote, urlparse
 
 import packaging.version
 
 try:
-    from xdg.DesktopEntry import DesktopEntry
-    from xdg import BaseDirectory
     import xdg
+    from xdg import BaseDirectory
+    from xdg.DesktopEntry import DesktopEntry
 except ImportError:
     pass
 
@@ -49,15 +49,16 @@ def stock_linux_file_manager() -> str:
 
         return StandardLinuxFileManager[desktop]
     except KeyError:
-        raise Exception("The desktop {} is unknown".format(desktop))
+        raise Exception(f"The desktop {desktop} is unknown")
 
 
 def user_linux_file_manager() -> str:
     """
     Determine the file manager for this desktop as set by the user.
 
-    xdg-mime is used to get a .desktop file, from which the executable name is extracted.
-    The executable is not examined to see if it is valid or if it even exists.
+    xdg-mime is used to get a .desktop file, from which the executable name is
+    extracted. The executable is not examined to see if it is valid or if it even
+    exists.
 
     All exceptions are raised.
 
@@ -67,11 +68,9 @@ def user_linux_file_manager() -> str:
     xdg_cmd = "xdg-mime query default inode/directory"
     cmd = shlex.split(xdg_cmd)
     try:
-        desktop_file = subprocess.check_output(
-            cmd, universal_newlines=True
-        )  # type: str
-    except:
-        raise Exception("Could not determine file manager using {}".format(xdg_cmd))
+        desktop_file = subprocess.check_output(cmd, universal_newlines=True)  # type: str
+    except Exception:
+        raise Exception(f"Could not determine file manager using {xdg_cmd}")
 
     # Remove new line character from output
     desktop_file = desktop_file[:-1]
@@ -84,14 +83,14 @@ def user_linux_file_manager() -> str:
             p = str(path)
             try:
                 desktop_entry = DesktopEntry(p)
-            except:
-                raise Exception("Could not open desktop entry at {}".format(p))
+            except Exception:
+                raise Exception(f"Could not open desktop entry at {p}")
             try:
                 desktop_entry.parse(p)
             except xdg.Exceptions.ParsingError:
-                raise Exception("Could not parse desktop entry at {}".format(p))
-            except:
-                raise Exception("Desktop entry at {} might be malformed".format(p))
+                raise Exception(f"Could not parse desktop entry at {p}")
+            except Exception:
+                raise Exception(f"Desktop entry at {p} might be malformed")
 
             fm = desktop_entry.getExec()
 
@@ -121,12 +120,12 @@ def valid_linux_file_manager() -> str:
 
     try:
         stock = stock_linux_file_manager()
-    except:
+    except Exception:
         stock = ""
 
     try:
         user_fm = user_linux_file_manager()
-    except:
+    except Exception:
         user_fm = ""
     else:
         if user_fm not in known_linux_file_managers():
@@ -135,10 +134,7 @@ def valid_linux_file_manager() -> str:
     if not (user_fm or stock):
         return ""
 
-    if not user_fm:
-        fm = stock
-    else:
-        fm = user_fm
+    fm = user_fm if user_fm else stock
 
     if fm and shutil.which(fm):
         return fm
@@ -146,7 +142,7 @@ def valid_linux_file_manager() -> str:
         return ""
 
 
-def known_linux_file_managers() -> Tuple[str]:
+def known_linux_file_managers() -> Tuple[str, ...]:
     """
     Generate a collection of Linux file managers this module knows about
 
@@ -219,17 +215,9 @@ def translate_wsl_path(path: str, from_windows_to_wsl: bool) -> str:
      or WSL to Windows (False)
     :return: the translated path
     """
-    if from_windows_to_wsl:
-        arg = "-u"
-    else:
-        arg = "-w"
+    arg = "-u" if from_windows_to_wsl else "-w"
     return (
-        subprocess.run(
-            ["wslpath", arg, path],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            check=True,
-        )
+        subprocess.run(["wslpath", arg, path], capture_output=True, check=True)
         .stdout.decode()
         .strip()
     )
@@ -248,7 +236,7 @@ def wsl_path_is_for_windows(path_or_uri: str) -> bool:
     if path_or_uri.startswith("file://"):
         # Assume valid URI
         # Look for drive letter, windows style
-        if path_or_uri[3:4].isalpha() and path_or_uri[4:5] == ":":
+        if path_or_uri[3:4].isalpha() and path_or_uri[4:5] == ":":  # noqa: SIM114
             return True
         # Look for UNC host name: anything that does not start with a leading /
         elif path_or_uri[7].isalpha():
@@ -311,7 +299,8 @@ def wsl_transform_path_uri(
     >>> r = wsl_transform_path_uri("file:///c:/Program Files/Common Files", True)
     >>> r.win_uri
     'file:///c:/Program%20Files/Common%20Files/'
-    >>> r = wsl_transform_path_uri("file:///c:/Program%20Files/Barrier/barrier.conf", True)
+    >>> f ="file:///c:/Program%20Files/Barrier/barrier.conf"
+    >>> r = wsl_transform_path_uri(f, True)
     >>> r.win_path
     'C:\\Program Files\\Barrier\\barrier.conf'
     >>> r.is_win_location
@@ -349,11 +338,13 @@ def wsl_transform_path_uri(
     >>> r = wsl_transform_path_uri(f"file://localhost{home}/my%20file.txt", True)
     >>> r.is_dir if r.exists else False
     False
-    >>> r.win_path if r.exists else r'\\wsl.localhost\Ubuntu-20.04\home\damon\my file.txt' # doctest: +ELLIPSIS
+    >>> f = r'\\wsl.localhost\Ubuntu-20.04\home\damon\my file.txt'
+    >>> r.win_path if r.exists else f # doctest: +ELLIPSIS
     '\\\\...\\...\\home\\...\\my file.txt'
     >>> r.is_win_location
     False
-    >>> r.win_uri if r.exists else 'file://wsl$/Ubuntu-20.04/home/damon/my%20file.txt' # doctest: +ELLIPSIS
+    >>> f = 'file://wsl$/Ubuntu-20.04/home/damon/my%20file.txt'
+    >>> r.win_uri if r.exists else f # doctest: +ELLIPSIS
     'file://.../.../home/.../my%20file.txt'
     >>> r = wsl_transform_path_uri("file:///etc/fstab", True)
     >>> r.exists
@@ -404,9 +395,11 @@ def wsl_transform_path_uri(
     '/home/.../dir with spaces'
     >>> r.is_win_location
     False
-    >>> r.win_path if r.exists else '\\\\wsl.localhost\\openSUSE-Leap-15.3\\home\\damon\\dir with spaces'  # doctest: +ELLIPSIS
+    >>> f = '\\\\wsl.localhost\\openSUSE-Leap-15.3\\home\\damon\\dir with spaces'
+    >>> r.win_path if r.exists else f  # doctest: +ELLIPSIS
     '\\\\...\\...\\home\\...\\dir with spaces'
-    >>> r.win_uri if r.exists else 'file://wsl.localhost/openSUSE-Leap-15.3/home/damon/dir%20with%20spaces/'  # doctest: +ELLIPSIS
+    >>> f = 'file://wsl.localhost/openSUSE-Leap-15.3/home/damon/dir%20with%20spaces/'
+    >>> r.win_uri if r.exists else f  # doctest: +ELLIPSIS
     'file://.../.../home/.../dir%20with%20spaces/'
     >>> r = wsl_transform_path_uri("file:///c:/Program%20Files/Common%20Files", True)
     >>> r.is_win_location
@@ -444,7 +437,8 @@ def wsl_transform_path_uri(
     >>> import os
     >>> import pwd
     >>> user = pwd.getpwuid(os.getuid())[0]
-    >>> r = wsl_transform_path_uri(f"\\\\wsl.localhost\\openSUSE-Leap-15.3\\home\\{user}\\My Photos", True)
+    >>> f = f"\\\\wsl.localhost\\openSUSE-Leap-15.3\\home\\{user}\\My Photos"
+    >>> r = wsl_transform_path_uri(f, True)
     >>> r.is_win_location if r.exists else False
     False
     >>> r.win_path # doctest: +ELLIPSIS
@@ -486,9 +480,11 @@ def wsl_transform_path_uri(
     True
     >>> r.linux_path  # doctest: +ELLIPSIS
     '/home/.../dir with spaces'
-    >>> r.win_path if r.exists else '\\\\wsl.localhost\\openSUSE-Leap-15.3\\home\\damon\\dir with spaces'  # doctest: +ELLIPSIS
+    >>> f = '\\\\wsl.localhost\\openSUSE-Leap-15.3\\home\\damon\\dir with spaces'
+    >>> r.win_path if r.exists else f  # doctest: +ELLIPSIS
     '\\\\...\\...\\home\\...\dir with spaces'
-    >>> r.win_uri  if r.exists else 'file://wsl.localhost/openSUSE-Leap-15.3/home/damon/dir%20with%20spaces/'  # doctest: +ELLIPSIS
+    >>> f = 'file://wsl.localhost/openSUSE-Leap-15.3/home/damon/dir%20with%20spaces/'
+    >>> r.win_uri  if r.exists else f  # doctest: +ELLIPSIS
     'file://.../.../home/.../dir%20with%20spaces/'
     >>> r = wsl_transform_path_uri(f"{home}/.bashrc", True)
     >>> r.is_win_location
@@ -539,7 +535,7 @@ def wsl_transform_path_uri(
             win_path = path
             try:
                 linux_path = translate_wsl_path(path, from_windows_to_wsl=True)
-            except subprocess.CalledProcessError as e:
+            except subprocess.CalledProcessError:
                 exists = False
         else:
             linux_path = path
@@ -558,7 +554,7 @@ def wsl_transform_path_uri(
                 win_path = path
                 try:
                     linux_path = translate_wsl_path(path=path, from_windows_to_wsl=True)
-                except subprocess.CalledProcessError as e:
+                except subprocess.CalledProcessError:
                     exists = False
 
                 # Generate Windows URI
@@ -586,7 +582,7 @@ def wsl_transform_path_uri(
                     win_path = translate_wsl_path(
                         path=linux_path, from_windows_to_wsl=False
                     )
-                except subprocess.CalledProcessError as e:
+                except subprocess.CalledProcessError:
                     exists = False
                 if win_path and not win_uri:
                     if not is_win_location:
@@ -596,15 +592,12 @@ def wsl_transform_path_uri(
                         win_uri = wsl_path_to_uri_for_windows_explorer(linux_path)
 
     if is_dir:
-        if linux_path is not None:
-            if linux_path[-1] == "/":
-                linux_path = linux_path[:-1]
-        if win_path is not None:
-            if win_path[-1] == "\\":
-                win_path = win_path[:-1]
-        if win_uri is not None:
-            if win_uri[-1] != "/":
-                win_uri = f"{win_uri}/"
+        if linux_path is not None and linux_path[-1] == "/":
+            linux_path = linux_path[:-1]
+        if win_path is not None and win_path[-1] == "\\":
+            win_path = win_path[:-1]
+        if win_uri is not None and win_uri[-1] != "/":
+            win_uri = f"{win_uri}/"
 
     return WSLTransformPathURI(
         is_win_location=is_win_location,
@@ -773,9 +766,7 @@ def linux_desktop() -> LinuxDesktop:
         env = "ubuntugnome"
     elif env == "pop:gnome":
         env = "popgnome"
-    elif env == "gnome-classic:gnome":
-        env = "gnome"
-    elif env == "budgie:gnome":
+    elif env in ("gnome-classic:gnome", "budgie:gnome"):
         env = "gnome"
     elif env == "zorin:gnome":
         env = "zorin"
@@ -783,7 +774,7 @@ def linux_desktop() -> LinuxDesktop:
     try:
         return LinuxDesktop[env]
     except KeyError:
-        raise Exception("The desktop environment {} is unknown".format(env))
+        raise Exception(f"The desktop environment {env} is unknown")
 
 
 def linux_desktop_humanize(desktop: LinuxDesktop) -> str:

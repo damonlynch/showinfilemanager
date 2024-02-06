@@ -1,6 +1,11 @@
 Changelog for Show in File Manager
 ==================================
 
+1.1.5 (2024-xx-xx)
+------------------
+ - Format and lint using ruff. Drop black.
+ - Drop Python 3.6 and 3.7 support.
+
 1.1.4 (2022-03-04)
 ------------------
  - Move debian directory into doc

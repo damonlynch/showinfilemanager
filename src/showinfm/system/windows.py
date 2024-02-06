@@ -1,22 +1,20 @@
 # Copyright (c) 2021 Damon Lynch
 # SPDX - License - Identifier: MIT
 
+import contextlib
 from pathlib import Path
 from typing import List, Optional
 
-try:
+with contextlib.suppress(ImportError):
     from win32com.shell import shell
-except ImportError:
-    pass
 
+from ..constants import FileManagerType
 from .tools import (
+    directories_and_their_files,
+    file_uri_to_path,
     is_uri,
     path_to_file_uri,
-    file_uri_to_path,
-    directories_and_their_files,
 )
-from ..constants import FileManagerType
-
 
 WindowsFileManagerBehavior = {}
 WindowsFileManagerBehavior["doublecmd.exe"] = FileManagerType.dual_panel
@@ -80,7 +78,7 @@ def launch_file_explorer(paths: List[str], verbose: Optional[bool] = False) -> N
 
     if folder_contents:
         desktop = shell.SHGetDesktopFolder()
-        for folder in folder_contents.keys():
+        for folder in folder_contents:
             folder_pidl = shell.SHILCreateFromPath(folder, 0)[0]
             shell_folder = desktop.BindToObject(
                 folder_pidl, None, shell.IID_IShellFolder
@@ -94,9 +92,9 @@ def launch_file_explorer(paths: List[str], verbose: Optional[bool] = False) -> N
             if verbose:
                 files = '", "'.join(folder_contents[folder])
                 if files:
-                    files = '"{}"'.format(files)
+                    files = f'"{files}"'
                 print(
                     "Executing Windows shell to open file "
-                    'explorer at "{}", selecting {}'.format(folder, files)
+                    f'explorer at "{folder}", selecting {files}'
                 )
             shell.SHOpenFolderAndSelectItems(folder_pidl, to_select, 0)

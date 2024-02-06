@@ -1,4 +1,4 @@
-# Copyright (c) 2016-2021 Damon Lynch
+# Copyright (c) 2016-2024 Damon Lynch
 # SPDX - License - Identifier: MIT
 
 """
@@ -8,24 +8,19 @@ Open the system file manager and optionally select files in it.
 """
 
 import argparse
-try:
-    import importlib.metadata as importlib_metadata
-except ImportError:
-    import importlib_metadata
+import importlib.metadata
 import os
-from pathlib import Path
 import platform
 import shlex
 import shutil
 import subprocess
 import sys
-from typing import Optional, Union, Sequence, List
 import urllib.parse
+from pathlib import Path
+from typing import List, Optional, Sequence, Union
 
-
-from .constants import FileManagerType, Platform, single_file_only, cannot_open_uris
-from .system import current_platform, is_wsl, is_wsl2, is_wsl1
-from .system import linux, tools, windows
+from .constants import FileManagerType, Platform, single_file_only
+from .system import current_platform, is_wsl, is_wsl1, is_wsl2, linux, tools, windows
 
 _valid_file_manager_probed = False
 _valid_file_manager = None
@@ -183,7 +178,7 @@ def show_in_file_manager(
     else:
         try:
             file_manager_type = _file_manager_type(file_manager)
-        except:
+        except Exception:
             file_manager_type = None
 
     if not (file_manager or is_wsl2):
@@ -414,14 +409,11 @@ def _launch_file_manager(
     """
 
     for u in uris_or_paths:
-        cmd = "{} {}{}".format(file_manager, arg, u)
+        cmd = f"{file_manager} {arg}{u}"
         if verbose:
             print("Executing", cmd)
         # Do not check current_platform here, it makes no sense
-        if platform.system() != "Windows":
-            args = shlex.split(cmd)
-        else:
-            args = cmd
+        args = shlex.split(cmd) if platform.system() != "Windows" else cmd
         proc = subprocess.Popen(args)
         if is_wsl2 and file_manager == "explorer.exe":
             proc.wait()
@@ -484,7 +476,7 @@ class Diagnostics:
         if current_platform == Platform.linux:
             try:
                 self.desktop = linux.linux_desktop()
-            except:
+            except Exception:
                 self.desktop = linux.LinuxDesktop.unknown
         else:
             self.desktop = ""
@@ -499,9 +491,9 @@ class Diagnostics:
 
     def __str__(self) -> str:
         desktop = (
-            "Linux Desktop: {}\n".format(self.desktop.name) if self.desktop else ""
+            f"Linux Desktop: {self.desktop.name}\n" if self.desktop else ""
         )
-        wsl = "WSL version {}\n".format(self.wsl_version) if self.wsl_version else ""
+        wsl = f"WSL version {self.wsl_version}\n" if self.wsl_version else ""
         file_managers = "Stock: {}\nUser's choice: {}\nValid: {}".format(
             self.stock_file_manager, self.user_file_manager, self.valid_file_manager
         )
@@ -516,8 +508,8 @@ def package_metadata():
     """
 
     try:
-        version = importlib_metadata.version("show-in-file-manager")
-    except:
+        version = importlib.metadata.version("show-in-file-manager")
+    except Exception:
         version = "Unknown version"
         summary = (
             "Platform independent Python module to open the system file manager "
@@ -525,7 +517,7 @@ def package_metadata():
         )
 
     else:
-        metadata = importlib_metadata.metadata("show-in-file-manager")
+        metadata = importlib.metadata.metadata("show-in-file-manager")
         summary = metadata["summary"]
 
     return version, summary
@@ -546,7 +538,7 @@ def parser_options(formatter_class=argparse.HelpFormatter):
     )
 
     parser.add_argument(
-        "--version", action="version", version="%(prog)s {}".format(version)
+        "--version", action="version", version=f"%(prog)s {version}"
     )
 
     parser.add_argument("-f", "--file-manager", help="file manager to run")

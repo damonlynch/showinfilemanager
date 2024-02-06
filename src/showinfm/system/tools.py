@@ -1,21 +1,18 @@
-# Copyright (c) 2021 Damon Lynch
+# Copyright (c) 2021-2024 Damon Lynch
 # Some portions Copyright (c) 2008-2021 The pip developers
 # SPDX - License - Identifier: MIT
 
-from collections import defaultdict
 import os
-from pathlib import Path
 import re
 import shlex
-import sys
-from typing import List, DefaultDict, Optional
+from collections import defaultdict
+from pathlib import Path
+from typing import DefaultDict, List
+from urllib.parse import urljoin, urlparse
+from urllib.request import pathname2url, url2pathname
 
-from urllib.parse import urlparse, unquote, urljoin
-from urllib.request import url2pathname, pathname2url
-
-from . import urivalidate
-from . import current_platform, is_wsl2
 from ..constants import Platform, cannot_open_uris
+from . import current_platform, urivalidate
 
 
 def filemanager_requires_path(file_manager: str) -> bool:
@@ -47,7 +44,7 @@ def quote_path(path: Path) -> Path:
 
     :param path: path to quote, if necessary
     :param target_platform: platform the file manager command will be executed on
-    :return: double quoted path
+    :return: double-quoted path
     """
 
     p = str(path)
@@ -56,10 +53,10 @@ def quote_path(path: Path) -> Path:
 
         if re.match("""'(.*)'""", p) is not None:
             # Replace single quotes with double quotes
-            return Path('"{}"'.format(p[1:-1]))
+            return Path(f'"{p[1:-1]}"')
         if re.match(r"""\"(.*)\"""", p) is None:
             # Add double quotes where there was no quoting at all
-            return Path('"{}"'.format(path))
+            return Path(f'"{path}"')
     else:
         if not (p[0] in ('"', "'") and p[-1] == p[0]):
             return Path(shlex.quote(p))
@@ -88,11 +85,11 @@ def file_uri_to_path(uri: str) -> str:
     run with a URI like file:///D:/some/directory
 
     Taken from https://stackoverflow.com/a/61922504/592623
-    and modified by Damon Lynch 2021
+    and modified by Damon Lynch 2021, 2024
     """
 
     parsed = urlparse(uri)
-    host = "{0}{0}{mnt}{0}".format(os.path.sep, mnt=parsed.netloc)
+    host = f"{os.path.sep}{os.path.sep}{parsed.netloc}{os.path.sep}"
     p = os.path.normpath(os.path.join(host, url2pathname(parsed.path)))
     return p
 

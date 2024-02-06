@@ -1,6 +1,7 @@
-import os
 import logging
+import os
 from pathlib import Path
+
 from setuptools import Command, setup
 
 
@@ -33,12 +34,12 @@ class BuildDocsCommand(Command):
             # Assume input directory doc and output directory man
             command = [
                 "pandoc",
-                "doc/{}".format(in_file),
+                f"doc/{in_file}",
                 "-s",
                 "-t",
                 "man",
                 "-o",
-                "man/{}".format(fn),
+                f"man/{fn}",
             ]
             self.announce("Running command: %s" % " ".join(command), level=logging.INFO)
             self.spawn(command)

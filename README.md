@@ -1,6 +1,6 @@
 # Show in File Manager
 
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 **Show in File Manager** is a Python package to open the system file manager 
 and optionally select files in it. The point is not to _open_ the files, 
@@ -22,7 +22,7 @@ Commands like these open the file manager, ideally with the files selected:
 With **Show in File Manager**, your Python program or command line script 
 can do the same, with minimum effort from you.
 Although this package provides several functions to assist in identifying 
-the the system's file managers, in most circumstances you need to call only 
+the system's file managers, in most circumstances you need to call only 
 one function, the function `show_in_file_manager`, and it should just work.
 
 This package aspires to be platform independent, but it currently supports 
