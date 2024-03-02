@@ -32,7 +32,7 @@ def stock_linux_file_manager() -> str:
     """
     Get stock (system default) file manager for the desktop environment.
 
-    Looks up value only if the the desktop environment can be determined.
+    Looks up value only if the desktop environment can be determined.
 
     All exceptions are raised.
 
@@ -68,7 +68,7 @@ def user_linux_file_manager() -> str:
     xdg_cmd = "xdg-mime query default inode/directory"
     cmd = shlex.split(xdg_cmd)
     try:
-        desktop_file = subprocess.check_output(cmd, universal_newlines=True)  # type: str
+        desktop_file: str = subprocess.check_output(cmd, universal_newlines=True)
     except Exception:
         raise Exception(f"Could not determine file manager using {xdg_cmd}")
 
