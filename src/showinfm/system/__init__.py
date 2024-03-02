@@ -1,8 +1,9 @@
 # Copyright (c) 2021 Damon Lynch
 # SPDX - License - Identifier: MIT
 
-from ..constants import Platform
 import platform
+
+from ..constants import Platform
 from . import linux
 
 system = platform.system()
