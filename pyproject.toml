@@ -1,9 +1,20 @@
 [build-system]
 requires = [
+    "argparse-manpage[setuptools]",
     "setuptools>=61.2",
     "wheel"
 ]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.cmdclass]
+build_py = "build_manpages.build_py"
+install = "build_manpages.install"
+build_manpages = "build_manpages.build_manpages"
+
+[tool.build_manpages]
+manpages = [
+    "man/showinfilemanager.1:function=get_parser:pyfile=src/showinfm/argumentsparse.py",
+]
 
 [project]
 name = "show-in-file-manager"

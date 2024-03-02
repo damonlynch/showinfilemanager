@@ -1,4 +1,3 @@
 include CHANGELOG.md
 exclude rundoctest.py
 graft man
-graft doc

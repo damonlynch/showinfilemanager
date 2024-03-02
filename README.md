@@ -37,11 +37,6 @@ It works with 19 [supported file managers](#supported-file-managers).
 python3 -m pip install show-in-file-manager
 ```
 
-Generate the man page:
-```bash
-python3 setup.py build_pandoc
-```
-
 You can import it as a Python module:
 ```python
 from showinfm import show_in_file_manager

@@ -1,8 +1,12 @@
 Changelog for Show in File Manager
 ==================================
 
-1.1.5 (2024-xx-xx)
+1.1.5 (2024-03-xx)
 ------------------
+ - Drop setup.py and setup.cfg in favor of pyproject.toml.
+ - Purge doc directory.
+ - New build dependency: [argparse-manpage](https://github.com/praiskup/argparse-manpage)
+ - Generate man page with argparse-manpage instead of pandoc.
  - Format and lint using ruff. Drop black.
  - Drop Python 3.6 and 3.7 support.
 
