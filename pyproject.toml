@@ -1,9 +1,56 @@
 [build-system]
 requires = [
-    "setuptools>=46.4.0",
+    "setuptools>=61.2",
     "wheel"
 ]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "show-in-file-manager"
+version = "1.1.5"
+authors = [{name = "Damon Lynch", email = "damonlynch@gmail.com"}]
+description = "Open the system file manager and select files in it"
+classifiers = [
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows :: Windows 10",
+    "Operating System :: Microsoft :: Windows :: Windows 11",
+    "Operating System :: POSIX :: Linux",
+    "Development Status :: 5 - Production/Stable",
+    "Topic :: Desktop Environment :: File Managers",
+    "Typing :: Typed",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "pyxdg>=0.25; platform_system=='Linux'",
+    "packaging",
+    "pywin32>=301; platform_system=='Windows'",
+]
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown"
+
+[project.urls]
+Homepage = "https://github.com/damonlynch/showinfilemanager"
+Issues = "https://github.com/damonlynch/showinfilemanager/issues"
+
+[project.scripts]
+showinfilemanager = "showinfm.showinfm:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = false
+
 
 [tool.ruff]
 exclude = [
