@@ -1,7 +1,7 @@
 Changelog for Show in File Manager
 ==================================
 
-1.1.5 (2024-03-xx)
+1.1.5 (2024-03-06)
 ------------------
  - Drop setup.py and setup.cfg in favor of pyproject.toml.
  - Purge doc directory.
