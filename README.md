@@ -1,6 +1,9 @@
 # Show in File Manager
 
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/show-in-file-manager.svg?logo=python&label=Python&logoColor=gold)](https://pypi.org/project/show-in-file-manager/)
+[![License - MIT](https://img.shields.io/badge/license-MIT-9400d3.svg)](https://spdx.org/licenses/)
+[![GitHub Sponsors](https://img.shields.io/github/sponsors/damonlynch?logo=GitHub%20Sponsors&style=social)](https://github.com/sponsors/damonlynch)
 
 **Show in File Manager** is a Python package to open the system file manager 
 and optionally select files in it. The point is not to _open_ the files, 
