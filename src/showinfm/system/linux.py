@@ -17,15 +17,15 @@ from urllib.parse import unquote, urlparse
 import packaging.version
 
 try:
-    import xdg
+    import xdg  # type: ignore
     from xdg import BaseDirectory
-    from xdg.DesktopEntry import DesktopEntry
+    from xdg.DesktopEntry import DesktopEntry  # type: ignore
 except ImportError:
     pass
 
 from ..constants import FileManagerType
 
-_linux_desktop = None
+_linux_desktop: Optional["LinuxDesktop"] = None
 
 
 def stock_linux_file_manager() -> str:
@@ -180,7 +180,7 @@ def caja_version() -> Optional[packaging.version.Version]:
     except subprocess.CalledProcessError:
         raise Exception("Failed to get version number from caja")
 
-    result = re.search("\d", version_string)
+    result = re.search(r"\d", version_string)
     if result is None:
         return None
 
@@ -208,7 +208,7 @@ def translate_wsl_path(path: str, from_windows_to_wsl: bool) -> str:
     """
     Use the WSL command wslpath to translate between Windows and WSL paths.
 
-    Uses subprocesss. Exceptions not caught.
+    Uses subprocesss. Exceptions are not caught.
 
     :param path: path to convert in string format
     :param from_windows_to_wsl: whether to translate from Windows to WSL (True),
@@ -256,12 +256,12 @@ def wsl_path_is_for_windows(path_or_uri: str) -> bool:
 
 
 class WSLTransformPathURI(NamedTuple):
-    is_win_location: bool
-    win_uri: str
-    win_path: str
-    linux_path: str
-    is_dir: bool
-    exists: bool
+    is_win_location: Optional[bool]
+    win_uri: Optional[str]
+    win_path: Optional[str]
+    linux_path: Optional[str]
+    is_dir: Optional[bool]
+    exists: Optional[bool]
 
 
 def wsl_transform_path_uri(
@@ -275,7 +275,8 @@ def wsl_transform_path_uri(
 
     :param path_or_uri: path or URI to examine
     :param generate_win_path: if passed a Linux path, generate path and URI for use in
-     Windows. Will do so anyway if path is located in Windows, not the Linux instance.
+     Windows. Will do so anyway if the path is located in Windows, not the Linux
+     instance.
     :return: Named Tuple containing values in WSLTranformPathURI
 
     >>> import platform
@@ -513,11 +514,11 @@ def wsl_transform_path_uri(
     >>> os.chdir(cwd)
     """
 
-    win_uri = None
-    win_path = None
-    linux_path = None
-    is_dir = None
-    exists = None
+    win_uri: Optional[str] = None
+    win_path: Optional[str] = None
+    linux_path: Optional[str] = None
+    is_dir: Optional[bool] = None
+    exists: Optional[bool] = None
     if path_or_uri.startswith("file:/"):
         is_win_uri = False
         parsed = urlparse(url=path_or_uri)
@@ -561,7 +562,7 @@ def wsl_transform_path_uri(
                 if is_unc:
                     wuri = urllib.request.pathname2url(path.replace("\\", "/"))
                     win_uri = f"file:{wuri}"
-                else:
+                elif linux_path is not None:
                     win_uri = wsl_path_to_uri_for_windows_explorer(linux_path)
             else:
                 # relative path was passed
@@ -750,7 +751,7 @@ def linux_desktop() -> LinuxDesktop:
     """
 
     try:
-        env = os.getenv("XDG_CURRENT_DESKTOP").lower()
+        env = os.getenv("XDG_CURRENT_DESKTOP").lower()  # type: ignore
     except AttributeError:
         wsl = wsl_version()
         if wsl is not None:
