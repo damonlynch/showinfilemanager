@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: Copyright 2016-2024 Damon Lynch
-# SPDX - License - Identifier: MIT
+# SPDX-License-Identifier: MIT
 
 
 import functools
