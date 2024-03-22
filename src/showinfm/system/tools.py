@@ -1,6 +1,6 @@
-# Copyright (c) 2021-2024 Damon Lynch
-# Some portions Copyright (c) 2008-2021 The pip developers
-# SPDX - License - Identifier: MIT
+# SPDX-FileCopyrightText: Copyright 2021-2024 Damon Lynch
+# SPDX-FileCopyrightText: 2008-2021 The pip developers
+# SPDX-License-Identifier: MIT
 
 import os
 import re

@@ -1,6 +1,10 @@
 Changelog for Show in File Manager
 ==================================
 
+1.1.6 (2024-03-xx)
+------------------
+ - Update SPDX headers to be compliant with spec
+
 1.1.5 (2024-03-06)
 ------------------
  - Drop setup.py and setup.cfg in favor of pyproject.toml.

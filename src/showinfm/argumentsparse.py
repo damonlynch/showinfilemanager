@@ -1,5 +1,5 @@
-# Copyright (c) 2016-2024 Damon Lynch
-# SPDX - License - Identifier: MIT
+# SPDX-FileCopyrightText: Copyright 2016-2024 Damon Lynch
+# SPDX-License-Identifier: MIT
 
 """
 Parse command line arguments

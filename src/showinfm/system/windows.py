@@ -1,5 +1,5 @@
-# Copyright (c) 2021 Damon Lynch
-# SPDX - License - Identifier: MIT
+# SPDX-FileCopyrightText: Copyright 2021 Damon Lynch
+# SPDX-License-Identifier: MIT
 
 import contextlib
 from pathlib import Path
