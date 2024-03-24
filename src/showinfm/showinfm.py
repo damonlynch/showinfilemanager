@@ -118,16 +118,16 @@ def show_in_file_manager(
     Open the file manager and show zero or more directories or files in it.
 
     The path_or_uri is a sequence of items, or a single item. An item can
-    be regular path, or a URI.
+    be a regular path, or a URI.
 
     On non-Windows platforms, regular paths will be converted to URIs when
     passed as command line arguments to the file manager, because some file
     managers do not handle regular paths correctly. However, URIs will be
-    convereted to paths to handle file managers that do not accepts URIs.
+    convereted to paths to handle file managers that do not accept URIs.
 
     On Windows, Explorer is called using the Win32 API.
 
-    On WSL1, all paths are opened using Windows Explorer. URIs and can be
+    On WSL1, all paths are opened using Windows Explorer. URIs can be
     specified using Linux or Windows formats. All formats are automatically
     converted to use the Windows URI format.
 
