@@ -152,10 +152,10 @@ def show_in_file_manager(
     specified using Linux or Windows formats. All formats are automatically 
     converted to use the Windows URI format. 
         
-    WSL2 functions the same as WSL1, except if the WSL2 instance has a Linux 
-    file manager installed. On these systems, if a path on Linux is 
-    specified, that file manager will be used instead of Windows Explorer. You 
-    can override this default behavior by using the parameter file_manager. 
+    WSL2 functions the same as WSL1, except if the WSL2 instance has a Linux
+    file manager installed. On these systems, if a path on Linux is
+    specified, that file manager will be used instead of Windows Explorer. 
+    Override this default behavior by using the parameter file_manager.
 
     The most common use of this function is to call it without specifying
     the file manager to use, which defaults to the value returned by
@@ -164,12 +164,12 @@ def show_in_file_manager(
     For file managers unable to select files to display, the file manager
     will instead display the contents of the path.
 
-    For file managers that can handle file selections, but only one at time,
+    For file managers that can handle file selections, but only one at a time,
     multiple file manager windows will be opened.
 
-    If you specify a file manager executable and this package does not
-    recognize it, it will be called with the files as the only command line
-    arguments.
+    If a file manager executable is specified and this package does not
+    recognize it, the executable will be called with the files as the only command
+    line arguments.
 
     :param path_or_uri: zero or more files or directories to open, specified
      as a single URI or valid path, or a sequence of URIs/paths.
