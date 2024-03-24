@@ -1,15 +1,17 @@
-# SPDX-FileCopyrightText: Copyright 2021 Damon Lynch
+# SPDX-FileCopyrightText: Copyright 2021-2024 Damon Lynch
 # SPDX-License-Identifier: MIT
 
 import platform
+from typing import Union
 
 from ..constants import Platform
 from . import linux
 
+current_platform: Union[Platform, None]
 system = platform.system()
-is_wsl = False
-is_wsl1 = False
-is_wsl2 = False
+is_wsl: bool = False
+is_wsl1: bool = False
+is_wsl2: bool = False
 if system == "Windows":
     current_platform = Platform.windows
 elif system == "Linux":

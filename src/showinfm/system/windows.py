@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright 2021 Damon Lynch
+# SPDX-FileCopyrightText: Copyright 2021-2024 Damon Lynch
 # SPDX-License-Identifier: MIT
 
 import contextlib
@@ -72,6 +72,9 @@ def launch_file_explorer(paths: List[str], verbose: Optional[bool] = False) -> N
 
     Inspired by https://mail.python.org/pipermail/python-win32/2012-September/012531.html
     and http://mail.python.org/pipermail/python-win32/2012-September/012533.html
+
+    See also:
+    https://learn.microsoft.com/en-us/windows/win32/api/shlobj_core/nf-shlobj_core-shopenfolderandselectitems
     """
 
     folder_contents = directories_and_their_files(paths)
@@ -81,10 +84,13 @@ def launch_file_explorer(paths: List[str], verbose: Optional[bool] = False) -> N
         for folder in folder_contents:
             folder_pidl = shell.SHILCreateFromPath(folder, 0)[0]
             shell_folder = desktop.BindToObject(
-                folder_pidl, None, shell.IID_IShellFolder
+                folder_pidl,
+                None,  # type: ignore
+                shell.IID_IShellFolder,
             )
             win_items = {
-                desktop.GetDisplayNameOf(item, 0): item for item in shell_folder
+                desktop.GetDisplayNameOf(item, 0): item
+                for item in shell_folder  # type: ignore
             }
             to_select = [
                 win_items[file] for file in folder_contents[folder] if file in win_items
@@ -97,4 +103,4 @@ def launch_file_explorer(paths: List[str], verbose: Optional[bool] = False) -> N
                     "Executing Windows shell to open file "
                     f'explorer at "{folder}", selecting {files}'
                 )
-            shell.SHOpenFolderAndSelectItems(folder_pidl, to_select, 0)
+            shell.SHOpenFolderAndSelectItems(folder_pidl, to_select, 0)  # type: ignore
