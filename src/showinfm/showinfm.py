@@ -21,9 +21,9 @@ from .argumentsparse import get_parser
 from .constants import FileManagerType, Platform, single_file_only
 from .system import current_platform, is_wsl, is_wsl1, is_wsl2, linux, tools, windows
 
-_valid_file_manager_probed = False
-_valid_file_manager = None
-_valid_file_manager_type = None
+_valid_file_manager_probed: bool = False
+_valid_file_manager: Optional[str] = None
+_valid_file_manager_type: Optional[FileManagerType] = None
 
 
 def stock_file_manager() -> str:
@@ -168,7 +168,8 @@ def show_in_file_manager(
     global _valid_file_manager
     global _valid_file_manager_type
 
-    file_manager_specified = file_manager is not None
+    file_manager_specified: bool = file_manager is not None
+    file_manager_type: Optional[FileManagerType]
 
     if not file_manager:
         _set_valid_file_manager()
@@ -181,15 +182,16 @@ def show_in_file_manager(
             file_manager_type = None
 
     if not (file_manager or is_wsl2):
-        # We are not running WSL2 and there is no file manager: there is nothing
+        # There is no file manager (and we are not running WSL2): there is nothing
         # to be done
         return
 
     # Used for directories when open_not_select_directory is True
-    directories = []
+    directories: List[str] = []
     # Used for paths that will be opened in Windows explorer called from WSL2
-    wsl_windows_paths = []
-    wsl_windows_directories = []
+    wsl_windows_paths: List[str] = []
+    wsl_windows_directories: List[str] = []
+    uris_and_paths: List[str]
 
     if not path_or_uri:
         if current_platform == Platform.macos:
@@ -204,122 +206,122 @@ def show_in_file_manager(
             path_or_uri = (path_or_uri,)
 
         uris_and_paths = []
-        for pu in path_or_uri:
+
+        filtered_path_or_uri = (p_or_u for p_or_u in path_or_uri if p_or_u)
+        for pu in filtered_path_or_uri:
             # Were we passed a URI or simple path?
-            if pu:
-                uri = path = ""
-                # target_platform = current_platform
-                if is_wsl:
-                    # Running WSL1 or WSL2. Is the path on the Windows file system, or
-                    # alternately is Windows explorer going to be used to view the
-                    # files? Also, what kind of path or URI has been passed?
-                    require_win_path = file_manager == "explorer.exe"
-                    wsl_details = linux.wsl_transform_path_uri(pu, require_win_path)
-                    if not wsl_details.exists:
-                        continue
-                    use_windows_explorer_via_wsl = (
-                        wsl_details.is_win_location and not file_manager_specified
-                    ) or file_manager == "explorer.exe"
-                    if use_windows_explorer_via_wsl:
-                        if debug:
-                            print(
-                                f"Converted '{pu}' to '{wsl_details.win_uri}'",
-                                file=sys.stderr,
-                            )
-                        if not (wsl_details.is_dir and open_not_select_directory):
-                            wsl_windows_paths.append(wsl_details.win_uri)
-                        else:
-                            wsl_windows_directories.append(wsl_details.win_uri)
-                        continue
-                    else:
-                        if tools.filemanager_requires_path(file_manager=file_manager):
-                            path = Path(wsl_details.linux_path).resolve()
-                            uri = None
-                        else:
-                            path = None
-                            uri = Path(wsl_details.linux_path).resolve().as_uri()
-                else:
-                    if tools.is_uri(pu):
-                        if (
-                            tools.filemanager_requires_path(file_manager=file_manager)
-                            and allow_conversion
-                        ):
-                            # Convert URI to regular path
-                            uri = None
-                            path = Path(path or tools.file_uri_to_path(pu))
-                        else:
-                            uri = pu
-                            path = None
-                    else:
-                        if (
-                            tools.filemanager_requires_path(file_manager=file_manager)
-                            or not allow_conversion
-                        ):
-                            path = Path(pu)
-                            uri = None
-                        else:
-                            uri = Path(pu).resolve().as_uri()
-                            path = None
-
-                if file_manager_type == FileManagerType.dir_only_uri:
-                    assert current_platform != Platform.windows
-                    # Show only the directory: do not attempt to select the file,
-                    # because the file manager cannot handle it.
-                    if uri:
-                        # Do not use tools.file_url_to_path() here, because we need the
-                        # parse_result, and file_url_to_path() assumes file:// URIs.
-                        # In any case, this code block is not run under Windows, so
-                        # there is no need to use tools.file_url_to_path() to handle the
-                        # file:/// case that urllib.parse.urlparse fails with.
-                        parse_result = urllib.parse.urlparse(uri)
-                        path = Path(parse_result.path)
-
-                    if not (path.is_dir() and open_not_select_directory):
-                        path = path.parent
-                    if uri:
-                        uri = urllib.parse.urlunparse(
-                            parse_result._replace(path=str(path))
+            uri: Optional[str] = None
+            path: Optional[Path] = None
+            # target_platform = current_platform
+            if is_wsl:
+                # Running WSL1 or WSL2. Is the path on the Windows file system, or
+                # alternately is Windows explorer going to be used to view the
+                # files? Also, what kind of path or URI has been passed?
+                require_win_path = file_manager == "explorer.exe"
+                wsl_details = linux.wsl_transform_path_uri(pu, require_win_path)
+                if not wsl_details.exists:
+                    continue
+                use_windows_explorer_via_wsl = (
+                    wsl_details.is_win_location and not file_manager_specified
+                ) or file_manager == "explorer.exe"
+                if use_windows_explorer_via_wsl:
+                    if debug:
+                        print(
+                            f"Converted '{pu}' to '{wsl_details.win_uri}'",
+                            file=sys.stderr,
                         )
+                    if not (wsl_details.is_dir and open_not_select_directory):
+                        wsl_windows_paths.append(wsl_details.win_uri)
                     else:
+                        wsl_windows_directories.append(wsl_details.win_uri)
+                    continue
+                else:
+                    if tools.filemanager_requires_path(file_manager=file_manager):
+                        path = Path(wsl_details.linux_path).resolve()
+                        uri = None
+                    else:
+                        path = None
+                        uri = Path(wsl_details.linux_path).resolve().as_uri()
+            else:
+                if tools.is_uri(pu):
+                    if (
+                        tools.filemanager_requires_path(file_manager=file_manager)
+                        and allow_conversion
+                    ):
+                        # Convert URI to a regular path
+                        uri = None
+                        path = Path(path or tools.file_uri_to_path(pu))
+                    else:
+                        uri = pu
+                        path = None
+                else:
+                    if (
+                        tools.filemanager_requires_path(file_manager=file_manager)
+                        or not allow_conversion
+                    ):
+                        path = Path(pu)
+                        uri = None
+                    else:
+                        uri = Path(pu).resolve().as_uri()
+                        path = None
+
+            if file_manager_type == FileManagerType.dir_only_uri:
+                assert current_platform != Platform.windows
+                # Show only the directory: do not attempt to select the file,
+                # because the file manager cannot handle it.
+                if uri:
+                    # Do not use tools.file_url_to_path() here, because we need the
+                    # parse_result, and file_url_to_path() assumes file:// URIs.
+                    # In any case, this code block is not run under Windows, so
+                    # there is no need to use tools.file_url_to_path() to handle the
+                    # file:/// case that urllib.parse.urlparse fails with.
+                    parse_result = urllib.parse.urlparse(uri)
+                    path = Path(parse_result.path)
+
+                if not (path.is_dir() and open_not_select_directory):
+                    path = path.parent
+                if uri:
+                    uri = urllib.parse.urlunparse(parse_result._replace(path=str(path)))
+                else:
+                    path = tools.quote_path(path=path)
+                uris_and_paths.append(uri or str(path))
+            else:
+                # whether to open the directory, or
+                # select it (depends on file manager capabilities and option
+                # open_not_select_directory):
+                open_directory = False
+
+                if (
+                    open_not_select_directory
+                    and file_manager_type != FileManagerType.dual_panel
+                    or file_manager_type == FileManagerType.regular
+                ):
+                    if uri:
+                        path = tools.file_uri_to_path(uri=uri)
+                        path = Path(path)
+                        open_directory = path.is_dir()
+                    else:
+                        open_directory = path.is_dir()
+                    if open_directory:
+                        if (
+                            file_manager_type == FileManagerType.regular
+                            and not open_not_select_directory
+                        ):
+                            # This type of file manger cannot select directories,
+                            # because it provides no mechanism
+                            # to distinguish between selecting and opening a
+                            # directory.
+                            # So open the parent instead.
+                            path = path.parent
+                            if uri:
+                                uri = path.as_uri()
+                        if uri is None:
+                            path = tools.quote_path(path=path)
+                        directories.append(uri or str(path))
+                if not open_directory:
+                    if uri is None and file_manager != "explorer.exe":
                         path = tools.quote_path(path=path)
                     uris_and_paths.append(uri or str(path))
-                else:
-                    # whether to open the directory, or
-                    # select it (depends on file manager capabilities and option
-                    # open_not_select_directory):
-                    open_directory = False
-
-                    if (
-                        open_not_select_directory
-                        and file_manager_type != FileManagerType.dual_panel
-                        or file_manager_type == FileManagerType.regular
-                    ):
-                        if uri:
-                            path = tools.file_uri_to_path(uri=uri)
-                            path = Path(path)
-                            open_directory = path.is_dir()
-                        else:
-                            open_directory = path.is_dir()
-                        if open_directory:
-                            if (
-                                file_manager_type == FileManagerType.regular
-                                and not open_not_select_directory
-                            ):
-                                # This type of file manger cannot select directories,
-                                # because it provides no mechanism
-                                # to distinguish between selecting and opening a
-                                # directory.
-                                # So open the parent instead.
-                                path = path.parent
-                                if uri:
-                                    uri = path.as_uri()
-                            if uri is None:
-                                path = tools.quote_path(path=path)
-                            directories.append(uri or str(path))
-                    if not open_directory:
-                        if uri is None and file_manager != "explorer.exe":
-                            path = tools.quote_path(path=path)
-                        uris_and_paths.append(uri or str(path))
 
         arg = ""
         if file_manager_type == FileManagerType.win_select:
@@ -459,6 +461,9 @@ class Diagnostics:
     """
 
     def __init__(self) -> None:
+        self.desktop: Optional[linux.LinuxDesktop]
+        self.wsl_version: str
+
         try:
             self.stock_file_manager = stock_file_manager()
         except Exception as e:
@@ -478,7 +483,7 @@ class Diagnostics:
             except Exception:
                 self.desktop = linux.LinuxDesktop.unknown
         else:
-            self.desktop = ""
+            self.desktop = None
 
         if is_wsl:
             if is_wsl2:
@@ -491,8 +496,10 @@ class Diagnostics:
     def __str__(self) -> str:
         desktop = f"Linux Desktop: {self.desktop.name}\n" if self.desktop else ""
         wsl = f"WSL version {self.wsl_version}\n" if self.wsl_version else ""
-        file_managers = "Stock: {}\nUser's choice: {}\nValid: {}".format(
-            self.stock_file_manager, self.user_file_manager, self.valid_file_manager
+        file_managers = (
+            f"Stock: {self.stock_file_manager}\n"
+            f"User's choice: {self.user_file_manager}\n"
+            f"Valid: {self.valid_file_manager}"
         )
         return desktop + wsl + file_managers
 
