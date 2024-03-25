@@ -246,13 +246,20 @@ def show_in_file_manager(
                         wsl_windows_directories.append(wsl_details.win_uri)
                     continue
                 else:
+                    if wsl_details.linux_path is None:
+                        if debug:
+                            print(
+                                f"Unable to convert '{pu}' into a Linux path",
+                                file=sys.stderr,
+                            )
+                        continue
                     if tools.filemanager_requires_path(file_manager=file_manager):
                         path = Path(wsl_details.linux_path).resolve()
                         uri = None
                     else:
                         path = None
                         uri = Path(wsl_details.linux_path).resolve().as_uri()
-            else:
+            else:  # is not WSL
                 if tools.is_uri(pu):
                     if (
                         tools.filemanager_requires_path(file_manager=file_manager)
@@ -275,6 +282,8 @@ def show_in_file_manager(
                         uri = Path(pu).resolve().as_uri()
                         path = None
 
+            assert path is not None or uri is not None
+
             if file_manager_type == FileManagerType.dir_only_uri:
                 assert current_platform != Platform.windows
                 # Show only the directory: do not attempt to select the file,
@@ -287,11 +296,18 @@ def show_in_file_manager(
                     # file:/// case that urllib.parse.urlparse fails with.
                     parse_result = urllib.parse.urlparse(uri)
                     path = Path(parse_result.path)
+                else:
+                    parse_result = None
+
+                assert path is not None
 
                 if not (path.is_dir() and open_not_select_directory):
                     path = path.parent
                 if uri:
-                    uri = urllib.parse.urlunparse(parse_result._replace(path=str(path)))
+                    assert parse_result is not None
+                    uri = str(
+                        urllib.parse.urlunparse(parse_result._replace(path=str(path)))
+                    )
                 else:
                     path = tools.quote_path(path=path)
                 locations.append(uri or str(path))
@@ -310,13 +326,14 @@ def show_in_file_manager(
                         path = Path(tools.file_uri_to_path(uri=uri))
                         open_directory = path.is_dir()
                     else:
+                        assert path is not None
                         open_directory = path.is_dir()
                     if open_directory:
                         if (
                             file_manager_type == FileManagerType.regular
                             and not open_not_select_directory
                         ):
-                            # This type of file manger cannot select directories,
+                            # This type of file manager cannot select directories,
                             # because it provides no mechanism
                             # to distinguish between selecting and opening a
                             # directory.
@@ -329,6 +346,7 @@ def show_in_file_manager(
                         directories.append(uri or str(path))
                 if not open_directory:
                     if uri is None and file_manager != "explorer.exe":
+                        assert path is not None
                         path = tools.quote_path(path=path)
                     locations.append(uri or str(path))
 
