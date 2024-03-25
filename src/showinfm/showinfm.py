@@ -186,12 +186,17 @@ def show_in_file_manager(
         # to be done
         return
 
+    if not file_manager and is_wsl2:
+        file_manager = ""
+
     # Used for directories when open_not_select_directory is True
     directories: List[str] = []
     # Used for paths that will be opened in Windows explorer called from WSL2
     wsl_windows_paths: List[str] = []
     wsl_windows_directories: List[str] = []
-    uris_and_paths: List[str]
+
+    # Target locations
+    locations: List[str]
 
     if not path_or_uri:
         if current_platform == Platform.macos:
@@ -199,13 +204,13 @@ def show_in_file_manager(
             path_or_uri = "file:///"
         else:
             arg = ""
-            uris_and_paths = []
+            locations = []
     if path_or_uri:
         if isinstance(path_or_uri, str):
             # turn the single path / URI into a Tuple
             path_or_uri = (path_or_uri,)
 
-        uris_and_paths = []
+        locations = []
 
         filtered_path_or_uri = (p_or_u for p_or_u in path_or_uri if p_or_u)
         for pu in filtered_path_or_uri:
@@ -220,11 +225,20 @@ def show_in_file_manager(
                 require_win_path = file_manager == "explorer.exe"
                 wsl_details = linux.wsl_transform_path_uri(pu, require_win_path)
                 if not wsl_details.exists:
+                    if debug:
+                        print(f"Path does not exist: '{pu}'", file=sys.stderr)
                     continue
                 use_windows_explorer_via_wsl = (
                     wsl_details.is_win_location and not file_manager_specified
                 ) or file_manager == "explorer.exe"
                 if use_windows_explorer_via_wsl:
+                    if wsl_details.win_uri is None:
+                        if debug:
+                            print(
+                                f"Unable to convert '{pu}' into a Windows URI",
+                                file=sys.stderr,
+                            )
+                        continue
                     if debug:
                         print(
                             f"Converted '{pu}' to '{wsl_details.win_uri}'",
@@ -284,7 +298,7 @@ def show_in_file_manager(
                     uri = urllib.parse.urlunparse(parse_result._replace(path=str(path)))
                 else:
                     path = tools.quote_path(path=path)
-                uris_and_paths.append(uri or str(path))
+                locations.append(uri or str(path))
             else:
                 # whether to open the directory, or
                 # select it (depends on file manager capabilities and option
@@ -297,8 +311,7 @@ def show_in_file_manager(
                     or file_manager_type == FileManagerType.regular
                 ):
                     if uri:
-                        path = tools.file_uri_to_path(uri=uri)
-                        path = Path(path)
+                        path = Path(tools.file_uri_to_path(uri=uri))
                         open_directory = path.is_dir()
                     else:
                         open_directory = path.is_dir()
@@ -321,7 +334,7 @@ def show_in_file_manager(
                 if not open_directory:
                     if uri is None and file_manager != "explorer.exe":
                         path = tools.quote_path(path=path)
-                    uris_and_paths.append(uri or str(path))
+                    locations.append(uri or str(path))
 
         arg = ""
         if file_manager_type == FileManagerType.win_select:
@@ -340,20 +353,20 @@ def show_in_file_manager(
         and not is_wsl
         and file_manager == "explorer.exe"
     ):
-        if uris_and_paths:
-            windows.launch_file_explorer(uris_and_paths, verbose)
+        if locations:
+            windows.launch_file_explorer(locations, verbose)
         for d in directories:
             if verbose:
                 print("Executing Windows shell to open", d)
             os.startfile(d)
     else:
-        if uris_and_paths:
+        if locations:
             # Some file managers must be passed only one or zero paths / URIs
             if file_manager not in single_file_only:
-                uris_and_paths = [" ".join(uris_and_paths)]
+                locations = [" ".join(locations)]
 
             _launch_file_manager(
-                uris_or_paths=uris_and_paths,
+                uris_or_paths=locations,
                 arg=arg,
                 file_manager=file_manager,
                 verbose=verbose,
@@ -383,7 +396,7 @@ def show_in_file_manager(
             )
 
     if (
-        not uris_and_paths
+        not locations
         and not directories
         and not wsl_windows_paths
         and not wsl_windows_directories
