@@ -3,6 +3,7 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![PyPI - Version](https://img.shields.io/pypi/v/show-in-file-manager.svg)](https://pypi.org/project/show-in-file-manager)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/show-in-file-manager.svg?logo=python&label=Python&logoColor=gold)](https://pypi.org/project/show-in-file-manager/)
+[![Checked with mypy](http://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
 [![License - MIT](https://img.shields.io/badge/license-MIT-9400d3.svg)](https://spdx.org/licenses/)
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/damonlynch?logo=GitHub%20Sponsors&style=social)](https://github.com/sponsors/damonlynch)
 
