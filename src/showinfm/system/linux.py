@@ -746,6 +746,9 @@ LinuxFileManagerBehavior["io.elementary.files"] = FileManagerType.regular
 LinuxFileManagerBehavior["cutefish-filemanager"] = FileManagerType.dir_only_uri
 LinuxFileManagerBehavior["lumina-fm"] = FileManagerType.dir_only_uri
 
+# TODO add "COSMIC Files": cosmic-files https://github.com/pop-os/cosmic-files/tree/master/res
+# TODO don't know what the Cosmic Desktop name is yet as reported by XDG_CURRENT_DESKTOP
+
 
 def wsl_version() -> Optional[LinuxDesktop]:
     with open("/proc/version") as f:
