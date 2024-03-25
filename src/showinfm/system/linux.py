@@ -20,8 +20,10 @@ try:
     import xdg  # type: ignore
     from xdg import BaseDirectory
     from xdg.DesktopEntry import DesktopEntry  # type: ignore
+
+    have_xdg = True
 except ImportError:
-    pass
+    have_xdg = False
 
 from ..constants import FileManagerType
 
@@ -64,6 +66,11 @@ def user_linux_file_manager() -> str:
 
     :return: executable name
     """
+
+    if not have_xdg:
+        raise Exception(
+            "xdg utilities and/or the python binding for xdg are not installed"
+        )
 
     xdg_cmd = "xdg-mime query default inode/directory"
     cmd = shlex.split(xdg_cmd)
