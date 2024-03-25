@@ -181,13 +181,9 @@ def show_in_file_manager(
         except Exception:
             file_manager_type = None
 
-    if not (file_manager or is_wsl2):
-        # There is no file manager (and we are not running WSL2): there is nothing
-        # to be done
+    if not file_manager:
+        # There is no file manager -- there is nothing to be done
         return
-
-    if not file_manager and is_wsl2:
-        file_manager = ""
 
     # Used for directories when open_not_select_directory is True
     directories: List[str] = []
