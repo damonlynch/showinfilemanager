@@ -261,7 +261,7 @@ class WSLTransformPathURI(NamedTuple):
     win_path: Optional[str]
     linux_path: Optional[str]
     is_dir: Optional[bool]
-    exists: Optional[bool]
+    exists: bool
 
 
 def wsl_transform_path_uri(
@@ -277,7 +277,13 @@ def wsl_transform_path_uri(
     :param generate_win_path: if passed a Linux path, generate path and URI for use in
      Windows. Will do so anyway if the path is located in Windows, not the Linux
      instance.
-    :return: Named Tuple containing values in WSLTranformPathURI
+    :return: Named Tuple containing values in WSLTranformPathURI:
+      is_win_location: if the path/URI is located within a Windows file system
+      win_uri is: the URI as it appears to Windows
+      win_path: the path as it appears to Windows
+      linux_path: the path as it appears to Linux
+      is_dir: whether the path/URI is a directory
+      exists: whether the path/URI exists
 
     >>> import platform
     >>> assert platform.system() == "Linux"
@@ -518,7 +524,8 @@ def wsl_transform_path_uri(
     win_path: Optional[str] = None
     linux_path: Optional[str] = None
     is_dir: Optional[bool] = None
-    exists: Optional[bool] = None
+    exists: bool = False
+
     if path_or_uri.startswith("file:/"):
         is_win_uri = False
         parsed = urlparse(url=path_or_uri)
@@ -599,6 +606,13 @@ def wsl_transform_path_uri(
             win_path = win_path[:-1]
         if win_uri is not None and win_uri[-1] != "/":
             win_uri = f"{win_uri}/"
+
+    if linux_path is not None:
+        assert is_win_location is not None
+    if win_uri is not None:
+        assert win_path is not None
+    if exists:
+        assert is_dir is not None
 
     return WSLTransformPathURI(
         is_win_location=is_win_location,
