@@ -372,7 +372,7 @@ def show_in_file_manager(
         for d in directories:
             if verbose:
                 print("Executing Windows shell to open", d)
-            os.startfile(d)
+            os.startfile(d)  # type: ignore[attr-defined]
     else:
         if locations:
             # Some file managers must be passed only one or zero paths / URIs
