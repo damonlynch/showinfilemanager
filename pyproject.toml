@@ -1,24 +1,9 @@
 [build-system]
-requires = [
-    "argparse-manpage[setuptools]",
-    "setuptools>=61.2",
-    "wheel"
-]
-build-backend = "setuptools.build_meta"
-
-[tool.setuptools.cmdclass]
-build_py = "build_manpages.build_py"
-install = "build_manpages.install"
-build_manpages = "build_manpages.build_manpages"
-
-[tool.build_manpages]
-manpages = [
-    "man/showinfilemanager.1:function=get_parser:pyfile=src/showinfm/argumentsparse.py",
-]
+requires = ["hatchling", "hatch-argparse-manpage"]
+build-backend = "hatchling.build"
 
 [project]
 name = "show-in-file-manager"
-version = "1.1.5"
 authors = [{name = "Damon Lynch", email = "damonlynch@gmail.com"}]
 description = "Open the system file manager and select files in it"
 classifiers = [
@@ -42,6 +27,7 @@ dependencies = [
     "packaging",
     "pywin32>=301; platform_system=='Windows'",
 ]
+dynamic = ["version"]
 
 [project.readme]
 file = "README.md"
@@ -54,14 +40,14 @@ Issues = "https://github.com/damonlynch/showinfilemanager/issues"
 [project.scripts]
 showinfilemanager = "showinfm.showinfm:main"
 
-[tool.setuptools]
-package-dir = {"" = "src"}
-include-package-data = false
+[tool.hatch.version]
+path = "src/showinfm/__about__.py"
 
-[tool.setuptools.packages.find]
-where = ["src"]
-namespaces = false
-
+[tool.hatch.build.hooks.argparse-manpage]
+include-url = false
+manpages = [
+    "man/showinfilemanager.1:function=get_parser:pyfile=src/showinfm/argumentsparse.py",
+]
 
 [tool.ruff]
 exclude = [
