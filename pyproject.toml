@@ -46,7 +46,7 @@ path = "src/showinfm/__about__.py"
 [tool.hatch.build.hooks.argparse-manpage]
 include-url = false
 manpages = [
-    "man/showinfilemanager.1:function=get_parser:pyfile=src/showinfm/argumentsparse.py",
+    "man/showinfilemanager.1:function=get_parser:pyfile=src/showinfm/argumentsparse.py:manual_title=General Commands Manual",
 ]
 
 [tool.ruff]
