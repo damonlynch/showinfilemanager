@@ -17,9 +17,9 @@ import urllib.parse
 from pathlib import Path
 from typing import List, Optional, Sequence, Union
 
-from .argumentsparse import get_parser
-from .constants import FileManagerType, Platform, single_file_only
-from .system import current_platform, is_wsl, is_wsl1, is_wsl2, linux, tools, windows
+from showinfm.argumentsparse import get_parser
+from showinfm.constants import FileManagerType, Platform, single_file_only
+from showinfm.system import current_platform, is_wsl, is_wsl1, is_wsl2, linux, tools, windows
 
 _valid_file_manager_probed: bool = False
 _valid_file_manager: Optional[str] = None

@@ -8,8 +8,8 @@ from typing import List, Optional
 with contextlib.suppress(ImportError):
     from win32com.shell import shell
 
-from ..constants import FileManagerType
-from .tools import (
+from showinfm.constants import FileManagerType
+from showinfm.system.tools import (
     directories_and_their_files,
     file_uri_to_path,
     is_uri,
