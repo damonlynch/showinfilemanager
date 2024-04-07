@@ -11,8 +11,8 @@ from typing import DefaultDict, List
 from urllib.parse import urljoin, urlparse
 from urllib.request import pathname2url, url2pathname
 
-from ..constants import Platform, cannot_open_uris
-from . import current_platform, urivalidate
+from showinfm.constants import Platform, cannot_open_uris
+from showinfm.system import current_platform, urivalidate
 
 
 def filemanager_requires_path(file_manager: str) -> bool:

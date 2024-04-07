@@ -25,7 +25,7 @@ try:
 except ImportError:
     have_xdg = False
 
-from ..constants import FileManagerType
+from showinfm.constants import FileManagerType
 
 _linux_desktop: Optional["LinuxDesktop"] = None
 
