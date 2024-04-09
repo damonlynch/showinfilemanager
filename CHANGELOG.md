@@ -6,7 +6,9 @@ Changelog for Show in File Manager
  - Update SPDX headers to be compliant with spec.
  - Switch to [hatch](https://hatch.pypa.io/latest/) from setuptools.
  - New build dependency: [hatch-argparse-manpage](https://github.com/damonlynch/hatch-argparse-manpage).
+ - Add [Release Notes](RELEASE_NOTES.md).
  - Refactor: use absolute imports, not relative.
+ - Refactor: flatten code by using a new class. The API is unchanged.
 
 1.1.5 (2024-03-06)
 ------------------
