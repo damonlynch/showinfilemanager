@@ -43,6 +43,12 @@ showinfilemanager = "showinfm.showinfm:main"
 [tool.hatch.version]
 path = "src/showinfm/__about__.py"
 
+[tool.hatch.build.targets.sdist]
+packages = ["src/showinfm"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/showinfm"]
+
 [tool.hatch.build.hooks.argparse-manpage]
 include-url = false
 manpages = [
