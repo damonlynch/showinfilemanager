@@ -9,13 +9,12 @@ Open the system file manager and optionally select files in it.
 
 import shutil
 import sys
-from typing import List, Optional, Sequence, Union
+from typing import Optional, Sequence, Union
 
 import showinfm.filemanager
 from showinfm.argumentsparse import get_parser
 from showinfm.constants import Platform
 from showinfm.system import current_platform, is_wsl, is_wsl1, is_wsl2, linux, windows
-
 
 _file_manager = showinfm.filemanager.FileManager()
 

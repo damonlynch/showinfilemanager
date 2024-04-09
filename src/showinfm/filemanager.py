@@ -7,9 +7,8 @@ import shlex
 import subprocess
 import sys
 import urllib.parse
-
 from pathlib import Path
-from typing import Optional, Union, Sequence, List
+from typing import List, Optional, Sequence, Union
 
 from showinfm.constants import FileManagerType, Platform, single_file_only
 from showinfm.system import (
@@ -124,8 +123,8 @@ class FileManager:
 
     def _set_valid_file_manager(self) -> None:
         """
-        Set module level global variables to set a valid file manager for this user in this
-        desktop environment.
+        Set class level global variables to set a valid file manager for this user
+        in this desktop environment.
         """
 
         if not self._valid_file_manager_probed:
@@ -170,14 +169,15 @@ class FileManager:
         self.locations = []
         self.directories = []
 
-        if is_wsl2:
-            self.wsl_windows_paths = []
-            self.wsl_windows_directories = []
+        # Set these WSL2 specific values even if not running it --
+        # it makes the launch process simpler.
+        self.wsl_windows_paths = []
+        self.wsl_windows_directories = []
 
-        if not path_or_uri:
-            if current_platform == Platform.macos:
-                # macOS finder requires a path to be able to launch it from the command line
-                path_or_uri = "file:///"
+        if not path_or_uri and current_platform == Platform.macos:
+            # macOS finder requires a path to be able to launch it from the
+            # command line
+            path_or_uri = "file:///"
 
         if path_or_uri:
             self._process_path_or_uri(path_or_uri)
@@ -186,7 +186,6 @@ class FileManager:
         self._launch()
 
     def _process_path_or_uri(self, path_or_uri: PathOrUri) -> None:
-
         assert self.file_manager
 
         if isinstance(path_or_uri, str):
