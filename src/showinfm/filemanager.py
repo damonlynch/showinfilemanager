@@ -8,7 +8,7 @@ import subprocess
 import sys
 import urllib.parse
 from pathlib import Path
-from typing import List, Optional, Sequence, Union
+from typing import List, NamedTuple, Optional, Sequence, Union
 
 from showinfm.constants import FileManagerType, Platform, single_file_only
 from showinfm.system import (
@@ -22,6 +22,12 @@ from showinfm.system import (
 )
 
 PathOrUri = Union[str, Sequence[str]]
+
+
+class ProcessPathOrUri(NamedTuple):
+    fully_processed: bool
+    path: Optional[Path]
+    uri: Optional[str]
 
 
 def valid_file_manager() -> str:
@@ -185,154 +191,203 @@ class FileManager:
         self._set_file_manager_argument()
         self._launch()
 
-    def _process_path_or_uri(self, path_or_uri: PathOrUri) -> None:
+    def _process_path_or_uri_wsl(self, pu: str) -> ProcessPathOrUri:
+        """
+        Process the path or URI when running under WSL1 or WSL2.
+        Is the path on the Windows file system, or
+        alternately is Windows explorer going to be used to view the
+        files? Also, what kind of path or URI has been passed?
+        :param pu: path or URI to process
+        :return: A tuple indicating whether the path or URI has been fully processed,
+         and if not, a Path or URI to process further
+        """
+
+        require_win_path = self.file_manager == "explorer.exe"
+        wsl_details = linux.wsl_transform_path_uri(pu, require_win_path)
+        if not wsl_details.exists:
+            if self.debug:
+                print(f"Path does not exist: '{pu}'", file=sys.stderr)
+            return ProcessPathOrUri(fully_processed=True, path=None, uri=None)
+        use_windows_explorer_via_wsl = (
+            wsl_details.is_win_location and not self.file_manager_specified
+        ) or self.file_manager == "explorer.exe"
+        if use_windows_explorer_via_wsl:
+            if wsl_details.win_uri is None:
+                if self.debug:
+                    print(
+                        f"Unable to convert '{pu}' into a Windows URI",
+                        file=sys.stderr,
+                    )
+                return ProcessPathOrUri(fully_processed=True, path=None, uri=None)
+            if self.debug:
+                print(
+                    f"Converted '{pu}' to '{wsl_details.win_uri}'",
+                    file=sys.stderr,
+                )
+            if not (wsl_details.is_dir and self.open_not_select_directory):
+                self.wsl_windows_paths.append(wsl_details.win_uri)
+            else:
+                self.wsl_windows_directories.append(wsl_details.win_uri)
+            return ProcessPathOrUri(fully_processed=True, path=None, uri=None)
+        else:
+            if wsl_details.linux_path is None:
+                if self.debug:
+                    print(
+                        f"Unable to convert '{pu}' into a Linux path",
+                        file=sys.stderr,
+                    )
+                return ProcessPathOrUri(fully_processed=True, path=None, uri=None)
+            assert self.file_manager
+            if tools.filemanager_requires_path(file_manager=self.file_manager):
+                path = Path(wsl_details.linux_path).resolve()
+                uri = None
+            else:
+                path = None
+                uri = Path(wsl_details.linux_path).resolve().as_uri()
+            return ProcessPathOrUri(fully_processed=False, path=path, uri=uri)
+
+    def _process_path_or_uri_non_wsl(self, pu: str) -> ProcessPathOrUri:
+        """
+        Process the path or URI when not running under WSL1 or WSL2.
+
+        :param pu: path or URI to process
+        :return: A tuple indicating whether the path or URI has been fully processed,
+         and if not, a Path or URI to process further
+        """
+
         assert self.file_manager
+        if tools.is_uri(pu):
+            if (
+                tools.filemanager_requires_path(file_manager=self.file_manager)
+                and self.allow_conversion
+            ):
+                # Convert URI to a regular path
+                uri = None
+                path = Path(tools.file_uri_to_path(pu))
+            else:
+                uri = pu
+                path = None
+        else:
+            if (
+                tools.filemanager_requires_path(file_manager=self.file_manager)
+                or not self.allow_conversion
+            ):
+                path = Path(pu)
+                uri = None
+            else:
+                uri = Path(pu).resolve().as_uri()
+                path = None
+
+        return ProcessPathOrUri(fully_processed=False, path=path, uri=uri)
+
+    def _process_path_or_uri_no_select(
+        self, path: Optional[Path], uri: Optional[str]
+    ) -> None:
+        """
+        Process the path or URI when using a file manager that cannot select files
+        or directories.
+        """
+
+        assert current_platform != Platform.windows
+        # Show only the directory: do not attempt to select the file,
+        # because the file manager cannot handle it.
+
+        if uri:
+            # Do not use tools.file_url_to_path() here, because we need the
+            # parse_result, and file_url_to_path() assumes file:// URIs.
+            # In any case, this code block is not run under Windows, so
+            # there is no need to use tools.file_url_to_path() to handle the
+            # file:/// case that urllib.parse.urlparse fails with.
+            parse_result = urllib.parse.urlparse(uri)
+            path = Path(parse_result.path)
+        else:
+            parse_result = None
+
+        assert path is not None
+
+        if not (path.is_dir() and self.open_not_select_directory):
+            path = path.parent
+        if uri:
+            assert parse_result is not None
+            uri = str(urllib.parse.urlunparse(parse_result._replace(path=str(path))))
+        else:
+            path = tools.quote_path(path=path)
+        self.locations.append(uri or str(path))
+
+    def _process_path_or_uri_can_select(
+        self, path: Optional[Path], uri: Optional[str]
+    ) -> None:
+        """
+        Process the path or URI when using a file manager that can select files
+        and potentially directories.
+        """
+
+        # Whether to open a directory or select it depends on file manager capabilities
+        # and the option open_not_select_directory
+        open_directory = False
+
+        if (
+            self.open_not_select_directory
+            and self.file_manager_type != FileManagerType.dual_panel
+            or self.file_manager_type == FileManagerType.regular
+        ):
+            if uri:
+                path = Path(tools.file_uri_to_path(uri=uri))
+                open_directory = path.is_dir()
+            else:
+                assert path is not None
+                open_directory = path.is_dir()
+            if open_directory:
+                if (
+                    self.file_manager_type == FileManagerType.regular
+                    and not self.open_not_select_directory
+                ):
+                    # This type of file manager cannot select directories,
+                    # because it provides no mechanism
+                    # to distinguish between selecting and opening a
+                    # directory.
+                    # So open the parent instead.
+                    path = path.parent
+                    if uri:
+                        uri = path.as_uri()
+                if uri is None:
+                    path = tools.quote_path(path=path)
+                self.directories.append(uri or str(path))
+        if not open_directory:
+            if uri is None and self.file_manager != "explorer.exe":
+                assert path is not None
+                path = tools.quote_path(path=path)
+            self.locations.append(uri or str(path))
+
+    def _process_path_or_uri(self, path_or_uri: PathOrUri) -> None:
+        """
+        Examines the path or URI and processes it according to the needs of the
+        file manager.
+
+        :param path_or_uri: path or URI to process
+        """
 
         if isinstance(path_or_uri, str):
-            # turn the single path / URI into a Tuple
+            # turn the single path / URI into a Sequence
             path_or_uri = (path_or_uri,)
 
         filtered_path_or_uri = (p_or_u for p_or_u in path_or_uri if p_or_u)
         for pu in filtered_path_or_uri:
-            # Were we passed a URI or simple path?
-            uri: Optional[str] = None
-            path: Optional[Path] = None
-            # target_platform = current_platform
             if is_wsl:
-                # Running WSL1 or WSL2. Is the path on the Windows file system, or
-                # alternately is Windows explorer going to be used to view the
-                # files? Also, what kind of path or URI has been passed?
-                require_win_path = self.file_manager == "explorer.exe"
-                wsl_details = linux.wsl_transform_path_uri(pu, require_win_path)
-                if not wsl_details.exists:
-                    if self.debug:
-                        print(f"Path does not exist: '{pu}'", file=sys.stderr)
+                p = self._process_path_or_uri_wsl(pu)
+                if p.fully_processed:
                     continue
-                use_windows_explorer_via_wsl = (
-                    wsl_details.is_win_location and not self.file_manager_specified
-                ) or self.file_manager == "explorer.exe"
-                if use_windows_explorer_via_wsl:
-                    if wsl_details.win_uri is None:
-                        if self.debug:
-                            print(
-                                f"Unable to convert '{pu}' into a Windows URI",
-                                file=sys.stderr,
-                            )
-                        continue
-                    if self.debug:
-                        print(
-                            f"Converted '{pu}' to '{wsl_details.win_uri}'",
-                            file=sys.stderr,
-                        )
-                    if not (wsl_details.is_dir and self.open_not_select_directory):
-                        self.wsl_windows_paths.append(wsl_details.win_uri)
-                    else:
-                        self.wsl_windows_directories.append(wsl_details.win_uri)
-                    continue
-                else:
-                    if wsl_details.linux_path is None:
-                        if self.debug:
-                            print(
-                                f"Unable to convert '{pu}' into a Linux path",
-                                file=sys.stderr,
-                            )
-                        continue
-                    if tools.filemanager_requires_path(file_manager=self.file_manager):
-                        path = Path(wsl_details.linux_path).resolve()
-                        uri = None
-                    else:
-                        path = None
-                        uri = Path(wsl_details.linux_path).resolve().as_uri()
-            else:  # is not WSL
-                if tools.is_uri(pu):
-                    if (
-                        tools.filemanager_requires_path(file_manager=self.file_manager)
-                        and self.allow_conversion
-                    ):
-                        # Convert URI to a regular path
-                        uri = None
-                        path = Path(path or tools.file_uri_to_path(pu))
-                    else:
-                        uri = pu
-                        path = None
-                else:
-                    if (
-                        tools.filemanager_requires_path(file_manager=self.file_manager)
-                        or not self.allow_conversion
-                    ):
-                        path = Path(pu)
-                        uri = None
-                    else:
-                        uri = Path(pu).resolve().as_uri()
-                        path = None
+            else:
+                p = self._process_path_or_uri_non_wsl(pu)
 
+            path = p.path
+            uri = p.uri
             assert path is not None or uri is not None
 
             if self.file_manager_type == FileManagerType.dir_only_uri:
-                assert current_platform != Platform.windows
-                # Show only the directory: do not attempt to select the file,
-                # because the file manager cannot handle it.
-                if uri:
-                    # Do not use tools.file_url_to_path() here, because we need the
-                    # parse_result, and file_url_to_path() assumes file:// URIs.
-                    # In any case, this code block is not run under Windows, so
-                    # there is no need to use tools.file_url_to_path() to handle the
-                    # file:/// case that urllib.parse.urlparse fails with.
-                    parse_result = urllib.parse.urlparse(uri)
-                    path = Path(parse_result.path)
-                else:
-                    parse_result = None
-
-                assert path is not None
-
-                if not (path.is_dir() and self.open_not_select_directory):
-                    path = path.parent
-                if uri:
-                    assert parse_result is not None
-                    uri = str(
-                        urllib.parse.urlunparse(parse_result._replace(path=str(path)))
-                    )
-                else:
-                    path = tools.quote_path(path=path)
-                self.locations.append(uri or str(path))
+                self._process_path_or_uri_no_select(path, uri)
             else:
-                # whether to open the directory, or
-                # select it (depends on file manager capabilities and option
-                # open_not_select_directory):
-                open_directory = False
-
-                if (
-                    self.open_not_select_directory
-                    and self.file_manager_type != FileManagerType.dual_panel
-                    or self.file_manager_type == FileManagerType.regular
-                ):
-                    if uri:
-                        path = Path(tools.file_uri_to_path(uri=uri))
-                        open_directory = path.is_dir()
-                    else:
-                        assert path is not None
-                        open_directory = path.is_dir()
-                    if open_directory:
-                        if (
-                            self.file_manager_type == FileManagerType.regular
-                            and not self.open_not_select_directory
-                        ):
-                            # This type of file manager cannot select directories,
-                            # because it provides no mechanism
-                            # to distinguish between selecting and opening a
-                            # directory.
-                            # So open the parent instead.
-                            path = path.parent
-                            if uri:
-                                uri = path.as_uri()
-                        if uri is None:
-                            path = tools.quote_path(path=path)
-                        self.directories.append(uri or str(path))
-                if not open_directory:
-                    if uri is None and self.file_manager != "explorer.exe":
-                        assert path is not None
-                        path = tools.quote_path(path=path)
-                    self.locations.append(uri or str(path))
+                self._process_path_or_uri_can_select(path, uri)
 
     def _set_file_manager_argument(self) -> None:
         self.arg = ""
