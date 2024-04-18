@@ -1,8 +1,8 @@
 Changelog for Show in File Manager
 ==================================
 
-1.1.6 (2024-04-xx)
-------------------
+1.1.6a1 (2024-04-18)
+--------------------
  - Update SPDX headers to be compliant with spec.
  - Switch to [hatch](https://hatch.pypa.io/latest/) from setuptools.
  - New build dependency: [hatch-argparse-manpage](https://github.com/damonlynch/hatch-argparse-manpage).
