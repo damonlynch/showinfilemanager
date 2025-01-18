@@ -16,6 +16,8 @@ from showinfm.system.tools import (
     path_to_file_uri,
 )
 
+import os
+
 WindowsFileManagerBehavior = {}
 WindowsFileManagerBehavior["doublecmd.exe"] = FileManagerType.dual_panel
 WindowsFileManagerBehavior["fman.exe"] = FileManagerType.dual_panel
@@ -78,29 +80,16 @@ def launch_file_explorer(paths: List[str], verbose: Optional[bool] = False) -> N
     """
 
     folder_contents = directories_and_their_files(paths)
-
     if folder_contents:
-        desktop = shell.SHGetDesktopFolder()
         for folder in folder_contents:
             folder_pidl = shell.SHILCreateFromPath(folder, 0)[0]
-            shell_folder = desktop.BindToObject(
-                folder_pidl,
-                None,  # type: ignore
-                shell.IID_IShellFolder,
-            )
-            win_items = {
-                desktop.GetDisplayNameOf(item, 0): item
-                for item in shell_folder  # type: ignore
-            }
-            to_select = [
-                win_items[file] for file in folder_contents[folder] if file in win_items
-            ]
             if verbose:
                 files = '", "'.join(folder_contents[folder])
                 if files:
                     files = f'"{files}"'
-                print(
-                    "Executing Windows shell to open file "
-                    f'explorer at "{folder}", selecting {files}'
-                )
+                print("Executing Windows shell to open file " f'explorer at "{folder}", selecting {files}')
+            to_select = [
+                shell.SHParseDisplayName(os.path.join(folder, filename), 0, None)[0]
+                for filename in folder_contents[folder]
+            ]
             shell.SHOpenFolderAndSelectItems(folder_pidl, to_select, 0)  # type: ignore
