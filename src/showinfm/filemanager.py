@@ -278,7 +278,11 @@ class FileManager:
                 uri = Path(pu).resolve().as_uri()
                 path = None
 
-        return ProcessPathOrUri(fully_processed=False, path=path, uri=uri)
+        haserror = not (path.exists() if path else Path(tools.file_uri_to_path(pu)).exists())
+        if haserror and self.debug:
+            print(f"Path '{path}' does not exist", file=sys.stderr)
+
+        return ProcessPathOrUri(fully_processed=haserror, path=path, uri=uri)
 
     def _process_path_or_uri_no_select(
         self, path: Optional[Path], uri: Optional[str]
@@ -324,7 +328,7 @@ class FileManager:
 
         # Whether to open a directory or select it depends on file manager capabilities
         # and the option open_not_select_directory
-        open_directory = False
+        is_directory = False
 
         if (
             self.open_not_select_directory
@@ -333,11 +337,11 @@ class FileManager:
         ):
             if uri:
                 path = Path(tools.file_uri_to_path(uri=uri))
-                open_directory = path.is_dir()
+                is_directory = path.is_dir()
             else:
                 assert path is not None
-                open_directory = path.is_dir()
-            if open_directory:
+                is_directory = path.is_dir()
+            if is_directory:
                 if (
                     self.file_manager_type == FileManagerType.regular
                     and not self.open_not_select_directory
@@ -353,7 +357,7 @@ class FileManager:
                 if uri is None:
                     path = tools.quote_path(path=path)
                 self.directories.append(uri or str(path))
-        if not open_directory:
+        if not is_directory:
             if uri is None and self.file_manager != "explorer.exe":
                 assert path is not None
                 path = tools.quote_path(path=path)
@@ -375,10 +379,11 @@ class FileManager:
         for pu in filtered_path_or_uri:
             if is_wsl:
                 p = self._process_path_or_uri_wsl(pu)
-                if p.fully_processed:
-                    continue
             else:
                 p = self._process_path_or_uri_non_wsl(pu)
+
+            if p.fully_processed:
+                continue
 
             path = p.path
             uri = p.uri
