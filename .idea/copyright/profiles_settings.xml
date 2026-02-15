@@ -3,5 +3,12 @@
     <module2copyright>
       <element module="Damon Lynch exclusive MIT  code" copyright="Copyright Damon Lynch MIT" />
     </module2copyright>
+    <LanguageOptions name="Python">
+      <option name="fileTypeOverride" value="3" />
+      <option name="block" value="false" />
+    </LanguageOptions>
+    <LanguageOptions name="__TEMPLATE__">
+      <option name="addBlankAfter" value="false" />
+    </LanguageOptions>
   </settings>
 </component>
