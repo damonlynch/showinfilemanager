@@ -673,6 +673,7 @@ class LinuxDesktop(Enum):
     cutefish = 18
     lumina = 19
     unknown = 20
+    cosmic = 21
 
 
 LinuxDesktopHumanize = dict(
@@ -696,6 +697,7 @@ LinuxDesktopHumanize = dict(
     cutefish="Cutefish",
     lumina="Lumina",
     unknown="Unknown",
+    cosmic="Cosmic",
 )
 
 
@@ -723,6 +725,7 @@ StandardLinuxFileManager = dict(
     wsl2="explorer.exe",
     cutefish="cutefish-filemanager",
     lumina="lumina-fm",
+    cosmic="cosmic-files",
 )
 
 
@@ -745,9 +748,7 @@ LinuxFileManagerBehavior["dde-file-manager"] = FileManagerType.show_item
 LinuxFileManagerBehavior["io.elementary.files"] = FileManagerType.regular
 LinuxFileManagerBehavior["cutefish-filemanager"] = FileManagerType.dir_only_uri
 LinuxFileManagerBehavior["lumina-fm"] = FileManagerType.dir_only_uri
-
-# TODO add "COSMIC Files": cosmic-files https://github.com/pop-os/cosmic-files/tree/master/res
-# TODO don't know what the Cosmic Desktop name is yet as reported by XDG_CURRENT_DESKTOP
+LinuxFileManagerBehavior["cosmic-files"]=FileManagerType.regular
 
 
 def wsl_version() -> Optional[LinuxDesktop]:
@@ -795,6 +796,8 @@ def linux_desktop() -> LinuxDesktop:
         env = "gnome"
     elif env == "zorin:gnome":
         env = "zorin"
+    elif env == "kde:plasma":
+        env = "kde"
 
     try:
         return LinuxDesktop[env]
