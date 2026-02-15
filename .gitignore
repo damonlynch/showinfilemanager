@@ -1,4 +1,5 @@
 runvenv.ps1
+man/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
