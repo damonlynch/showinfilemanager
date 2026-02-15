@@ -1,9 +1,6 @@
 #!/usr/bin/python3
-# SPDX-FileCopyrightText: Copyright 2021-2024 Damon Lynch
+# SPDX-FileCopyrightText: 2021-2024 Damon Lynch <damonlynch@gmail.com>
 # SPDX-License-Identifier: MIT
-
-__author__ = "Damon Lynch"
-__copyright__ = "Copyright 2021-2024, Damon Lynch"
 
 import doctest
 

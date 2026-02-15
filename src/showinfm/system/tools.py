@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright 2021-2024 Damon Lynch
+# SPDX-FileCopyrightText: 2021-2024 Damon Lynch <damonlynch@gmail.com>
 # SPDX-FileCopyrightText: 2008-2021 The pip developers
 # SPDX-License-Identifier: MIT
 

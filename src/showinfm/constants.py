@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright 2016-2021 Damon Lynch
+# SPDX-FileCopyrightText: 2016-2021 Damon Lynch <damonlynch@gmail.com>
 # SPDX-License-Identifier: MIT
 
 from enum import Enum
