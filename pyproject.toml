@@ -4,14 +4,14 @@ build-backend = "hatchling.build"
 
 [project]
 name = "show-in-file-manager"
-authors = [{name = "Damon Lynch", email = "damonlynch@gmail.com"}]
+authors = [{ name = "Damon Lynch", email = "damonlynch@gmail.com" }]
 description = "Open the system file manager and select files in it"
 classifiers = [
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "License :: OSI Approved :: MIT License",
     "Operating System :: MacOS :: MacOS X",
     "Operating System :: Microsoft :: Windows :: Windows 10",
@@ -21,7 +21,7 @@ classifiers = [
     "Topic :: Desktop Environment :: File Managers",
     "Typing :: Typed",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 dependencies = [
     "pyxdg>=0.25; platform_system=='Linux'",
     "packaging",
