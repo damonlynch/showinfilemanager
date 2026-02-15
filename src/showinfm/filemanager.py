@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright 2016-2024 Damon Lynch
+# SPDX-FileCopyrightText: 2016-2024 Damon Lynch <damonlynch@gmail.com>
 # SPDX-License-Identifier: MIT
 
 import os

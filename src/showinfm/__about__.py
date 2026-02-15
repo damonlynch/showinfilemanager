@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright 2024 Damon Lynch
+# SPDX-FileCopyrightText: 2024 Damon Lynch <damonlynch@gmail.com>
 # SPDX-License-Identifier: MIT
 
-__version__ = "1.1.6a1"
+__version__ = "1.1.6"

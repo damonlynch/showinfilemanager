@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# SPDX-FileCopyrightText: Copyright 2021 Damon Lynch
+# SPDX-FileCopyrightText: 2021 Damon Lynch <damonlynch@gmail.com>
 # SPDX-License-Identifier: MIT
 
 __author__ = "Damon Lynch"
