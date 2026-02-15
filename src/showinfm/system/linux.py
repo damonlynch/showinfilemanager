@@ -1,9 +1,10 @@
-# SPDX-FileCopyrightText: 2016-2024 Damon Lynch <damonlynch@gmail.com>
-# SPDX-License-Identifier: MIT
+#  SPDX-FileCopyrightText: 2016-2026 Damon Lynch <damonlynch@gmail.com>
+#  SPDX-License-Identifier: MIT
 
 
 import functools
 import os
+import packaging.version
 import re
 import shlex
 import shutil
@@ -13,8 +14,6 @@ from enum import Enum
 from pathlib import Path, PureWindowsPath
 from typing import NamedTuple, Optional, Tuple
 from urllib.parse import unquote, urlparse
-
-import packaging.version
 
 try:
     import xdg  # type: ignore
@@ -45,8 +44,8 @@ def stock_linux_file_manager() -> str:
     if _linux_desktop is None:
         _linux_desktop = linux_desktop()
 
+    desktop = _linux_desktop.name
     try:
-        desktop = _linux_desktop.name
         desktop = LinuxDesktopFamily.get(desktop) or desktop
 
         return StandardLinuxFileManager[desktop]
@@ -191,7 +190,7 @@ def caja_version() -> Optional[packaging.version.Version]:
     if result is None:
         return None
 
-    version = version_string[result.start() :]
+    version = version_string[result.start():]
     return packaging.version.parse(version)
 
 
@@ -272,7 +271,7 @@ class WSLTransformPathURI(NamedTuple):
 
 
 def wsl_transform_path_uri(
-    path_or_uri: str, generate_win_path: bool
+        path_or_uri: str, generate_win_path: bool
 ) -> WSLTransformPathURI:
     r"""
     Transforms URI or path into path and URI suitable for working with WSL.
@@ -700,14 +699,12 @@ LinuxDesktopHumanize = dict(
     cosmic="Cosmic",
 )
 
-
 LinuxDesktopFamily = dict(
     ubuntugnome="gnome",
     popgnome="gnome",
     zorin="gnome",
     unity="gnome",
 )
-
 
 StandardLinuxFileManager = dict(
     gnome="nautilus",
@@ -728,7 +725,6 @@ StandardLinuxFileManager = dict(
     cosmic="cosmic-files",
 )
 
-
 LinuxFileManagerBehavior = dict(
     nautilus=FileManagerType.select,
     dolphin=FileManagerType.select,
@@ -748,7 +744,7 @@ LinuxFileManagerBehavior["dde-file-manager"] = FileManagerType.show_item
 LinuxFileManagerBehavior["io.elementary.files"] = FileManagerType.regular
 LinuxFileManagerBehavior["cutefish-filemanager"] = FileManagerType.dir_only_uri
 LinuxFileManagerBehavior["lumina-fm"] = FileManagerType.dir_only_uri
-LinuxFileManagerBehavior["cosmic-files"]=FileManagerType.regular
+LinuxFileManagerBehavior["cosmic-files"] = FileManagerType.regular
 
 
 def wsl_version() -> Optional[LinuxDesktop]:
