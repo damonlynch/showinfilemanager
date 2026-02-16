@@ -1,39 +1,25 @@
 # Show in File Manager
 
 |         |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Package | [![PyPI - Version](https://img.shields.io/pypi/v/show-in-file-manager.svg)](https://pypi.org/project/show-in-file-manager) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/show-in-file-manager.svg?logo=python&label=Python&logoColor=gold)](https://pypi.org/project/show-in-file-manager/)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | 
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Package | [![PyPI - Version](https://img.shields.io/pypi/v/show-in-file-manager.svg)](https://pypi.org/project/show-in-file-manager) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/show-in-file-manager.svg?logo=python&label=Python&logoColor=gold)](https://pypi.org/project/show-in-file-manager/)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | Meta    | [![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg)](https://github.com/pypa/hatch) [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff) [![GitButler](https://img.shields.io/badge/GitButler-%23B9F4F2?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB3aWR0aD0iMzkiIGhlaWdodD0iMjgiIHZpZXdCb3g9IjAgMCAzOSAyOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTI1LjIxNDUgMTIuMTk5N0wyLjg3MTA3IDEuMzg5MTJDMS41NDI5NSAwLjc0NjUzMiAwIDEuNzE0MDYgMCAzLjE4OTQ3VjI0LjgxMDVDMCAyNi4yODU5IDEuNTQyOTUgMjcuMjUzNSAyLjg3MTA3IDI2LjYxMDlMMjUuMjE0NSAxNS44MDAzQzI2LjcxOTcgMTUuMDcyMSAyNi43MTk3IDEyLjkyNzkgMjUuMjE0NSAxMi4xOTk3WiIgZmlsbD0iYmxhY2siLz4KPHBhdGggZD0iTTEzLjc4NTUgMTIuMTk5N0wzNi4xMjg5IDEuMzg5MTJDMzcuNDU3MSAwLjc0NjUzMiAzOSAxLjcxNDA2IDM5IDMuMTg5NDdWMjQuODEwNUMzOSAyNi4yODU5IDM3LjQ1NzEgMjcuMjUzNSAzNi4xMjg5IDI2LjYxMDlMMTMuNzg1NSAxNS44MDAzQzEyLjI4MDMgMTUuMDcyMSAxMi4yODAzIDEyLjkyNzkgMTMuNzg1NSAxMi4xOTk3WiIgZmlsbD0idXJsKCNwYWludDBfcmFkaWFsXzMxMF8xMjkpIi8%2BCjxkZWZzPgo8cmFkaWFsR3JhZGllbnQgaWQ9InBhaW50MF9yYWRpYWxfMzEwXzEyOSIgY3g9IjAiIGN5PSIwIiByPSIxIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgZ3JhZGllbnRUcmFuc2Zvcm09InRyYW5zbGF0ZSgxNi41NzAxIDE0KSBzY2FsZSgxOS44NjQxIDE5LjgzODMpIj4KPHN0b3Agb2Zmc2V0PSIwLjMwMTA1NiIgc3RvcC1vcGFjaXR5PSIwIi8%2BCjxzdG9wIG9mZnNldD0iMSIvPgo8L3JhZGlhbEdyYWRpZW50Pgo8L2RlZnM%2BCjwvc3ZnPgo%3D)](https://gitbutler.com/) [![Checked with mypy](http://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/) [![License - MIT](https://img.shields.io/badge/license-MIT-9400d3.svg)](https://spdx.org/licenses/) [![GitHub Sponsors](https://img.shields.io/github/sponsors/damonlynch?logo=GitHub%20Sponsors&style=social)](https://github.com/sponsors/damonlynch) |
 
------
+______________________________________________________________________
 
-**Show in File Manager** is a Python package to open the system file manager
-and optionally select files in it. The point is not to _open_ the files,
-but to _select_ them in the file manager, thereby highlighting the
-files and allowing the user to quickly do something with them.
+**Show in File Manager** is a Python package to open the system file manager and optionally select files in it. The point is not to _open_ the files, but to _select_ them in the file manager, thereby highlighting the files and allowing the user to quickly do something with them.
 
-Plenty of programs expose this functionality in their user interface. On
-Windows terms like "Show in Windows Explorer", "Show in Explorer", and
-"Reveal in Explorer" are common. Cross-platform programs use terms like "Open
-Containing Folder" or "Open in File Browser", all doing something similar:
+Plenty of programs expose this functionality in their user interface. On Windows terms like "Show in Windows Explorer", "Show in Explorer", and "Reveal in Explorer" are common. Cross-platform programs use terms like "Open Containing Folder" or "Open in File Browser", all doing something similar:
 
-![Show in Windows Explorer](https://github.com/damonlynch/showinfilemanager/raw/main/.github/photomechanic-win.png)
-![Open containing folder](https://github.com/damonlynch/showinfilemanager/raw/main/.github/documentviewer-gnome.png)
+![Show in Windows Explorer](https://github.com/damonlynch/showinfilemanager/raw/main/.github/photomechanic-win.png) ![Open containing folder](https://github.com/damonlynch/showinfilemanager/raw/main/.github/documentviewer-gnome.png)
 
 Commands like these open the file manager, ideally with the files selected:
 
 ![Peony file manager](https://github.com/damonlynch/showinfilemanager/raw/main/.github/peony-kylin.png)
 
-With **Show in File Manager**, your Python program or command line script
-can do the same, with minimum effort from you.
-Although this package provides several functions to assist in identifying
-the system's file managers, in most circumstances you need to call only
-one function, the function `show_in_file_manager`, and it should just work.
+With **Show in File Manager**, your Python program or command line script can do the same, with minimum effort from you. Although this package provides several functions to assist in identifying the system's file managers, in most circumstances you need to call only one function, the function `show_in_file_manager`, and it should just work.
 
-This package aspires to be platform independent, but it currently supports
-only Windows 10/11, Linux,
-[WSL1 and WSL2](https://docs.microsoft.com/en-us/windows/wsl/), and macOS.
-It works with 20 [supported file managers](#supported-file-managers).
+This package aspires to be platform independent, but it currently supports only Windows 10/11, Linux, [WSL1 and WSL2](https://docs.microsoft.com/en-us/windows/wsl/), and macOS. It works with 20 [supported file managers](#supported-file-managers).
 
 ## Install and run
 
@@ -191,8 +177,7 @@ def show_in_file_manager(
     """
 ```
 
-Other functions mentioned below are not necessary to call, but are provided
-for convenience and control.
+Other functions mentioned below are not necessary to call, but are provided for convenience and control.
 
 ### Determine the most sensible choice of file manager
 
@@ -216,15 +201,11 @@ def valid_file_manager() -> str:
     """
 ```
 
-This package makes opinionated choices about the most sensible choice of
-file manager:
+This package makes opinionated choices about the most sensible choice of file manager:
 
-1. A file manager is valid if and only if this package recognizes it, e.g.
-   `nautilus`, `explorer.exe`.
-2. If the user's choice of file manager is valid (i.e. an actual file
-   manager, not some random application), that file manager is used.
-3. If the user's choice of file manager is invalid or could not be
-   determined, the desktop or OS's stock file manager is used.
+1. A file manager is valid if and only if this package recognizes it, e.g. `nautilus`, `explorer.exe`.
+1. If the user's choice of file manager is valid (i.e. an actual file manager, not some random application), that file manager is used.
+1. If the user's choice of file manager is invalid or could not be determined, the desktop or OS's stock file manager is used.
 
 ### Get the operating system's stock file manager
 
@@ -257,17 +238,13 @@ def user_file_manager() -> str:
     """
 ```
 
-On Windows and macOS, for now only the stock file manager is returned. That
-could change in future releases.
+On Windows and macOS, for now only the stock file manager is returned. That could change in future releases.
 
-On Linux, the file manager is probed using `xdg-mime query default 
-inode/directory`, and the resulting `.desktop` file is parsed to extract the
-file manager command.
+On Linux, the file manager is probed using `xdg-mime query default  inode/directory`, and the resulting `.desktop` file is parsed to extract the file manager command.
 
 ## Examples
 
-From Python, show file or directory in file manager, using the most sensible
-choice of file manager:
+From Python, show file or directory in file manager, using the most sensible choice of file manager:
 
 ```python
 # Windows path, in Windows or from within WSL
@@ -297,8 +274,7 @@ show_in_file_manager('/home/user')
 show_in_file_manager('/home/user', open_not_select_directory=False)
 ```
 
-Open the system home directory (`/home` on Linux, `/Users` on macOS) and
-select the user's home folder in it:
+Open the system home directory (`/home` on Linux, `/Users` on macOS) and select the user's home folder in it:
 
 ```bash
 showinfilemanager -s ~
@@ -316,22 +292,17 @@ Select files in two different directories, and open a third directory:
 showinfilemanager myfile.txt ../anotherfile.txt ../../
 ```
 
-The previous command will open three different instances of the file manager,
-because of three different directories (macOS users may need to adjust
-finder preferences in order to display multiple finder windows).
+The previous command will open three different instances of the file manager, because of three different directories (macOS users may need to adjust finder preferences in order to display multiple finder windows).
 
 ## Limitations
 
-- Its behavior in a confined Linux environment like a Flatpak, Snap, or
-  AppImage is untested.
+- Its behavior in a confined Linux environment like a Flatpak, Snap, or AppImage is untested.
 
 ## Contributing
 
-Please file issues or pull requests to improve the code. Discuss
-improvements in the GitHub discussion section for this project.
+Please file issues or pull requests to improve the code. Discuss improvements in the GitHub discussion section for this project.
 
-The initial source of this code is from
-[Rapid Photo Downloader](https://github.com/damonlynch/rapid-photo-downloader).
+The initial source of this code is from [Rapid Photo Downloader](https://github.com/damonlynch/rapid-photo-downloader).
 
 ## License
 
