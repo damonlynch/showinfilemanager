@@ -275,13 +275,7 @@ class FileManager:
                 uri = Path(pu).resolve().as_uri()
                 path = None
 
-        has_error = not (
-            path.exists() if path else Path(tools.file_uri_to_path(pu)).exists()
-        )
-        if has_error and self.debug:
-            print(f"Path '{path}' does not exist", file=sys.stderr)
-
-        return ProcessPathOrUri(fully_processed=has_error, path=path, uri=uri)
+        return ProcessPathOrUri(fully_processed=False, path=path, uri=uri)
 
     def _process_path_or_uri_no_select(
         self, path: Path | None, uri: str | None
