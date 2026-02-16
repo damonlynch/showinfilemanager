@@ -33,7 +33,7 @@ one function, the function `show_in_file_manager`, and it should just work.
 This package aspires to be platform independent, but it currently supports
 only Windows 10/11, Linux,
 [WSL1 and WSL2](https://docs.microsoft.com/en-us/windows/wsl/), and macOS.
-It works with 19 [supported file managers](#supported-file-managers).
+It works with 20 [supported file managers](#supported-file-managers).
 
 ## Install and run
 

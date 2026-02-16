@@ -44,12 +44,13 @@ showinfilemanager = "showinfm.showinfm:main"
 path = "src/showinfm/__about__.py"
 
 [tool.hatch.build.targets.sdist]
-packages = ["src/showinfm"]
+include = ["src/showinfm", "/*.md"]
+exclude = [".github"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/showinfm"]
+packages = ["src/showinfm", "man", "/*.md"]
 
-[tool.hatch.build.hooks.argparse-manpage]
+[tool.hatch.build.targets.wheel.hooks.argparse-manpage]
 include-url = false
 manpages = [
     "man/showinfilemanager.1:function=get_parser:pyfile=src/showinfm/argumentsparse.py:manual_title=General Commands Manual",
