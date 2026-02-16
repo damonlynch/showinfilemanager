@@ -1,8 +1,10 @@
-# SPDX-FileCopyrightText: 2021 Damon Lynch <damonlynch@gmail.com>
-# SPDX-License-Identifier: MIT
+#  SPDX-FileCopyrightText: 2021-2026 Damon Lynch <damonlynch@gmail.com>
+#  SPDX-License-Identifier: MIT
 
 # ruff: noqa: F401
 
+
+from showinfm.__about__ import __version__
 from showinfm.constants import cannot_open_uris, single_file_only
 from showinfm.showinfm import (
     show_in_file_manager,

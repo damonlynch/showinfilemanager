@@ -1,5 +1,5 @@
-# SPDX-FileCopyrightText: 2016-2024 Damon Lynch <damonlynch@gmail.com>
-# SPDX-License-Identifier: MIT
+#  SPDX-FileCopyrightText: 2016-2026 Damon Lynch <damonlynch@gmail.com>
+#  SPDX-License-Identifier: MIT
 
 """
 Parse command line arguments
@@ -7,29 +7,43 @@ Parse command line arguments
 
 import importlib.metadata
 from argparse import ArgumentParser, HelpFormatter
+from pathlib import Path
+
+try:
+    from showinfm import __about__ as __about__
+except ImportError:
+    # The script is being run at build time
+    # Module imports are unavailable
+
+    here = Path(__file__).parent
+    with open(here / "__about__.py") as f:
+        about = {}
+        exec(f.read(), about)
+
+    # Convert about dictionary to class
+    class About:
+        pass
+
+    __about__ = About()
+    __about__.__dict__.update(about)
 
 
 def package_metadata():
     """
     Get Python package metadata
 
-    :return: version number and package summary
+    :return: package summary
     """
 
     try:
-        version = importlib.metadata.version("show-in-file-manager")
+        metadata = importlib.metadata.metadata("show-in-file-manager")
+        summary = metadata["summary"]
     except Exception:
-        version = "Unknown version"
         summary = (
             "Platform independent Python module to open the system file manager "
             "and optionally select files in it "
         )
-
-    else:
-        metadata = importlib.metadata.metadata("show-in-file-manager")
-        summary = metadata["summary"]
-
-    return version, summary
+    return summary
 
 
 def get_parser(formatter_class=HelpFormatter) -> ArgumentParser:
@@ -40,13 +54,15 @@ def get_parser(formatter_class=HelpFormatter) -> ArgumentParser:
     :return: argparse.ArgumentParser
     """
 
-    version, summary = package_metadata()
+    summary = package_metadata()
 
     parser = ArgumentParser(
         prog="showinfilemanager", description=summary, formatter_class=formatter_class
     )
 
-    parser.add_argument("--version", action="version", version=f"%(prog)s {version}")
+    parser.add_argument(
+        "--version", action="version", version=f"%(prog)s {__about__.__version__}"
+    )
 
     parser.add_argument("-f", "--file-manager", help="file manager to run")
 

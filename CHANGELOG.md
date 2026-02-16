@@ -1,15 +1,21 @@
 Changelog for Show in File Manager
 ==================================
 
-1.1.6 (2026-02-xx)
+1.1.6 (2026-02-16)
 ------------------
 
 - Support [Cosmic Files](https://github.com/pop-os/cosmic-files)
 - Add check for "kde:plasma" in environment variable
   XDG_CURRENT_DESKTOP.
 - Fix [#27](https://github.com/damonlynch/showinfilemanager/issues/27):
-  Incorrect behavior when Windows explorer hides file extensions.
+  Incorrect behavior when Windows explorer hides file extensions. Thanks to
+  tpl2go for the fix.
 - Drop Python 3.8 and 3.9 support. Use Python 3.10+ typing syntax.
+- Add `__version__` to package.
+- `hatch build -t sdist` now produces an archive of the project's
+  source code.
+- `hatch build -t wheel` now produces a wheel (zip archive) of
+  the program's Python code; it also generates the manpage.
 
 1.1.6a1 (2024-04-18)
 --------------------
