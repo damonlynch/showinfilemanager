@@ -4,7 +4,6 @@
 
 import functools
 import os
-import packaging.version
 import re
 import shlex
 import shutil
@@ -12,8 +11,10 @@ import subprocess
 import urllib.request
 from enum import Enum
 from pathlib import Path, PureWindowsPath
-from typing import NamedTuple, Optional, Tuple
+from typing import NamedTuple, Optional
 from urllib.parse import unquote, urlparse
+
+import packaging.version
 
 try:
     import xdg  # type: ignore
@@ -148,7 +149,7 @@ def valid_linux_file_manager() -> str:
         return ""
 
 
-def known_linux_file_managers() -> Tuple[str, ...]:
+def known_linux_file_managers() -> tuple[str, ...]:
     """
     Generate a collection of Linux file managers this module knows about
 
@@ -171,7 +172,7 @@ def linux_file_manager_type(file_manager: str) -> FileManagerType:
     return LinuxFileManagerBehavior.get(file_manager, FileManagerType.regular)
 
 
-def caja_version() -> Optional[packaging.version.Version]:
+def caja_version() -> packaging.version.Version | None:
     """
     Get the version of Caja via a command line switch
     :return: parsed ver
@@ -190,7 +191,7 @@ def caja_version() -> Optional[packaging.version.Version]:
     if result is None:
         return None
 
-    version = version_string[result.start():]
+    version = version_string[result.start() :]
     return packaging.version.parse(version)
 
 
@@ -262,16 +263,16 @@ def wsl_path_is_for_windows(path_or_uri: str) -> bool:
 
 
 class WSLTransformPathURI(NamedTuple):
-    is_win_location: Optional[bool]
-    win_uri: Optional[str]
-    win_path: Optional[str]
-    linux_path: Optional[str]
-    is_dir: Optional[bool]
+    is_win_location: bool | None
+    win_uri: str | None
+    win_path: str | None
+    linux_path: str | None
+    is_dir: bool | None
     exists: bool
 
 
 def wsl_transform_path_uri(
-        path_or_uri: str, generate_win_path: bool
+    path_or_uri: str, generate_win_path: bool
 ) -> WSLTransformPathURI:
     r"""
     Transforms URI or path into path and URI suitable for working with WSL.
@@ -526,10 +527,10 @@ def wsl_transform_path_uri(
     >>> os.chdir(cwd)
     """
 
-    win_uri: Optional[str] = None
-    win_path: Optional[str] = None
-    linux_path: Optional[str] = None
-    is_dir: Optional[bool] = None
+    win_uri: str | None = None
+    win_path: str | None = None
+    linux_path: str | None = None
+    is_dir: bool | None = None
     exists: bool = False
 
     if path_or_uri.startswith("file:/"):
@@ -747,7 +748,7 @@ LinuxFileManagerBehavior["lumina-fm"] = FileManagerType.dir_only_uri
 LinuxFileManagerBehavior["cosmic-files"] = FileManagerType.regular
 
 
-def wsl_version() -> Optional[LinuxDesktop]:
+def wsl_version() -> LinuxDesktop | None:
     with open("/proc/version") as f:
         p = f.read()
     if p.find("microsoft") > 0 and p.find("WSL2"):
@@ -763,7 +764,7 @@ def detect_wsl() -> bool:
     return p.lower().find("microsoft") > 0
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def linux_desktop() -> LinuxDesktop:
     """
     Determine Linux desktop environment

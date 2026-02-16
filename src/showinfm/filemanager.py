@@ -1,5 +1,5 @@
-# SPDX-FileCopyrightText: 2016-2024 Damon Lynch <damonlynch@gmail.com>
-# SPDX-License-Identifier: MIT
+#  SPDX-FileCopyrightText: 2016-2026 Damon Lynch <damonlynch@gmail.com>
+#  SPDX-License-Identifier: MIT
 
 import os
 import platform
@@ -7,8 +7,9 @@ import shlex
 import subprocess
 import sys
 import urllib.parse
+from collections.abc import Sequence
 from pathlib import Path
-from typing import List, NamedTuple, Optional, Sequence, Union
+from typing import NamedTuple
 
 from showinfm.constants import FileManagerType, Platform, single_file_only
 from showinfm.system import (
@@ -21,13 +22,13 @@ from showinfm.system import (
     windows,
 )
 
-PathOrUri = Union[str, Sequence[str]]
+PathOrUri = str | Sequence[str]
 
 
 class ProcessPathOrUri(NamedTuple):
     fully_processed: bool
-    path: Optional[Path]
-    uri: Optional[str]
+    path: Path | None
+    uri: str | None
 
 
 def valid_file_manager() -> str:
@@ -79,21 +80,21 @@ def _file_manager_type(fm: str) -> FileManagerType:
 class FileManager:
     def __init__(self) -> None:
         self._valid_file_manager_probed: bool = False
-        self._valid_file_manager: Optional[str] = None
-        self._valid_file_manager_type: Optional[FileManagerType] = None
+        self._valid_file_manager: str | None = None
+        self._valid_file_manager_type: FileManagerType | None = None
 
-        self.file_manager: Optional[str]
-        self.file_manager_type: Optional[FileManagerType]
+        self.file_manager: str | None
+        self.file_manager_type: FileManagerType | None
 
         # Used for directories when open_not_select_directory is True
-        self.directories: List[str]
+        self.directories: list[str]
 
         # Target locations
-        self.locations: List[str]
+        self.locations: list[str]
 
         # Used for paths that will be opened in Windows explorer called from WSL2
-        self.wsl_windows_paths: List[str]
-        self.wsl_windows_directories: List[str]
+        self.wsl_windows_paths: list[str]
+        self.wsl_windows_directories: list[str]
 
         # Argument to pass to a file manager on the command line
         self.arg: str = ""
@@ -106,15 +107,11 @@ class FileManager:
         self.open_not_select_directory: bool
         self.allow_conversion: bool
 
-    def _launch_file_manager(self, uris_or_paths: List[str]) -> None:
+    def _launch_file_manager(self, uris_or_paths: list[str]) -> None:
         """
         Launch the file manager
 
         :param uris_or_paths: list of URIs, or a list of a single empty string
-        :param arg: arg to pass the file manager
-        :param file_manager: file manager executable name
-        :param verbose: if True print command to be executed before launching
-         it
         """
 
         for u in uris_or_paths:
@@ -142,9 +139,9 @@ class FileManager:
 
     def show_in_file_manager(
         self,
-        path_or_uri: Optional[PathOrUri] = None,
+        path_or_uri: PathOrUri | None = None,
         open_not_select_directory: bool = True,
-        file_manager: Optional[str] = None,
+        file_manager: str | None = None,
         allow_conversion: bool = True,
         verbose: bool = False,
         debug: bool = False,
@@ -278,14 +275,16 @@ class FileManager:
                 uri = Path(pu).resolve().as_uri()
                 path = None
 
-        haserror = not (path.exists() if path else Path(tools.file_uri_to_path(pu)).exists())
-        if haserror and self.debug:
+        has_error = not (
+            path.exists() if path else Path(tools.file_uri_to_path(pu)).exists()
+        )
+        if has_error and self.debug:
             print(f"Path '{path}' does not exist", file=sys.stderr)
 
-        return ProcessPathOrUri(fully_processed=haserror, path=path, uri=uri)
+        return ProcessPathOrUri(fully_processed=has_error, path=path, uri=uri)
 
     def _process_path_or_uri_no_select(
-        self, path: Optional[Path], uri: Optional[str]
+        self, path: Path | None, uri: str | None
     ) -> None:
         """
         Process the path or URI when using a file manager that cannot select files
@@ -319,7 +318,7 @@ class FileManager:
         self.locations.append(uri or str(path))
 
     def _process_path_or_uri_can_select(
-        self, path: Optional[Path], uri: Optional[str]
+        self, path: Path | None, uri: str | None
     ) -> None:
         """
         Process the path or URI when using a file manager that can select files
@@ -328,7 +327,7 @@ class FileManager:
 
         # Whether to open a directory or select it depends on file manager capabilities
         # and the option open_not_select_directory
-        is_directory = False
+        open_directory = False
 
         if (
             self.open_not_select_directory
@@ -337,11 +336,11 @@ class FileManager:
         ):
             if uri:
                 path = Path(tools.file_uri_to_path(uri=uri))
-                is_directory = path.is_dir()
+                open_directory = path.is_dir()
             else:
                 assert path is not None
-                is_directory = path.is_dir()
-            if is_directory:
+                open_directory = path.is_dir()
+            if open_directory:
                 if (
                     self.file_manager_type == FileManagerType.regular
                     and not self.open_not_select_directory
@@ -357,7 +356,7 @@ class FileManager:
                 if uri is None:
                     path = tools.quote_path(path=path)
                 self.directories.append(uri or str(path))
-        if not is_directory:
+        if not open_directory:
             if uri is None and self.file_manager != "explorer.exe":
                 assert path is not None
                 path = tools.quote_path(path=path)

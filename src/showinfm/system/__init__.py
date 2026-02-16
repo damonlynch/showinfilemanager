@@ -1,13 +1,12 @@
-# SPDX-FileCopyrightText: 2021-2024 Damon Lynch <damonlynch@gmail.com>
-# SPDX-License-Identifier: MIT
+#  SPDX-FileCopyrightText: 2021-2026 Damon Lynch <damonlynch@gmail.com>
+#  SPDX-License-Identifier: MIT
 
 import platform
-from typing import Union
 
 from ..constants import Platform
 from . import linux
 
-current_platform: Union[Platform, None]
+current_platform: Platform | None
 system = platform.system()
 is_wsl: bool = False
 is_wsl1: bool = False
