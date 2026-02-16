@@ -1,13 +1,12 @@
-# SPDX-FileCopyrightText: 2021-2024 Damon Lynch <damonlynch@gmail.com>
-# SPDX-FileCopyrightText: 2008-2021 The pip developers
-# SPDX-License-Identifier: MIT
+#  SPDX-FileCopyrightText: 2008-2026 Damon Lynch <damonlynch@gmail.com>
+#  SPDX-FileCopyrightText: 2008-2021 The pip developers
+#  SPDX-License-Identifier: MIT
 
 import os
 import re
 import shlex
 from collections import defaultdict
 from pathlib import Path
-from typing import DefaultDict, List
 from urllib.parse import urljoin, urlparse
 from urllib.request import pathname2url, url2pathname
 
@@ -43,7 +42,6 @@ def quote_path(path: Path) -> Path:
     not already quoted.
 
     :param path: path to quote, if necessary
-    :param target_platform: platform the file manager command will be executed on
     :return: double-quoted path
     """
 
@@ -94,7 +92,7 @@ def file_uri_to_path(uri: str) -> str:
     return p
 
 
-def directories_and_their_files(paths: List[str]) -> DefaultDict[str, List[str]]:
+def directories_and_their_files(paths: list[str]) -> defaultdict[str, list[str]]:
     """
     Group paths into directories and their files.
 

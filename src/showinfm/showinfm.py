@@ -1,5 +1,5 @@
-# SPDX-FileCopyrightText: 2016-2024 Damon Lynch <damonlynch@gmail.com>
-# SPDX-License-Identifier: MIT
+#  SPDX-FileCopyrightText: 2016-2026 Damon Lynch <damonlynch@gmail.com>
+#  SPDX-License-Identifier: MIT
 
 """
 Show in File Manager
@@ -9,7 +9,7 @@ Open the system file manager and optionally select files in it.
 
 import shutil
 import sys
-from typing import Optional, Sequence, Union
+from collections.abc import Sequence
 
 import showinfm.filemanager
 from showinfm.argumentsparse import get_parser
@@ -92,9 +92,9 @@ def valid_file_manager() -> str:
 
 
 def show_in_file_manager(
-    path_or_uri: Optional[Union[str, Sequence[str]]] = None,
+    path_or_uri: str | Sequence[str] | None = None,
     open_not_select_directory: bool = True,
-    file_manager: Optional[str] = None,
+    file_manager: str | None = None,
     allow_conversion: bool = True,
     verbose: bool = False,
     debug: bool = False,
@@ -168,7 +168,7 @@ class Diagnostics:
     """
 
     def __init__(self) -> None:
-        self.desktop: Optional[linux.LinuxDesktop]
+        self.desktop: linux.LinuxDesktop | None
         self.wsl_version: str
 
         try:
