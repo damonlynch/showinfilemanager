@@ -1,6 +1,6 @@
 # Changelog for Show in File Manager
 
-## 1.1.6 (2026-02-16)
+## 1.1.6 (2026-02-17)
 
 - Support [Cosmic Files](https://github.com/pop-os/cosmic-files)
 - Add check for "kde:plasma" in environment variable `XDG_CURRENT_DESKTOP`.
