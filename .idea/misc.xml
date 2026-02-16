@@ -3,5 +3,12 @@
   <component name="Black">
     <option name="sdkName" value="Python 3.12 (showinfilemanager)" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.12 (showinfilemanager)" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="Hatch (show-in-file-manager) [3.14]" project-jdk-type="Python SDK" />
+  <component name="PythonCompatibilityInspectionAdvertiser">
+    <option name="version" value="3" />
+  </component>
+  <component name="RuffConfiguration">
+    <option name="enabled" value="true" />
+    <option name="executableDiscoveryMode" value="PATH" />
+  </component>
 </project>
