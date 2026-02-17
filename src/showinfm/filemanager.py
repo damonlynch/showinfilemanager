@@ -296,16 +296,23 @@ class FileManager:
             # there is no need to use tools.file_url_to_path() to handle the
             # file:/// case that urllib.parse.urlparse fails with.
             parse_result = urllib.parse.urlparse(uri)
-            path = Path(parse_result.path)
+            quoted_path = parse_result.path
+            # unquote the path before checking for its existence (below)
+            path = Path(urllib.parse.unquote(parse_result.path))
         else:
             parse_result = None
+            quoted_path = None
 
         assert path is not None
 
         if not (path.is_dir() and self.open_not_select_directory):
             path = path.parent
+
         if uri:
             assert parse_result is not None
+            # Use the original quoted path
+            assert quoted_path is not None
+            path = Path(quoted_path)
             uri = str(urllib.parse.urlunparse(parse_result._replace(path=str(path))))
         else:
             path = tools.quote_path(path=path)

@@ -1,24 +1,21 @@
 # Changelog for Show in File Manager
 
-## 1.1.6 (2026-02-16)
+## 1.1.6 (2026-02-17)
 
-- Support [Cosmic Files](https://github.com/pop-os/cosmic-files)
+- Support [Cosmic Files](https://github.com/pop-os/cosmic-files).
 - Add check for "kde:plasma" in environment variable `XDG_CURRENT_DESKTOP`.
-- Fix [#27](https://github.com/damonlynch/showinfilemanager/issues/27):
-  Incorrect behavior when Windows explorer hides file extensions. Thanks to
-  tpl2go for the fix.
+- Fix [#27](https://github.com/damonlynch/showinfilemanager/issues/27): Incorrect behavior when Windows explorer hides file extensions. Thanks to tpl2go for the fix.
+- Fix [#29](https://github.com/damonlynch/showinfilemanager/issues/29) :Directory names with Unicode do not open correctly in file managers that cannot select files. Thanks to nipatriknilsson for identifying the underlying problem.
 - Drop Python 3.8 and 3.9 support. Use Python 3.10+ typing syntax.
 - Add `__version__` to package.
 - `hatch build -t sdist` now produces an archive of the project's source code.
-- `hatch build -t wheel` now produces a wheel (zip archive) of the program's
-  Python code; it also generates the manpage.
+- `hatch build -t wheel` now produces a wheel (zip archive) of the program's Python code; it also generates the manpage.
 
 ## 1.1.6a1 (2024-04-18)
 
 - Update SPDX headers to be compliant with spec.
 - Switch to [hatch](https://hatch.pypa.io/latest/) from setuptools.
-- New build
-  dependency: [hatch-argparse-manpage](https://github.com/damonlynch/hatch-argparse-manpage).
+- New build dependency: [hatch-argparse-manpage](https://github.com/damonlynch/hatch-argparse-manpage).
 - Add [Release Notes](RELEASE_NOTES.md).
 - Refactor: use absolute imports, not relative.
 - Refactor: flatten code by using a new class. The API is unchanged.
@@ -27,8 +24,7 @@
 
 - Drop setup.py and setup.cfg in favor of pyproject.toml.
 - Purge doc directory.
-- New build
-  dependency: [argparse-manpage](https://github.com/praiskup/argparse-manpage)
+- New build dependency: [argparse-manpage](https://github.com/praiskup/argparse-manpage)
 - Generate man page with argparse-manpage instead of pandoc.
 - Format and lint using ruff. Drop black.
 - Drop Python 3.6 and 3.7 support.
@@ -39,34 +35,23 @@
 
 ## 1.1.3 (2022-02-18)
 
-- Fix [#3](https://github.com/damonlynch/showinfilemanager/issues/3): Missing
-  dependency on packaging.
+- Fix [#3](https://github.com/damonlynch/showinfilemanager/issues/3): Missing dependency on packaging.
 
 ## 1.1.2 (2021-12-27)
 
-- Add check for "unity:unity7:ubuntu" in environment variable
-  XDG_CURRENT_DESKTOP.
-  See https://github.com/damonlynch/rapid-photo-downloader/issues/46.
+- Add check for "unity:unity7:ubuntu" in environment variable XDG_CURRENT_DESKTOP. See https://github.com/damonlynch/rapid-photo-downloader/issues/46.
 
 ## 1.1.1 (2021-10-31)
 
-- Add `allow_conversion` switch to `show_in_file_manager()`. Set to False if
-  passing non-standard URIs.
+- Add `allow_conversion` switch to `show_in_file_manager()`. Set to False if passing non-standard URIs.
 - Recognize non-standard URI prefix 'camera:/', used by KDE.
-- Added function `linux_desktop_humanize()`, to make Linux desktop environment
-  variable name values human friendly.
+- Added function `linux_desktop_humanize()`, to make Linux desktop environment variable name values human friendly.
 
 ## 1.1.0 (2021-10-29)
 
-- On WSL2, use a Linux file manager (if set) for WSL paths, and Windows Explorer
-  for Windows paths. If no Linux file manager is installed, use Windows
-  Explorer. To override the default choice of using Explorer for Windows paths,
-  simply specify a file manager of your choice.
-- On both WSL1 and WSL2, use Windows style URIs to work around
-  a [bug](https://github.com/microsoft/WSL/issues/7603) in WSL where using the
-  /select switch while passing a path with spaces in it fails.
-- Don't mess up the terminal when launching Windows Explorer from WSL on Windows
-  Terminal.
+- On WSL2, use a Linux file manager (if set) for WSL paths, and Windows Explorer for Windows paths. If no Linux file manager is installed, use Windows Explorer. To override the default choice of using Explorer for Windows paths, simply specify a file manager of your choice.
+- On both WSL1 and WSL2, use Windows style URIs to work around a [bug](https://github.com/microsoft/WSL/issues/7603) in WSL where using the /select switch while passing a path with spaces in it fails.
+- Don't mess up the terminal when launching Windows Explorer from WSL on Windows Terminal.
 
 ## 1.0.1 (2021-10-23)
 
@@ -102,8 +87,7 @@
 - Add setup.py for man page generation.
 - Improve README to clarify installation and usage.
 - Parse filename globs passed via the command line on Windows.
-- Use win32 API to execute explorer.exe on Windows, allowing for multiple file
-  selection.
+- Use win32 API to execute explorer.exe on Windows, allowing for multiple file selection.
 
 ## 0.0.4 (2021-08-14)
 
@@ -118,8 +102,7 @@
 
 ## 0.0.2 (2021-08-12)
 
-- Move config data from `__about__.py` to static config in
-  `pyproject.toml` [(PEP 621)](https://www.python.org/dev/peps/pep-0621/).
+- Move config data from `__about__.py` to static config in `pyproject.toml` [(PEP 621)](https://www.python.org/dev/peps/pep-0621/).
 - Added command line arguments `--debug` and `--verbose`.
 
 ## 0.0.1 (2021-08-12)

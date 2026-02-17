@@ -1,7 +1,7 @@
 # Show in File Manager
 
 |         |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Package | [![PyPI - Version](https://img.shields.io/pypi/v/show-in-file-manager.svg)](https://pypi.org/project/show-in-file-manager) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/show-in-file-manager.svg?logo=python&label=Python&logoColor=gold)](https://pypi.org/project/show-in-file-manager/)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | Meta    | [![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg)](https://github.com/pypa/hatch) [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff) [![GitButler](https://img.shields.io/badge/GitButler-%23B9F4F2?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB3aWR0aD0iMzkiIGhlaWdodD0iMjgiIHZpZXdCb3g9IjAgMCAzOSAyOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTI1LjIxNDUgMTIuMTk5N0wyLjg3MTA3IDEuMzg5MTJDMS41NDI5NSAwLjc0NjUzMiAwIDEuNzE0MDYgMCAzLjE4OTQ3VjI0LjgxMDVDMCAyNi4yODU5IDEuNTQyOTUgMjcuMjUzNSAyLjg3MTA3IDI2LjYxMDlMMjUuMjE0NSAxNS44MDAzQzI2LjcxOTcgMTUuMDcyMSAyNi43MTk3IDEyLjkyNzkgMjUuMjE0NSAxMi4xOTk3WiIgZmlsbD0iYmxhY2siLz4KPHBhdGggZD0iTTEzLjc4NTUgMTIuMTk5N0wzNi4xMjg5IDEuMzg5MTJDMzcuNDU3MSAwLjc0NjUzMiAzOSAxLjcxNDA2IDM5IDMuMTg5NDdWMjQuODEwNUMzOSAyNi4yODU5IDM3LjQ1NzEgMjcuMjUzNSAzNi4xMjg5IDI2LjYxMDlMMTMuNzg1NSAxNS44MDAzQzEyLjI4MDMgMTUuMDcyMSAxMi4yODAzIDEyLjkyNzkgMTMuNzg1NSAxMi4xOTk3WiIgZmlsbD0idXJsKCNwYWludDBfcmFkaWFsXzMxMF8xMjkpIi8%2BCjxkZWZzPgo8cmFkaWFsR3JhZGllbnQgaWQ9InBhaW50MF9yYWRpYWxfMzEwXzEyOSIgY3g9IjAiIGN5PSIwIiByPSIxIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgZ3JhZGllbnRUcmFuc2Zvcm09InRyYW5zbGF0ZSgxNi41NzAxIDE0KSBzY2FsZSgxOS44NjQxIDE5LjgzODMpIj4KPHN0b3Agb2Zmc2V0PSIwLjMwMTA1NiIgc3RvcC1vcGFjaXR5PSIwIi8%2BCjxzdG9wIG9mZnNldD0iMSIvPgo8L3JhZGlhbEdyYWRpZW50Pgo8L2RlZnM%2BCjwvc3ZnPgo%3D)](https://gitbutler.com/) [![Checked with mypy](http://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/) [![License - MIT](https://img.shields.io/badge/license-MIT-9400d3.svg)](https://spdx.org/licenses/) [![GitHub Sponsors](https://img.shields.io/github/sponsors/damonlynch?logo=GitHub%20Sponsors&style=social)](https://github.com/sponsors/damonlynch) |
 
@@ -57,38 +57,17 @@ This package solves the following problems:
 - How do I supply command line arguments to select files in the file manager?
 - What about file managers with limited features?
 
-There is no standard command line argument with which to open an operating
-system's file manager and select files at a specified path. Moreover, not
-all file managers support specifying files to select &mdash; if you try to
-pass a file to some file managers, they will open the file instead of
-selecting it, or worse yet display an error message. Some file managers will
-only allow selecting one file at a time from the command line.
+There is no standard command line argument with which to open an operating system's file manager and select files at a specified path. Moreover, not all file managers support specifying files to select — if you try to pass a file to some file managers, they will open the file instead of selecting it, or worse yet display an error message. Some file managers will only allow selecting one file at a time from the command line.
 
-On desktop Linux the problem is especially acute, as Linux provides a
-plethora of file managers, with widely varying command line arguments.
-Moreover, the user's default file manager can sometimes be incorrectly set
-to nonsensical values, such as an AppImage or Flatpak of a random application.
+On desktop Linux the problem is especially acute, as Linux provides a plethora of file managers, with widely varying command line arguments. Moreover, the user's default file manager can sometimes be incorrectly set to nonsensical values, such as an AppImage or Flatpak of a random application.
 
-Windows is not without its share of limitations. Windows Explorer will select
-only one file at a time when called from the command line, and the argument
-must be quoted in a way peculiar to it. Rather than using the command line
-to launch Windows Explorer, this package instead uses the
-[Win32 API](https://docs.microsoft.com/en-us/windows/win32/api/shlobj_core/nf-shlobj_core-shopenfolderandselectitems)
-to programmatically select multiple files. Using the Win32 API is not
-possible when calling Windows Explorer from within WSL &mdash; this package
-will launch `explorer.exe` using the command line under WSL. Calling Windows
-Explorer from within WSL is not trivial due to differences in URI and path
-formats between Windows and Linux.
+Windows is not without its share of limitations. Windows Explorer will select only one file at a time when called from the command line, and the argument must be quoted in a way peculiar to it. Rather than using the command line to launch Windows Explorer, this package instead uses the [Win32 API](https://docs.microsoft.com/en-us/windows/win32/api/shlobj_core/nf-shlobj_core-shopenfolderandselectitems) to programmatically select multiple files. Using the Win32 API is not possible when calling Windows Explorer from within WSL — this package will launch `explorer.exe` using the command line under WSL. Calling Windows Explorer from within WSL is not trivial due to differences in URI and path formats between Windows and Linux.
 
 ## Supported file managers
 
-This package takes care of calling the file managers with the correct
-arguments for you. The command line arguments shown here are for reference.
+This package takes care of calling the file managers with the correct arguments for you. The command line arguments shown here are for reference.
 
-All but two file managers
-accept [URIs](https://en.wikipedia.org/wiki/Uniform_Resource_Identifier)
-like `file:///home/user/file.txt` in addition to regular paths like
-`/home/user/file.txt`.
+All but two file managers accept [URIs](https://en.wikipedia.org/wiki/Uniform_Resource_Identifier) like `file:///home/user/file.txt` in addition to regular paths like `/home/user/file.txt`.
 
 | File Manager                                                                                    | Used by                                            | Command line                             | Can Select Files | Handles Multiple Files / Directories | Notes                                                                                                                                                                                                                                                    |
 |-------------------------------------------------------------------------------------------------|----------------------------------------------------|------------------------------------------|:----------------:|:------------------------------------:|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -119,11 +98,12 @@ like `file:///home/user/file.txt` in addition to regular paths like
 
 ```python
 def show_in_file_manager(
-        path_or_uri: Optional[Union[str, Sequence[str]]] = None,
-        open_not_select_directory: Optional[bool] = True,
-        file_manager: Optional[str] = None,
-        verbose: bool = False,
-        debug: bool = False,
+    path_or_uri: str | Sequence[str] | None = None,
+    open_not_select_directory: bool = True,
+    file_manager: str | None = None,
+    allow_conversion: bool = True,
+    verbose: bool = False,
+    debug: bool = False,
 ) -> None:
     """
     Open the file manager and show zero or more directories or files in it.
@@ -204,8 +184,8 @@ def valid_file_manager() -> str:
 This package makes opinionated choices about the most sensible choice of file manager:
 
 1. A file manager is valid if and only if this package recognizes it, e.g. `nautilus`, `explorer.exe`.
-1. If the user's choice of file manager is valid (i.e. an actual file manager, not some random application), that file manager is used.
-1. If the user's choice of file manager is invalid or could not be determined, the desktop or OS's stock file manager is used.
+2. If the user's choice of file manager is valid (i.e. an actual file manager, not some random application), that file manager is used.
+3. If the user's choice of file manager is invalid or could not be determined, the desktop or OS's stock file manager is used.
 
 ### Get the operating system's stock file manager
 
