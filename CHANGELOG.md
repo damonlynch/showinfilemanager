@@ -5,7 +5,7 @@
 - Support [Cosmic Files](https://github.com/pop-os/cosmic-files).
 - Add check for "kde:plasma" in environment variable `XDG_CURRENT_DESKTOP`.
 - Fix [#27](https://github.com/damonlynch/showinfilemanager/issues/27): Incorrect behavior when Windows explorer hides file extensions. Thanks to tpl2go for the fix.
-- Fix [#29](https://github.com/damonlynch/showinfilemanager/issues/29) :Directory names with Unicode do not open correctly in file managers that cannot select files. Thanks to nipatriknilsson for identifying the underlying problem.
+- Fix [#29](https://github.com/damonlynch/showinfilemanager/issues/29): Directory names with Unicode do not open correctly in file managers that cannot select files. Thanks to nipatriknilsson for identifying the underlying problem.
 - Drop Python 3.8 and 3.9 support. Use Python 3.10+ typing syntax.
 - Add `__version__` to package.
 - `hatch build -t sdist` now produces an archive of the project's source code.
