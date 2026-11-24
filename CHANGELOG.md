@@ -7,6 +7,7 @@
   `urllib.request.pathname2url()` changed in Python 3.12 for paths beginning with
   two slashes and again in 3.14 for absolute paths, so UNC shares came out with
   four leading slashes and drive paths as `file://nt:/c:/...`.
+- A file manager registered in `xdg-mime` but since uninstalled no longer leaves Show in File Manager with no file manager at all; the desktop's stock manager is used instead.
 
 ## 1.1.6 (2026-02-17)
 

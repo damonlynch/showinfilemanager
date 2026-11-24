@@ -475,9 +475,18 @@ def _ladder(
     *,
     stock: str = "",
     user: str | None = "",
-    on_path: bool = True,
+    missing: tuple[str, ...] = (),
 ) -> str:
-    """Drive valid_linux_file_manager() with a chosen stock and user answer."""
+    """
+    Drive valid_linux_file_manager() with a chosen stock and user answer.
+
+    shutil.which() resolves nothing for an empty name, so the stand-in matches that:
+    a stub returning a path for "" would make the empty-name guard in the code under
+    test look load-bearing when it is not.
+
+    :param missing: names shutil.which() cannot resolve, so that the user's choice can
+     be installed while the stock manager is not, and the other way round
+    """
 
     monkeypatch.setattr(linux, "stock_linux_file_manager", lambda: stock)
     if user is None:
@@ -491,7 +500,11 @@ def _ladder(
     monkeypatch.setattr(
         linux,
         "shutil",
-        SimpleNamespace(which=lambda name: f"/usr/bin/{name}" if on_path else None),
+        SimpleNamespace(
+            which=lambda name: (
+                None if not name or name in missing else f"/usr/bin/{name}"
+            )
+        ),
     )
     return linux.valid_linux_file_manager()
 
@@ -523,4 +536,45 @@ def test_nothing_installed_yields_no_file_manager(
 def test_an_uninstalled_choice_yields_no_file_manager(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    assert _ladder(monkeypatch, stock="nautilus", on_path=False) == ""
+    assert _ladder(monkeypatch, stock="nautilus", missing=("nautilus",)) == ""
+
+
+def test_a_stale_user_choice_falls_back_to_the_stock_manager(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Committing to one candidate before resolving anything is what made a stale
+    override end with no file manager at all, even with the stock one installed.
+    """
+
+    assert (
+        _ladder(monkeypatch, stock="nautilus", user="dolphin", missing=("dolphin",))
+        == "nautilus"
+    )
+
+
+def test_a_stale_override_falls_back_to_the_stock_manager(
+    xdg_entries, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    The dolphin example end to end, with no stubbed reader: the registered handler's
+    .desktop file is intact and names dolphin, which is no longer installed, and the
+    desktop's stock manager is. The first assertion is what makes the second mean
+    anything, since a fallback would also pass if the override read as nothing.
+    """
+
+    xdg_entries.write("org.kde.dolphin.desktop", "dolphin %u")
+    xdg_entries.answer("org.kde.dolphin.desktop\n")
+    monkeypatch.setattr(linux, "stock_linux_file_manager", lambda: "nautilus")
+    monkeypatch.setattr(
+        linux,
+        "shutil",
+        SimpleNamespace(
+            which=lambda name: (
+                None if not name or name == "dolphin" else f"/usr/bin/{name}"
+            )
+        ),
+    )
+
+    assert linux.user_linux_file_manager() == "dolphin"
+    assert linux.valid_linux_file_manager() == "nautilus"

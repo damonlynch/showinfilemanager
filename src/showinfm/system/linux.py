@@ -157,10 +157,16 @@ def valid_linux_file_manager() -> str:
     Get user's file manager, falling back to using sensible defaults for the particular
     desktop environment.
 
+    Each candidate is tried in turn rather than one being chosen and then rejected if
+    it turns out not to be installed. That distinction is what a stale override
+    depends on: xdg-mime can report a file manager that has since been uninstalled,
+    and if the choice is fixed before the executables are looked at, that missing
+    program decides the answer and the desktop's stock manager is never consulted.
+
     All exceptions are caught.
 
-    :return: If the user's default file manager is set and it is known by this module,
-     then return it. Otherwise return the stock file manager, if it exists.
+    :return: the user's default file manager if this module knows it and it is
+     installed, else the stock file manager if that is installed, else an empty string
     """
 
     try:
@@ -176,15 +182,11 @@ def valid_linux_file_manager() -> str:
         if user_fm not in known_linux_file_managers():
             user_fm = ""
 
-    if not (user_fm or stock):
-        return ""
+    for fm in (user_fm, stock):
+        if fm and shutil.which(fm):
+            return fm
 
-    fm = user_fm if user_fm else stock
-
-    if fm and shutil.which(fm):
-        return fm
-    else:
-        return ""
+    return ""
 
 
 def known_linux_file_managers() -> tuple[str, ...]:
