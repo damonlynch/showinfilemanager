@@ -229,38 +229,6 @@ def translate_wsl_path(path: str, from_windows_to_wsl: bool) -> str:
     )
 
 
-def wsl_path_is_for_windows(path_or_uri: str) -> bool:
-    """
-    When running in WSL, detect if the path being passed is in Windows or Linux
-
-    Reference: https://docs.microsoft.com/en-us/windows/wsl/filesystems
-
-    :param path_or_uri:
-    :return:
-    """
-
-    if path_or_uri.startswith("file://"):
-        # Assume valid URI
-        # Look for drive letter, windows style
-        if path_or_uri[3:4].isalpha() and path_or_uri[4:5] == ":":  # noqa: SIM114
-            return True
-        # Look for UNC host name: anything that does not start with a leading /
-        elif path_or_uri[7].isalpha():
-            return True
-        return False
-    else:
-        drive = PureWindowsPath(path_or_uri).drive
-        if drive:
-            # C:\
-            if drive[0].isalpha() and drive[1] == ":":
-                return True
-            # UNC share
-            if drive[:2] == r"\\":
-                return True
-        # Assume anything under /mnt is Windows
-        return path_or_uri.startswith("/mnt")
-
-
 class WSLTransformPathURI(NamedTuple):
     is_win_location: bool | None
     win_uri: str | None
