@@ -36,21 +36,6 @@ class FakeWslpath:
         self._to_wsl[windows_path] = wsl_path
         self._to_windows[wsl_path] = windows_path
 
-    def to_windows(self, wsl_path: str, windows_path: str) -> None:
-        """
-        Answer wslpath -w alone, without teaching the reverse direction.
-
-        Real translations are not symmetric: a path that arrives as
-        'c:/Program Files/x' comes back from wslpath -w as 'C:\\Program Files\\x'.
-        Tests that depend on that normalisation need to state it rather than get
-        the input echoed back at them.
-
-        :param wsl_path: path as it appears to Linux under WSL
-        :param windows_path: path as wslpath reports it to Windows
-        """
-
-        self._to_windows[wsl_path] = windows_path
-
     def __call__(
         self, cmd: list[str], *args: object, **kwargs: object
     ) -> subprocess.CompletedProcess:

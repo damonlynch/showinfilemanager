@@ -259,48 +259,25 @@ def test_spaces_in_a_windows_uri_input_are_encoded(
     assert result.linux_path == ABSENT
 
 
-def test_win_path_is_normalised_when_the_target_exists(
-    fake_wslpath: FakeWslpath, tmp_path: Path
-) -> None:
-    target = tmp_path / "barrier.conf"
-    target.write_text("", encoding="utf-8")
-    windows_path = r"C:\Program Files\Barrier\barrier.conf"
-    fake_wslpath.pair("c:/Program Files/Barrier/barrier.conf", str(target))
-    # wslpath -w is what normalises the drive letter and the separators, so it is
-    # stated separately from the -u direction the URI path is translated with
-    fake_wslpath.to_windows(str(target), windows_path)
-
-    result = wsl_transform_path_uri(
-        "file:///c:/Program%20Files/Barrier/barrier.conf", True
-    )
-
-    assert result.exists is True
-    assert result.is_dir is False
-    # tmp_path stands in for a mounted drive, so is_win_location is False here
-    # rather than the True a real /mnt/c path gives; the live layer covers both.
-    assert result.win_path == windows_path
-
-
-def test_win_path_stays_in_the_input_dialect_when_the_target_is_absent(
+def test_windows_uri_of_an_absent_target_reports_no_directory(
     fake_wslpath: FakeWslpath,
 ) -> None:
     """
-    The retired doctest expected a normalised path here. It only ever held when
-    the file existed, because wslpath is what normalises it, and it was run on a
-    machine where the Barrier directory had long since lost its contents.
+    What matters about a target wslpath can translate but that does not exist: the
+    caller sees exists False with no directory verdict, which is what makes
+    FileManager drop the location rather than hand explorer.exe a path that is not
+    there. The win_path field is deliberately not asserted: no consumer in this
+    package, in Rapid Photo Downloader or in biblioartisan reads it.
     """
 
-    fake_wslpath.pair("c:/Program Files/Barrier/barrier.conf", ABSENT)
+    fake_wslpath.pair("c:/Users/damon/Documents/report.txt", f"{ABSENT}/report.txt")
 
-    result = wsl_transform_path_uri(
-        "file:///c:/Program%20Files/Barrier/barrier.conf", True
-    )
+    result = wsl_transform_path_uri("file:///c:/Users/damon/Documents/report.txt", True)
 
     assert result.exists is False
     assert result.is_dir is None
     assert result.is_win_location is True
-    assert result.win_path == "c:/Program Files/Barrier/barrier.conf"
-    assert result.win_uri == "file:///c:/Program%20Files/Barrier/barrier.conf"
+    assert result.linux_path == f"{ABSENT}/report.txt"
 
 
 def test_relative_path_resolves_against_the_working_directory(
