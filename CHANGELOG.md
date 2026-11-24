@@ -1,5 +1,13 @@
 # Changelog for Show in File Manager
 
+## 1.1.7 (2026-11-xx)
+
+- Fix [#39](https://github.com/damonlynch/showinfilemanager/issues/39): Show in File Manager on Windows wrongly assumes successful import of `win32com.shell`.
+- Fix the Windows Explorer URIs generated under WSL on recent Python releases:
+  `urllib.request.pathname2url()` changed in Python 3.12 for paths beginning with
+  two slashes and again in 3.14 for absolute paths, so UNC shares came out with
+  four leading slashes and drive paths as `file://nt:/c:/...`.
+
 ## 1.1.6 (2026-02-17)
 
 - Support [Cosmic Files](https://github.com/pop-os/cosmic-files).
