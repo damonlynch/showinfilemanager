@@ -8,11 +8,10 @@ import re
 import shlex
 import shutil
 import subprocess
-import urllib.request
 from enum import Enum
 from pathlib import Path, PureWindowsPath
 from typing import NamedTuple, Optional
-from urllib.parse import unquote, urlparse
+from urllib.parse import quote, unquote, urlparse
 
 import packaging.version
 
@@ -574,8 +573,7 @@ def wsl_transform_path_uri(
 
                 # Generate Windows URI
                 if is_unc:
-                    wuri = urllib.request.pathname2url(path.replace("\\", "/"))
-                    win_uri = f"file:{wuri}"
+                    win_uri = "file:" + _quote_path_for_uri(path.replace("\\", "/"))
                 elif linux_path is not None:
                     win_uri = wsl_path_to_uri_for_windows_explorer(linux_path)
             else:
@@ -601,8 +599,9 @@ def wsl_transform_path_uri(
                     exists = False
                 if win_path and not win_uri:
                     if not is_win_location:
-                        wuri = urllib.request.pathname2url(win_path.replace("\\", "/"))
-                        win_uri = f"file:{wuri}"
+                        win_uri = "file:" + _quote_path_for_uri(
+                            win_path.replace("\\", "/")
+                        )
                     else:
                         win_uri = wsl_path_to_uri_for_windows_explorer(linux_path)
 
@@ -631,6 +630,24 @@ def wsl_transform_path_uri(
     )
 
 
+def _quote_path_for_uri(slash_path: str) -> str:
+    r"""
+    Percent encode a slash separated path, leaving its slashes alone.
+
+    urllib.request.pathname2url() is deliberately not used. As of Python 3.14 it
+    inserts an empty authority in front of an absolute path, so '/mnt/c/x' comes
+    back as '///mnt/c/x' and '//wsl.localhost/x' as '////wsl.localhost/x'.
+    Windows Explorer needs those slashes exactly as they are, so only the
+    encoding is wanted here. quote() with safe="/" is what pathname2url() did on
+    every Python release up to and including 3.13.
+
+    :param slash_path: Windows path written with forward slashes
+    :return: the path percent encoded, its slashes untouched
+    """
+
+    return quote(slash_path, safe="/")
+
+
 def wsl_path_to_uri_for_windows_explorer(path: str) -> str:
     r"""
     Convert a path to a URI accepted by Windows Explorer.
@@ -640,6 +657,9 @@ def wsl_path_to_uri_for_windows_explorer(path: str) -> str:
     (note the three slashes after file:), and
     file://hostname/path/to/the%20file.txt
 
+    The drive letter is split away from the rest of the path before encoding
+    because a colon would otherwise be percent encoded.
+
     :param path: path format like '/mnt/c/some/path', '/home/user', 'C:\some\path'
     :return: a file URI accepted by Windows Explorer
     """
@@ -647,9 +667,9 @@ def wsl_path_to_uri_for_windows_explorer(path: str) -> str:
     assert not path.startswith("\\\\")
     assert path.startswith("/mnt/")
 
-    path = urllib.request.pathname2url(path)
-    # Remove the /mnt portion, keep the drive letter, and insert a colon
-    return f"file://{path[4:6]}:{path[6:]}"
+    # Under WSL the drive letter sits in the path where a share name would be
+    drive, _, remainder = path[len("/mnt/") :].partition("/")
+    return f"file:///{drive}:{_quote_path_for_uri('/' + remainder)}"
 
 
 class LinuxDesktop(Enum):
