@@ -62,3 +62,21 @@ def fake_wslpath(monkeypatch: pytest.MonkeyPatch) -> FakeWslpath:
     fake = FakeWslpath()
     monkeypatch.setattr(linux.subprocess, "run", fake)
     return fake
+
+
+@pytest.fixture(autouse=True)
+def clear_cached_desktop() -> None:
+    """
+    Drop the desktop state that would otherwise carry from test to test.
+
+    linux_desktop() is decorated with functools.cache, and stock_linux_file_manager()
+    memoises into the _linux_desktop global, so without this the first test to reach
+    either one fixes the answer for all the rest and the verdict depends on the order
+    the tests happen to run in.
+    """
+
+    linux.linux_desktop.cache_clear()
+    linux._linux_desktop = None
+    yield
+    linux.linux_desktop.cache_clear()
+    linux._linux_desktop = None
