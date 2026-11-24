@@ -61,9 +61,15 @@ def user_linux_file_manager() -> str:
     extracted. The executable is not examined to see if it is valid or if it even
     exists.
 
+    Where several handlers are registered for directories, xdg-mime lists them
+    semicolon separated in order of preference. The first entry with a usable
+    .desktop file is used, so a stale override left behind by an uninstalled file
+    manager does not hide the handler registered after it. An empty answer means
+    nothing is registered, which is reported as no choice at all.
+
     All exceptions are raised.
 
-    :return: executable name
+    :return: executable name, or an empty string if there is no user choice
     """
 
     if not have_xdg:
@@ -78,39 +84,72 @@ def user_linux_file_manager() -> str:
     except Exception:
         raise Exception(f"Could not determine file manager using {xdg_cmd}")
 
-    # Remove new line character from output
-    desktop_file = desktop_file[:-1]
-    if desktop_file.endswith(";"):
-        desktop_file = desktop_file[:-1]
-
-    for desktop_path in (Path(d) / "applications" for d in BaseDirectory.xdg_data_dirs):
-        path = desktop_path / desktop_file
-        if path.exists():
-            p = str(path)
-            try:
-                desktop_entry = DesktopEntry(p)
-            except Exception:
-                raise Exception(f"Could not open desktop entry at {p}")
-            try:
-                desktop_entry.parse(p)
-            except xdg.Exceptions.ParsingError:
-                raise Exception(f"Could not parse desktop entry at {p}")
-            except Exception:
-                raise Exception(f"Desktop entry at {p} might be malformed")
-
-            fm = desktop_entry.getExec()
-
-            # Strip away any extraneous arguments
-            fm_cmd = fm.split()[0]
-            # Strip away any path information
-            fm_cmd = Path(fm_cmd).name
-            # Strip away any quotes
-            fm_cmd = fm_cmd.replace('"', "")
-            fm_cmd = fm_cmd.replace("'", "")
-
-            return fm_cmd
+    # Where more than one handler is registered, xdg-mime lists them in order of
+    # preference
+    for desktop_file in desktop_file.strip().split(";"):
+        if not desktop_file:
+            # An empty answer splits to one empty name, which must not be used as a
+            # filename: that would test the applications directory itself, which
+            # exists, and report it as an unreadable desktop entry
+            continue
+        for desktop_path in (
+            Path(d) / "applications" for d in BaseDirectory.xdg_data_dirs
+        ):
+            path = desktop_path / desktop_file
+            if not path.exists():
+                continue
+            fm_cmd = _executable_from_desktop_entry(str(path))
+            if fm_cmd:
+                return fm_cmd
 
     return ""
+
+
+def _executable_from_desktop_entry(path: str) -> str:
+    """
+    Read a .desktop entry and return the executable it names.
+
+    Handlers are tried in preference order, and for each of them the data directories
+    in their own order. That nesting is what makes the preference list mean something,
+    and it is also what lets a bad entry be stepped over rather than obeyed: a
+    .desktop file left in the user's directory by an uninstalled file manager keeps
+    that directory's override in force for xdg-mime, so an entry with no Exec key, or
+    an empty one, comes back as an empty string and the caller tries the next handler.
+    An entry that exists but cannot be read, parsed or understood still raises,
+    because nothing about it says the user meant no file manager at all.
+
+    What is not detected here is an Exec key naming a program that is no longer
+    installed: this module does not examine the executable, and it is
+    valid_linux_file_manager that rejects a choice which is not on the PATH.
+
+    :param path: full path of the .desktop file to read
+    :return: the executable name, or an empty string when the entry names none
+    """
+
+    try:
+        desktop_entry = DesktopEntry(path)
+    except Exception:
+        raise Exception(f"Could not open desktop entry at {path}")
+    try:
+        desktop_entry.parse(path)
+    except xdg.Exceptions.ParsingError:
+        raise Exception(f"Could not parse desktop entry at {path}")
+    except Exception:
+        raise Exception(f"Desktop entry at {path} might be malformed")
+
+    fm = desktop_entry.getExec()
+    if not fm:
+        return ""
+
+    # Strip away any extraneous arguments
+    fm_cmd = fm.split()[0]
+    # Strip away any path information
+    fm_cmd = Path(fm_cmd).name
+    # Strip away any quotes
+    fm_cmd = fm_cmd.replace('"', "")
+    fm_cmd = fm_cmd.replace("'", "")
+
+    return fm_cmd
 
 
 def valid_linux_file_manager() -> str:

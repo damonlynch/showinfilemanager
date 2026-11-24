@@ -8,9 +8,10 @@ Nothing here reads the machine it runs on: the desktop comes from a set
 XDG_CURRENT_DESKTOP, and xdg-mime, the .desktop entries, shutil.which and caja
 --version are all answered from below.
 
-Three cases describe what the code does rather than what it should do, and say so in
-the test. They are meant to turn red the day those paths are corrected, which is the
-reason to pin them rather than leave them untested.
+Three of the xdg-mime cases below once pinned what the code did rather than what it
+should do, and were rewritten when those paths were corrected. They are kept because
+going back to the old handling has to fail loudly, not because that behaviour was ever
+wanted.
 """
 
 import re
@@ -74,14 +75,18 @@ def xdg_entries(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, fake_subprocess: FakeSubprocess
 ):
     """
-    A single-directory XDG setup whose .desktop files can be written from a test.
+    An XDG setup with two data directories whose .desktop files a test can write.
 
-    DesktopEntry stands in for pyxdg's and, like it, refuses a path that is not a
-    file. That refusal is what turns an empty xdg-mime answer into an error rather
-    than a choice, so a stand-in that accepted any path would hide the case.
+    The directories are reported in the order a real system lists them, the user's
+    before the system's, so a test can tell whether the preference list or the
+    directory order drives the search. DesktopEntry stands in for pyxdg's and, like
+    it, refuses a path that is not a file, so a candidate that resolves to a
+    directory cannot be quietly accepted as a desktop entry.
     """
-    applications = tmp_path / "applications"
-    applications.mkdir()
+    user_dir = tmp_path / "user"
+    system_dir = tmp_path / "system"
+    for data_dir in (user_dir, system_dir):
+        (data_dir / "applications").mkdir(parents=True)
 
     class ParsingError(Exception):
         """Stands in for xdg.Exceptions.ParsingError."""
@@ -111,7 +116,7 @@ def xdg_entries(
     monkeypatch.setattr(
         linux,
         "BaseDirectory",
-        SimpleNamespace(xdg_data_dirs=[str(tmp_path)]),
+        SimpleNamespace(xdg_data_dirs=[str(user_dir), str(system_dir)]),
         raising=False,
     )
     monkeypatch.setattr(linux, "DesktopEntry", Entry, raising=False)
@@ -122,8 +127,9 @@ def xdg_entries(
         raising=False,
     )
 
-    def write(name: str, exec_line: str = "nautilus %U") -> Path:
-        path = applications / name
+    def write(name: str, exec_line: str = "nautilus %U", system: bool = False) -> Path:
+        root = system_dir if system else user_dir
+        path = root / "applications" / name
         path.write_text(
             f"[Desktop Entry]\nType=Application\nExec={exec_line}\n", encoding="utf-8"
         )
@@ -133,7 +139,6 @@ def xdg_entries(
         fake_subprocess.check_output_result = xdg_mime_output
 
     return SimpleNamespace(
-        applications=applications,
         answer=answer,
         write=write,
         entry_class=Entry,
@@ -349,44 +354,87 @@ def test_trailing_semicolon_is_ignored(xdg_entries) -> None:
     assert linux.user_linux_file_manager() == "peony"
 
 
-def test_a_second_handler_makes_the_users_choice_disappear(xdg_entries) -> None:
+def test_the_first_handler_of_a_list_is_the_users_choice(xdg_entries) -> None:
     """
-    xdg-mime lists every accepted handler separated by semicolons, but only a trailing
-    semicolon is removed, so the whole list is looked up as one filename, matches
-    nothing, and the user's configured file manager is discarded. Pinned, not
-    endorsed.
+    xdg-mime lists every accepted handler separated by semicolons, in order of
+    preference, so the first is the default. Looking the whole list up as one filename
+    matched nothing and dropped the user's configured file manager without a word.
     """
 
     xdg_entries.write("org.gnome.Nautilus.desktop")
+    xdg_entries.write("nemo.desktop", "nemo %U")
     xdg_entries.answer("org.gnome.Nautilus.desktop;nemo.desktop\n")
+    assert linux.user_linux_file_manager() == "nautilus"
+
+
+def test_a_missing_first_handler_falls_through_to_the_next(xdg_entries) -> None:
+    """
+    Registering a handler is not the same as having it installed: the .desktop file of
+    the preferred one can be gone while a later entry in the list is still there, and
+    the user's choice is then the next one down rather than the desktop default.
+    """
+
+    xdg_entries.write("nemo.desktop", "nemo %U")
+    xdg_entries.answer("org.gnome.Nautilus.desktop;nemo.desktop\n")
+    assert linux.user_linux_file_manager() == "nemo"
+
+
+def test_a_stale_override_without_an_executable_falls_through(xdg_entries) -> None:
+    """
+    The override .desktop file left behind in the user's data directory by an
+    uninstalled file manager keeps its place at the head of xdg-mime's list, but names
+    no executable, so the handler registered next is the user's real choice rather
+    than no choice at all.
+    """
+
+    xdg_entries.write("org.kde.dolphin.desktop", "")
+    xdg_entries.write("thunar.desktop", "thunar %F")
+    xdg_entries.answer("org.kde.dolphin.desktop;thunar.desktop\n")
+    assert linux.user_linux_file_manager() == "thunar"
+
+
+def test_preference_order_outranks_directory_order(xdg_entries) -> None:
+    """
+    The user's data directory is searched before the system's, but for each handler
+    rather than for each list entry, so a preferred handler installed system-wide
+    beats a less preferred one the user installed. Swapping that nesting would let the
+    user's nemo answer here.
+    """
+
+    xdg_entries.write("nemo.desktop", "nemo %U")
+    xdg_entries.write("org.gnome.Nautilus.desktop", system=True)
+    xdg_entries.answer("org.gnome.Nautilus.desktop;nemo.desktop\n")
+    assert linux.user_linux_file_manager() == "nautilus"
+
+
+def test_no_handler_in_the_list_has_a_desktop_file(xdg_entries) -> None:
+    xdg_entries.answer("gone.desktop;also-gone.desktop\n")
     assert linux.user_linux_file_manager() == ""
 
 
-def test_output_without_a_newline_loses_its_last_character(xdg_entries) -> None:
+def test_an_answer_without_a_newline_keeps_its_whole_name(xdg_entries) -> None:
     """
-    The newline is removed by slicing rather than stripping, so an answer that arrives
-    without one loses the final character of the filename instead. Pinned, not
-    endorsed.
+    Whether the answer ends in a newline depends on how check_output decoded it, so the
+    name is stripped rather than sliced, and no character is lost when there is no
+    newline to remove.
     """
 
-    xdg_entries.write("nemo.desktop")
+    xdg_entries.write("nemo.desktop", "nemo %U")
     xdg_entries.answer("nemo.desktop")
-    assert linux.user_linux_file_manager() == ""
+    assert linux.user_linux_file_manager() == "nemo"
 
 
-def test_no_handler_configured_reports_the_directory_as_unreadable(
-    xdg_entries,
-) -> None:
+def test_no_handler_configured_yields_no_user_choice(xdg_entries) -> None:
     """
-    With an empty answer the filename is empty, so the path the code tests is the
-    applications directory itself, which exists. The resulting message is what users
-    of the --debug output see on a system where xdg-mime knows no handler for
-    inode/directory. Pinned, not endorsed.
+    Nothing is registered for inode/directory wherever there is no desktop, which is
+    the usual answer under WSL. An empty answer used to be looked up as a filename,
+    which resolves to the applications directory itself, and that exists, so it came
+    back as the unreadable desktop entry message in the --debug output instead of as
+    no choice.
     """
 
     xdg_entries.answer("")
-    with pytest.raises(Exception, match="Could not open desktop entry"):
-        linux.user_linux_file_manager()
+    assert linux.user_linux_file_manager() == ""
 
 
 def test_unreadable_desktop_entry_names_its_own_path(xdg_entries) -> None:
