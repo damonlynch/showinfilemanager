@@ -7,11 +7,11 @@ name = "show-in-file-manager"
 authors = [{ name = "Damon Lynch", email = "damonlynch@gmail.com" }]
 description = "Open the system file manager and select files in it"
 classifiers = [
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "License :: OSI Approved :: MIT License",
     "Operating System :: MacOS :: MacOS X",
     "Operating System :: Microsoft :: Windows :: Windows 10",
@@ -21,7 +21,7 @@ classifiers = [
     "Topic :: Desktop Environment :: File Managers",
     "Typing :: Typed",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "pyxdg>=0.25; platform_system=='Linux'",
     "packaging",
@@ -56,7 +56,11 @@ manpages = [
     "man/showinfilemanager.1:function=get_parser:pyfile=src/showinfm/argumentsparse.py:manual_title=General Commands Manual",
 ]
 
+[[tool.hatch.envs.hatch-test.matrix]]
+python = ["3.11", "3.12", "3.13", "3.14", "3.15"]
+
 [tool.ruff]
+target-version = "py311"
 exclude = [
     ".bzr",
     ".direnv",
