@@ -1,15 +1,13 @@
 #  SPDX-FileCopyrightText: 2021-2026 Damon Lynch <damonlynch@gmail.com>
 #  SPDX-License-Identifier: MIT
 
-import contextlib
-from pathlib import Path
-
-with contextlib.suppress(ImportError):
-    from win32com.shell import shell
-
 import os
+from pathlib import Path
+from typing import Any
 
-from showinfm.constants import FileManagerType
+from showinfm.constants import FileManagerType, Platform
+from showinfm.exceptions import WindowsShellUnavailableError
+from showinfm.system import current_platform
 from showinfm.system.tools import (
     directories_and_their_files,
     file_uri_to_path,
@@ -21,6 +19,67 @@ WindowsFileManagerBehavior = {
     "doublecmd.exe": FileManagerType.dual_panel,
     "fman.exe": FileManagerType.dual_panel,
 }
+
+# win32com.shell is used for one thing only: selecting files in Windows
+# Explorer. Importing it is therefore restricted to Windows, where it's needed,
+# and any failure to import it is recorded instead of raised, so that this
+# package remains importable and folders can still be opened. The failure is
+# reported when the API is actually needed, in launch_file_explorer().
+_shell: Any = None
+_shell_import_error: BaseException | None = None
+
+if current_platform == Platform.windows:
+    try:
+        # Anything that stops this import from working means the API cannot be
+        # used, so the exact exception type doesn't matter: pywin32 can fail
+        # with a plain ImportError when it isn't installed, and with errors
+        # from its own registration when the post-install step never ran.
+        from win32com.shell import shell as _shell
+    except Exception as e:
+        _shell_import_error = e
+
+
+def _shell_unusable_reason() -> str:
+    """
+    Describe why the Win32 shell API cannot be used.
+
+    :return: reason for the API being unavailable
+    """
+
+    if _shell_import_error is not None:
+        return f"{type(_shell_import_error).__name__}: {_shell_import_error}"
+    return "win32com.shell was not imported"
+
+
+def windows_shell_available() -> bool:
+    """
+    Whether the Win32 shell API that selects files in Windows Explorer can be
+    used on this system.
+
+    Only meaningful on Windows. On Linux and macOS the module is deliberately
+    never imported, because those platforms select files by passing command
+    line arguments to their file managers, so requiring pywin32 there would add
+    a dependency that is never used. The result is therefore False on those
+    platforms even though nothing is wrong with them.
+
+    :return: True if win32com.shell was imported, else False
+    """
+
+    return _shell is not None
+
+
+def windows_shell_status() -> str:
+    """
+    Describe whether the Win32 shell API can be used, for diagnostic output.
+
+    :return: single line description of the state on this system
+    """
+
+    if current_platform != Platform.windows:
+        return "not required (not running on Windows)"
+    if _shell is not None:
+        return "available"
+    return f"not available ({_shell_unusable_reason()})"
 
 
 def windows_file_manager_type(file_manager: str) -> FileManagerType:
@@ -77,12 +136,25 @@ def launch_file_explorer(paths: list[str], verbose: bool | None = False) -> None
 
     See also:
     https://learn.microsoft.com/en-us/windows/win32/api/shlobj_core/nf-shlobj_core-shopenfolderandselectitems
+
+    :param paths: list of paths to select
+    :param verbose: if True print what will be executed
+    :raises WindowsShellUnavailableError: if win32com.shell is not available
     """
+
+    if _shell is None:
+        raise WindowsShellUnavailableError(
+            "Cannot select files in Windows File Explorer: the win32com.shell "
+            f"module of pywin32 could not be loaded ({_shell_unusable_reason()}). "
+            "Install pywin32. If it is already installed, its components may not "
+            "be registered, in which case run 'python -m pywin32_postinstall "
+            "-install'. Folders can still be opened without pywin32."
+        )
 
     folder_contents = directories_and_their_files(paths)
     if folder_contents:
         for folder in folder_contents:
-            folder_pidl = shell.SHILCreateFromPath(folder, 0)[0]
+            folder_pidl = _shell.SHILCreateFromPath(folder, 0)[0]
             if verbose:
                 files = '", "'.join(folder_contents[folder])
                 if files:
@@ -92,7 +164,7 @@ def launch_file_explorer(paths: list[str], verbose: bool | None = False) -> None
                     f'explorer at "{folder}", selecting {files}'
                 )
             to_select = [
-                shell.SHParseDisplayName(os.path.join(folder, filename), 0, None)[0]
+                _shell.SHParseDisplayName(os.path.join(folder, filename), 0, None)[0]
                 for filename in folder_contents[folder]
             ]
-            shell.SHOpenFolderAndSelectItems(folder_pidl, to_select, 0)  # type: ignore
+            _shell.SHOpenFolderAndSelectItems(folder_pidl, to_select, 0)  # type: ignore

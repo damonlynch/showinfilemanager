@@ -14,6 +14,7 @@ from collections.abc import Sequence
 import showinfm.filemanager
 from showinfm.argumentsparse import get_parser
 from showinfm.constants import Platform
+from showinfm.exceptions import WindowsShellUnavailableError
 from showinfm.system import current_platform, is_wsl, is_wsl1, is_wsl2, linux, windows
 
 _file_manager = showinfm.filemanager.FileManager()
@@ -148,6 +149,8 @@ def show_in_file_manager(
     :param verbose: if True print command to be executed before launching
      it
     :param debug: if True print debugging information to stderr
+    :raises WindowsShellUnavailableError: if files are to be selected in Windows
+     Explorer on this system and win32com.shell is not available
     """
 
     global _file_manager
@@ -170,6 +173,7 @@ class Diagnostics:
     def __init__(self) -> None:
         self.desktop: linux.LinuxDesktop | None
         self.wsl_version: str
+        self.windows_shell_status: str | None
 
         try:
             self.stock_file_manager = stock_file_manager()
@@ -192,6 +196,14 @@ class Diagnostics:
         else:
             self.desktop = None
 
+        # Only reported on Windows, where the Win32 shell API is what selects
+        # files in Explorer. Elsewhere it is never imported, so there is
+        # nothing useful to report.
+        if current_platform == Platform.windows:
+            self.windows_shell_status = windows.windows_shell_status()
+        else:
+            self.windows_shell_status = None
+
         if is_wsl:
             if is_wsl2:
                 self.wsl_version = "2"
@@ -203,12 +215,17 @@ class Diagnostics:
     def __str__(self) -> str:
         desktop = f"Linux Desktop: {self.desktop.name}\n" if self.desktop else ""
         wsl = f"WSL version {self.wsl_version}\n" if self.wsl_version else ""
+        win_shell = (
+            f"Windows shell: {self.windows_shell_status}\n"
+            if self.windows_shell_status
+            else ""
+        )
         file_managers = (
             f"Stock: {self.stock_file_manager}\n"
             f"User's choice: {self.user_file_manager}\n"
             f"Valid: {self.valid_file_manager}"
         )
-        return desktop + wsl + file_managers
+        return desktop + wsl + win_shell + file_managers
 
 
 def main() -> None:
@@ -237,6 +254,11 @@ def main() -> None:
             open_not_select_directory=open_not_select_directory,
             debug=debug,
         )
+    except WindowsShellUnavailableError as e:
+        # Aborting with the remediation steps is the point of this error, so it
+        # is reported on its own rather than as an unhandled exception.
+        sys.stderr.write(f"{e}\n")
+        sys.exit(1)
     except Exception as e:
         sys.stderr.write(str(e))
         if args.debug:

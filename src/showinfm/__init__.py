@@ -6,6 +6,7 @@
 
 from showinfm.__about__ import __version__
 from showinfm.constants import cannot_open_uris, single_file_only
+from showinfm.exceptions import WindowsShellUnavailableError
 from showinfm.showinfm import (
     show_in_file_manager,
     stock_file_manager,
@@ -13,3 +14,4 @@ from showinfm.showinfm import (
     valid_file_manager,
 )
 from showinfm.system.linux import LinuxDesktop, linux_desktop, linux_desktop_humanize
+from showinfm.system.windows import windows_shell_available
