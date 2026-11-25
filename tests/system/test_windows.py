@@ -2,7 +2,8 @@
 #  SPDX-License-Identifier: MIT
 
 """
-Tests for the Windows-only win32com.shell dependency, which is issue #39.
+Tests for what only Windows does: the win32com.shell dependency of issue #39, and the
+UNC locations of issue #38.
 
 Each scenario runs in its own interpreter through tests/system/windows_probe.py,
 because current_platform and the decision to import win32com.shell are both made
@@ -13,22 +14,58 @@ price of that, and reports are cached per scenario so the suite stays quick.
 
 These hold on a real Windows install too: the blocked case forbids the import rather
 than relying on pywin32 being absent.
+
+The UNC tests come in two layers. The string one needs no share and pins the separator
+a URI with a host converts to. The live one is skipped unless SHOWINFM_UNC_ROOT names a
+readable share, because only a real folder shows what the library hands over is what
+Windows accepts -- quote and doubled separators both fail there, and both fail quietly
+on a machine without a share.
 """
 
 import functools
 import json
+import os
 import platform
 import subprocess
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 import showinfm
+from showinfm import filemanager
 from showinfm.exceptions import WindowsShellUnavailableError
 from showinfm.system import windows
+from showinfm.system.tools import file_uri_to_path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
+# A share to test against, as only its owner can know it. Nothing here writes to it.
+UNC_ROOT = os.environ.get("SHOWINFM_UNC_ROOT", "")
+REAL_UNC = bool(UNC_ROOT) and platform.system() == "Windows" and Path(UNC_ROOT).is_dir()
+
+requires_unc_share = pytest.mark.skipif(
+    not REAL_UNC,
+    reason="needs SHOWINFM_UNC_ROOT set to a readable network share",
+)
+
+
+@pytest.fixture(scope="module")
+def unc_folder() -> str:
+    """
+    A real directory on the share, preferring one whose name contains a space, since
+    that is what quoting was added for and what it breaks on.
+
+    :return: the directory as Windows names it
+    """
+
+    try:
+        subfolders = [p for p in Path(UNC_ROOT).iterdir() if p.is_dir()]
+    except OSError as e:
+        pytest.skip(f"{UNC_ROOT} could not be listed: {e}")
+    spaced = [p for p in subfolders if " " in p.name]
+    return str((spaced or subfolders or [Path(UNC_ROOT)])[0])
 
 
 @pytest.fixture(scope="module")
@@ -136,9 +173,10 @@ def test_opening_a_folder_needs_no_pywin32(explorer_tree: tuple[str, str]) -> No
 
     assert report["errors"] == []
     assert len(report["startfile"]) == 1
-    # Asserted as containment rather than equality: the folder reaches startfile
-    # quoted, which is the separate unfixed defect about quoted paths
-    assert folder in report["startfile"][0]
+    # Equality, not containment: os.startfile is a direct Win32 call, so the folder has
+    # to arrive as it stands. Wrapping it in quotes was issue #38, and rebuilding the
+    # quoted value as a Path also collapsed the leading separators of a UNC location.
+    assert report["startfile"] == [folder]
 
 
 def test_diagnostics_report_the_shell_state_on_windows(
@@ -175,3 +213,141 @@ def test_the_error_is_a_runtime_error_reachable_from_the_package() -> None:
     assert issubclass(WindowsShellUnavailableError, RuntimeError)
     assert showinfm.WindowsShellUnavailableError is WindowsShellUnavailableError
     assert showinfm.windows_shell_available is windows.windows_shell_available
+
+
+@pytest.mark.skipif(
+    platform.system() != "Windows",
+    reason="ntpath and the Windows url2pathname decide this shape",
+)
+def test_a_uri_with_a_host_keeps_one_separator_before_the_share() -> None:
+    """
+    file://host/share is how a network location is written as a URI, and url2pathname()
+    returns a path that still begins with a separator. Two separators in front of the
+    share name is a path the shell API refuses, so the host alone supplies them.
+    """
+
+    assert (
+        file_uri_to_path("file://storage/Backup/media render/holiday.jpg")
+        == r"\\storage\Backup\media render\holiday.jpg"
+    )
+
+
+@pytest.mark.skipif(
+    platform.system() != "Windows",
+    reason="ntpath and the Windows url2pathname decide this shape",
+)
+def test_a_uri_without_a_host_still_converts_to_a_drive_path() -> None:
+    """The ordinary case, which must not move while the network one is corrected."""
+
+    assert file_uri_to_path("file:///C:/x y/holiday.jpg") == r"C:\x y\holiday.jpg"
+
+
+@pytest.mark.skipif(
+    platform.system() != "Windows",
+    reason="ntpath and the Windows url2pathname decide this shape",
+)
+def test_a_localhost_authority_still_names_a_local_drive_path() -> None:
+    """
+    RFC 8089 counts an authority of localhost as a local file URI, "exactly as if no
+    authority were present", so the drive letter begins the path, not becoming a share
+    called C: on a host named localhost.
+    """
+
+    assert (
+        file_uri_to_path("file://localhost/C:/x y/holiday.jpg") == r"C:\x y\holiday.jpg"
+    )
+
+
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="the same rule, read on the interpreter that used to drop the host",
+)
+def test_a_localhost_authority_still_names_a_local_path_off_windows() -> None:
+    """
+    The POSIX half of the pair above, and of the same sentence in the RFC. A host of
+    localhost is this machine, not a share, so no leading component is added.
+    """
+
+    assert (
+        file_uri_to_path("file://localhost/home/damon/holiday.jpg")
+        == "/home/damon/holiday.jpg"
+    )
+
+
+@requires_unc_share
+def test_a_live_network_folder_reaches_startfile_exactly(
+    monkeypatch: pytest.MonkeyPatch, unc_folder: str
+) -> None:
+    """
+    The whole route, with only the API call stood in for: the folder is real, so Windows
+    decides its directoryness rather than this test asserting it. Quote would arrive as
+    literal characters, and rebuilding a quoted value as a Path drops one of the two
+    leading separators.
+    """
+
+    opened: list[str] = []
+    monkeypatch.setattr(filemanager, "os", SimpleNamespace(startfile=opened.append))
+
+    filemanager.FileManager().show_in_file_manager(
+        unc_folder, file_manager="explorer.exe"
+    )
+
+    assert opened == [unc_folder]
+
+
+@requires_unc_share
+def test_a_live_network_folder_survives_the_uri_round_trip(unc_folder: str) -> None:
+    """
+    as_uri() and back has to name the same folder: that round trip is the only way a
+    caller hands a network location over as a URI.
+    """
+
+    converted = file_uri_to_path(Path(unc_folder).as_uri())
+
+    assert converted == unc_folder
+    assert Path(converted).is_dir()
+
+
+@requires_unc_share
+def test_a_live_network_folder_given_as_a_uri_is_opened_not_selected(
+    monkeypatch: pytest.MonkeyPatch, unc_folder: str
+) -> None:
+    """
+    The route issue #38 recommends as a workaround. Converting the URI back to a path is
+    what decides whether the folder is opened or selected, so a doubled separator there
+    sends it to the shell API instead, which refuses it. Neither API is really called.
+    """
+
+    opened: list[str] = []
+    selected: list = []
+    monkeypatch.setattr(filemanager, "os", SimpleNamespace(startfile=opened.append))
+    monkeypatch.setattr(
+        filemanager.windows,
+        "launch_file_explorer",
+        lambda paths, verbose=False: selected.append(paths),
+    )
+
+    filemanager.FileManager().show_in_file_manager(
+        Path(unc_folder).as_uri(), file_manager="explorer.exe"
+    )
+
+    assert selected == []
+    assert opened == [unc_folder]
+
+
+@requires_unc_share
+def test_the_shell_api_accepts_the_network_folder_it_is_given(unc_folder: str) -> None:
+    """
+    The Windows answer, not this machine's opinion of the string. SHILCreateFromPath is
+    the first call launch_file_explorer() makes and the one that refused the doubled
+    separator. Parsing a path opens no window.
+    """
+
+    converted = file_uri_to_path(Path(unc_folder).as_uri())
+    report = scenario("unc_parse", converted)
+
+    assert report["available"] is True, (
+        "pywin32 is not usable here, so the shell API cannot answer"
+    )
+    assert report["error"] is None, report
+    assert report["parsed"] is True

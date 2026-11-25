@@ -87,9 +87,24 @@ def file_uri_to_path(uri: str) -> str:
     """
 
     parsed = urlparse(uri)
-    host = f"{os.path.sep}{os.path.sep}{parsed.netloc}{os.path.sep}"
-    p = os.path.normpath(os.path.join(host, url2pathname(parsed.path)))
-    return p
+    path = url2pathname(parsed.path)
+    # RFC 8089: an authority of "localhost" names this machine, "exactly as if no
+    # authority were present", so it must not become the host of a network path.
+    # Loopback addresses and FQDNs that resolve locally are deliberately not
+    # recognised here: that would mean resolving a name while converting a path.
+    authority = "" if parsed.netloc.lower() == "localhost" else parsed.netloc
+    root = f"{os.path.sep}{os.path.sep}{authority}{os.path.sep}"
+    if authority:
+        # A URI with a host names a network location, and the host supplies the leading
+        # separators. url2pathname() keeps the one the URI's path starts with, and
+        # os.path.join() on Python 3.11 adds a separator of its own in front of what is
+        # left, so the UNC root is built by hand: two separators, the host, one more,
+        # then the remainder. normpath() leaves a doubling inside a UNC path alone, and
+        # the shell API refuses such a path.
+        path = root + path.lstrip(f"{os.path.sep}{os.path.altsep or ''}")
+    else:
+        path = os.path.join(root, path)
+    return os.path.normpath(path)
 
 
 def directories_and_their_files(paths: list[str]) -> defaultdict[str, list[str]]:

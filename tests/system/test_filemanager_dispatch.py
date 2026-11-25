@@ -385,17 +385,33 @@ def test_explorer_uses_the_shell_rather_than_a_process(
 
 def test_directories_on_windows_use_startfile(dispatch: Dispatch, tmp_path) -> None:
     """
-    A directory on native Windows goes to os.startfile, and reaches it double quoted,
-    because quote_path adds those quotes for the Windows shell. The quoted form is
-    what issue #38 reports failing on a folder whose name contains spaces, so this
-    records the handover as it stands rather than endorsing it.
+    A directory on native Windows goes to os.startfile, a direct Win32 call that takes
+    the path as it stands. Quote reaches it as literal characters, and rebuilding a
+    quoted value as a Path also drops one of the two leading separators of a UNC
+    location -- issue #38.
     """
 
     dispatch.configure(platform=WINDOWS)
     dispatch.run(str(tmp_path), file_manager="explorer.exe")
-    assert dispatch.startfile_calls == [f'"{tmp_path}"']
+    assert dispatch.startfile_calls == [str(tmp_path)]
     assert dispatch.launches == []
     assert dispatch.shell_calls == []
+
+
+def test_other_windows_file_managers_still_receive_a_quoted_directory(
+    dispatch: Dispatch, tmp_path
+) -> None:
+    """
+    The exemption is for explorer.exe alone. Any other manager is launched as a single
+    command string, which CreateProcess splits at the first space, and a temp path on
+    this machine always holds one. nemo is used because only a manager that opens a
+    directory reaches this branch.
+    """
+
+    dispatch.configure(platform=WINDOWS)
+    dispatch.run(str(tmp_path), file_manager="nemo")
+    assert dispatch.startfile_calls == []
+    assert dispatch.launches == [f'nemo "{tmp_path}"']
 
 
 def test_windows_locations_and_directories_are_both_handled(
@@ -407,7 +423,7 @@ def test_windows_locations_and_directories_are_both_handled(
     target.write_text("", encoding="utf-8")
     dispatch.configure(platform=WINDOWS)
     dispatch.run([str(tmp_path), str(target)], file_manager="explorer.exe")
-    assert dispatch.startfile_calls == [f'"{tmp_path}"']
+    assert dispatch.startfile_calls == [str(tmp_path)]
     assert dispatch.shell_calls == [[str(target)]]
 
 

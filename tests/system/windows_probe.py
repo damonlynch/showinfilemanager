@@ -114,6 +114,31 @@ def report_diagnostics() -> None:
     REPORT["diagnostics"] = text
 
 
+def report_unc_parse() -> None:
+    """
+    Ask the real shell API to parse a path, without opening anything.
+
+    SHILCreateFromPath is the first call launch_file_explorer() makes and the one that
+    refuses a malformed UNC location, so this settles whether a path is acceptable while
+    no Explorer window appears. Only the real module answers, since the fake shell the
+    other scenarios install records calls rather than parsing them.
+    """
+
+    from showinfm.system import windows
+
+    REPORT["available"] = windows.windows_shell_available()
+    if windows._shell is None:
+        REPORT["error"] = "win32com.shell was not imported"
+        return
+    try:
+        pidl = windows._shell.SHILCreateFromPath(TARGET, 0)[0]
+    except Exception as e:
+        REPORT["error"] = f"{type(e).__name__}: {e}"
+    else:
+        REPORT["error"] = None
+        REPORT["parsed"] = bool(pidl)
+
+
 def report_abort() -> None:
     from showinfm.system import windows
 
@@ -197,6 +222,10 @@ elif MODE == "windows_folder_only":
     pretend_windows()
     block_win32com()
     report_folder_only()
+elif MODE == "unc_parse":
+    # No pretend_windows() here: this scenario answers for the machine it runs on, which
+    # is the only way the shell API's own verdict on a UNC path is worth anything.
+    report_unc_parse()
 elif MODE in ("cli_missing", "cli_present"):
     pretend_windows()
     if MODE == "cli_missing":

@@ -8,6 +8,13 @@
   two slashes and again in 3.14 for absolute paths, so UNC shares came out with
   four leading slashes and drive paths as `file://nt:/c:/...`.
 - A file manager registered in `xdg-mime` but since uninstalled no longer leaves Show in File Manager with no file manager at all; the desktop's stock manager is used instead.
+- Fix [#38](https://github.com/damonlynch/showinfilemanager/issues/38): UNC folders become local paths: quoting drops one of the two leading separators.
+- Fix `file_uri_to_path()` for network locations: the share name ended up behind two
+  separators, which the Windows shell API refuses, and on other platforms the host was
+  dropped, so `file://host/share` became the local path `/share`. A network URI built with
+  `Path.as_uri()` therefore never opened, so the workaround suggested in issue #38 did not
+  work either. `Path.is_dir()` also answered differently for the doubled path on Python
+  3.11 and 3.14, so which route the failure took depended on the interpreter.
 
 ## 1.1.6 (2026-02-17)
 

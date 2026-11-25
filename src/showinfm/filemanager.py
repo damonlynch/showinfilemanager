@@ -348,7 +348,7 @@ class FileManager:
                     path = path.parent
                     if uri:
                         uri = path.as_uri()
-                if uri is None:
+                if uri is None and self.file_manager != "explorer.exe":
                     path = tools.quote_path(path=path)
                 self.directories.append(uri or str(path))
         if not open_directory:
