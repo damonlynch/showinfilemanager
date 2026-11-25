@@ -61,14 +61,25 @@ requires_windows_paths = pytest.mark.skipif(
 
 
 class RecordedPopen:
-    """Stand in for a Popen result, remembering that it was waited on."""
+    """Stand in for a Popen result, remembering that it was waited on.
+
+    Nothing is actually started, so the fake reports itself finished when asked
+    for its status, which is what the package does with the real object to keep
+    the launch list from growing.
+    """
 
     def __init__(self, harness: "Dispatch", command: object) -> None:
         self.harness = harness
         self.command = command
+        self.returncode: int | None = None
 
     def wait(self) -> None:
         self.harness.waited.append(self.command)
+        self.returncode = 0
+
+    def poll(self) -> int:
+        self.returncode = 0
+        return 0
 
 
 class Dispatch:
@@ -817,3 +828,16 @@ def test_configuring_an_impossible_machine_is_refused(dispatch: Dispatch) -> Non
         dispatch.configure(platform=LINUX, wsl2=True)
     with pytest.raises(AssertionError, match="either WSL1 or WSL2"):
         dispatch.configure(platform=LINUX, wsl=True, wsl1=True, wsl2=True)
+
+
+def test_the_recorded_launch_can_be_reaped(dispatch: Dispatch) -> None:
+    """
+    The package reads the status of each launch to keep its list of them from growing,
+    so the stand-in has to answer that question too. Without it every scenario here
+    would fail on the first launch, which is the sort of breakage a fake hides.
+    """
+
+    recorded = RecordedPopen(dispatch, "nautilus")
+
+    assert recorded.poll() == 0
+    assert recorded.returncode == 0

@@ -1,6 +1,7 @@
 #  SPDX-FileCopyrightText: 2016-2026 Damon Lynch <damonlynch@gmail.com>
 #  SPDX-License-Identifier: MIT
 
+import atexit
 import os
 import platform
 import shlex
@@ -30,6 +31,72 @@ class ProcessPathOrUri(NamedTuple):
     fully_processed: bool
     path: Path | None
     uri: str | None
+
+
+# The file managers this package starts are not waited for: they must outlive the
+# call, since opening a file manager and then blocking the caller would be useless.
+#
+# CPython reports a Popen finalised with no exit status noted as "still running", and
+# it does so before checking, so the report describes an unread status rather than a
+# running program. Reading the status is what keeps that honest, which is what the
+# list below is for: each launch notes the status of the earlier ones, and the exit
+# hook does the last one.
+#
+# A manager that is still running when the interpreter exits has no status to note,
+# and no later launch to read one, so it would be reported on the way out however
+# carefully the list is kept. That report is wrong for this package: it is the whole
+# intention that the file manager outlives the call. So the finalizer is replaced with
+# one that does nothing, for objects started here, and the subclass is built at launch
+# rather than at import so that a scenario replacing subprocess.Popen still stands in
+# for it. Nothing is detached and no status is invented: assigning None to __del__ is
+# not the way to remove a finalizer, it makes CPython call None on the way out.
+_PROCESSES: list[subprocess.Popen] = []
+
+_NO_FINALIZER: dict[type, type] = {}
+
+
+def _quiet_finalizer(self: subprocess.Popen) -> None:
+    """Nothing to report: this child is meant to outlive us."""
+
+
+def _start_process(args: str | list[str]) -> subprocess.Popen:
+    """
+    Start a file manager, with no finalizer to report it.
+
+    Returns a process object of the same kind the current subprocess.Popen would
+    give, but silent when it is collected: for a program expected to outlive this
+    one the report is not about a mistake.
+    """
+
+    base = subprocess.Popen
+    if getattr(base, "__del__", None) is None:
+        # Nothing to turn off: a stand-in without a finalizer, so no subclass and
+        # no reason to make one.
+        return base(args)
+
+    quiet = _NO_FINALIZER.get(base)
+    if quiet is None:
+        quiet = type("FireAndForgetParent", (base,), {"__del__": _quiet_finalizer})
+        _NO_FINALIZER[base] = quiet
+    return quiet(args)
+
+
+def _reap_processes() -> None:
+    """
+    Note down the exit status of any started file manager that has finished.
+
+    Called on each launch, so the list holds only the children still running, and
+    at exit for the last one, which no later launch would otherwise report. With no
+    finalizer to do it, this is the only thing that reads a status, so an object
+    that never reaches the list is left unreaped for the life of this process.
+    """
+
+    for process in _PROCESSES:
+        process.poll()
+    _PROCESSES[:] = [p for p in _PROCESSES if p.returncode is None]
+
+
+atexit.register(_reap_processes)
 
 
 def valid_file_manager() -> str:
@@ -121,8 +188,14 @@ class FileManager:
                 print("Executing", cmd)
             # Do not check current_platform here, it makes no sense
             args = shlex.split(cmd) if platform.system() != "Windows" else cmd
-            proc = subprocess.Popen(args)
+            proc = _start_process(args)
+            # Registered before anything else can raise: with no finalizer, an
+            # object that never reaches the list is never reaped either.
+            _PROCESSES.append(proc)
+            _reap_processes()
             if is_wsl2 and self.file_manager == "explorer.exe":
+                # explorer.exe returns immediately under WSL2, and waiting is what
+                # keeps its output from mangling the terminal.
                 proc.wait()
 
     def _set_valid_file_manager(self) -> None:
