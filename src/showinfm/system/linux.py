@@ -62,10 +62,14 @@ def user_linux_file_manager() -> str:
     exists.
 
     Where several handlers are registered for directories, xdg-mime lists them
-    semicolon separated in order of preference. The first entry with a usable
-    .desktop file is used, so a stale override left behind by an uninstalled file
-    manager does not hide the handler registered after it. An empty answer means
-    nothing is registered, which is reported as no choice at all.
+    semicolon separated in order of preference. The first entry whose .desktop file
+    is present and names an executable is the one used: an entry that names a program
+    which has since been uninstalled still counts as the user's choice here, and it is
+    valid_linux_file_manager() that rejects a choice which is not installed. Each
+    handler is looked for in every data directory before the next one is tried, so
+    which directory a file manager installed its entry into does not override that
+    order. An empty answer means nothing is registered, which is reported as no choice
+    at all.
 
     All exceptions are raised.
 
@@ -109,18 +113,11 @@ def _executable_from_desktop_entry(path: str) -> str:
     """
     Read a .desktop entry and return the executable it names.
 
-    Handlers are tried in preference order, and for each of them the data directories
-    in their own order. That nesting is what makes the preference list mean something,
-    and it is also what lets a bad entry be stepped over rather than obeyed: a
-    .desktop file left in the user's directory by an uninstalled file manager keeps
-    that directory's override in force for xdg-mime, so an entry with no Exec key, or
-    an empty one, comes back as an empty string and the caller tries the next handler.
-    An entry that exists but cannot be read, parsed or understood still raises,
-    because nothing about it says the user meant no file manager at all.
-
-    What is not detected here is an Exec key naming a program that is no longer
-    installed: this module does not examine the executable, and it is
-    valid_linux_file_manager that rejects a choice which is not on the PATH.
+    An entry with no Exec key, or an empty one, returns an empty string rather than
+    raising, because it names nothing: the caller takes that as this handler deciding
+    nothing and moves on to the next one. An entry that cannot be read or parsed does
+    raise, since a broken file is not the same as an absent choice. Whether the named
+    program is installed is not examined here.
 
     :param path: full path of the .desktop file to read
     :return: the executable name, or an empty string when the entry names none
@@ -157,11 +154,8 @@ def valid_linux_file_manager() -> str:
     Get user's file manager, falling back to using sensible defaults for the particular
     desktop environment.
 
-    Each candidate is tried in turn rather than one being chosen and then rejected if
-    it turns out not to be installed. That distinction is what a stale override
-    depends on: xdg-mime can report a file manager that has since been uninstalled,
-    and if the choice is fixed before the executables are looked at, that missing
-    program decides the answer and the desktop's stock manager is never consulted.
+    The user's choice and the stock manager are both tried, in that order, and the
+    first that is installed is returned.
 
     All exceptions are caught.
 
@@ -409,12 +403,12 @@ def _quote_path_for_uri(slash_path: str) -> str:
     r"""
     Percent encode a slash separated path, leaving its slashes alone.
 
-    urllib.request.pathname2url() is deliberately not used. As of Python 3.14 it
-    inserts an empty authority in front of an absolute path, so '/mnt/c/x' comes
-    back as '///mnt/c/x' and '//wsl.localhost/x' as '////wsl.localhost/x'.
-    Windows Explorer needs those slashes exactly as they are, so only the
-    encoding is wanted here. quote() with safe="/" is what pathname2url() did on
-    every Python release up to and including 3.13.
+    urllib.request.pathname2url() is deliberately not used. It now inserts an empty
+    authority in front of an absolute path, so '/mnt/c/x' comes back as '///mnt/c/x'
+    and '//wsl.localhost/x' as '////wsl.localhost/x', and which of those happens
+    depends on the interpreter: the two-slash form changed in Python 3.12 and the
+    one-slash form in 3.14. Windows Explorer needs those slashes exactly as they are,
+    so only the encoding is wanted here.
 
     :param slash_path: Windows path written with forward slashes
     :return: the path percent encoded, its slashes untouched

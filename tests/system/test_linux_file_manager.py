@@ -8,10 +8,10 @@ Nothing here reads the machine it runs on: the desktop comes from a set
 XDG_CURRENT_DESKTOP, and xdg-mime, the .desktop entries, shutil.which and caja
 --version are all answered from below.
 
-Three of the xdg-mime cases below once pinned what the code did rather than what it
-should do, and were rewritten when those paths were corrected. They are kept because
-going back to the old handling has to fail loudly, not because that behaviour was ever
-wanted.
+Beyond the desktop and file manager tables, the xdg-mime cases cover a registered
+handler that cannot be used: no .desktop file, no executable named in it, several
+handlers listed in order of preference, an answer with no trailing newline, and no
+handler registered at all.
 """
 
 import re
@@ -543,8 +543,8 @@ def test_a_stale_user_choice_falls_back_to_the_stock_manager(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
-    Committing to one candidate before resolving anything is what made a stale
-    override end with no file manager at all, even with the stock one installed.
+    A user choice that is not installed does not settle the answer on its own: the
+    stock manager is tried as well, and here it is the one that exists.
     """
 
     assert (
