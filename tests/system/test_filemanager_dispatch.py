@@ -263,6 +263,24 @@ def test_a_path_object_is_accepted(dispatch: Dispatch, tmp_path) -> None:
     assert dispatch.commands == [["dolphin", tmp_path.as_uri()]]
 
 
+def test_a_manager_with_no_known_type_is_still_launched(
+    dispatch: Dispatch, tmp_path, monkeypatch
+) -> None:
+    """
+    _file_manager_type() has no type to report when current_platform is None, which its
+    annotation allows even though the module that sets it declines to import then. The
+    caller records no type rather than giving up, so the file manager is still launched,
+    with no selection argument, and the location is simply opened.
+    """
+
+    def no_type(file_manager: str) -> FileManagerType:
+        raise NotImplementedError
+
+    monkeypatch.setattr(filemanager, "_file_manager_type", no_type)
+    dispatch.run(str(tmp_path), file_manager="dolphin")
+    assert dispatch.commands == [["dolphin", tmp_path.as_uri()]]
+
+
 def test_paths_and_strings_can_be_mixed_in_one_call(
     dispatch: Dispatch, tmp_path
 ) -> None:
@@ -841,3 +859,211 @@ def test_the_recorded_launch_can_be_reaped(dispatch: Dispatch) -> None:
 
     assert recorded.poll() == 0
     assert recorded.returncode == 0
+
+
+def test_verbose_writes_the_command_to_stdout(
+    dispatch: Dispatch, tmp_path: Path, capsys
+) -> None:
+    """
+    --verbose is the caller's only view of the command line this module assembles, so that
+    line and nothing else goes to stdout, argument included. Output that moved to stderr
+    would leave someone diagnosing a launch with nothing to read.
+    """
+
+    target = tmp_path / "holiday.jpg"
+    target.write_text("", encoding="utf-8")
+
+    dispatch.run(str(target), file_manager="dolphin", verbose=True)
+
+    out, err = capsys.readouterr()
+    assert out == f"Executing dolphin --select {target.resolve().as_uri()}\n"
+    assert err == ""
+    assert dispatch.commands == [["dolphin", "--select", target.resolve().as_uri()]]
+
+
+def test_debug_writes_its_report_to_stderr(wsl: Dispatch, capsys) -> None:
+    """
+    --debug narrates what was dropped and why, which is not the program's result, so it
+    goes to stderr and leaves stdout to the --verbose line. This is the promise the option
+    help makes, and nothing else in the package reads the text.
+    """
+
+    wsl.wsl_reports["/mnt/c/gone.jpg"] = wsl.report(exists=False, is_win_location=True)
+
+    wsl.run("/mnt/c/gone.jpg", debug=True)
+
+    out, err = capsys.readouterr()
+    assert err == "Path does not exist: '/mnt/c/gone.jpg'\n"
+    assert out == ""
+
+
+def test_the_stock_manager_on_macos_is_open(dispatch: Dispatch, tmp_path: Path) -> None:
+    """
+    macOS has no registered default to look up, so the platform's own opener is the stock
+    choice, and revealing is what its type asks for. A directory is opened rather than
+    revealed, which is why the argument set for it is not sent.
+    """
+
+    dispatch.configure(MACOS)
+
+    dispatch.run(str(tmp_path))
+
+    assert dispatch.commands == [["open", tmp_path.resolve().as_uri()]]
+
+
+def test_a_file_uri_becomes_a_path_for_a_manager_that_cannot_open_uris(
+    dispatch: Dispatch, tmp_path: Path
+) -> None:
+    """
+    fman accepts no URI, so the file: URI is translated back into a filesystem path on the
+    way in. Managers that do speak URIs keep the scheme, as the scenarios above pin.
+    """
+
+    target = tmp_path / "holiday.jpg"
+    target.write_text("", encoding="utf-8")
+
+    dispatch.run(target.resolve().as_uri(), file_manager="fman")
+
+    assert dispatch.commands == [["fman", str(target.resolve())]]
+
+
+def test_a_wsl_path_stays_a_path_for_such_a_manager(
+    wsl: Dispatch, tmp_path: Path
+) -> None:
+    """
+    The WSL route decides between a path and a URI by the same rule as everywhere else, so
+    a manager that cannot open URIs is handed the Linux path even though the request came
+    through the translation that usually answers with Windows forms.
+    """
+
+    path = str(tmp_path / "notes.txt")
+    wsl.wsl_reports[path] = wsl.report(linux_path=path)
+
+    wsl.run(path, file_manager="fman")
+
+    assert wsl.commands == [["fman", path]]
+
+
+def test_a_uri_explorer_cannot_show_is_reported_and_dropped(
+    dispatch: Dispatch, capsys
+) -> None:
+    """
+    Explorer is driven through the shell API, which takes filesystem items only, so a URI
+    of another scheme names nothing to show: neither the shell nor startfile is asked, and
+    --debug records which scheme was refused.
+    """
+
+    dispatch.configure(WINDOWS)
+
+    dispatch.run(
+        "http://example.com/holiday.jpg", file_manager="explorer.exe", debug=True
+    )
+
+    out, err = capsys.readouterr()
+    assert err == (
+        "Cannot show a http:// URI in Windows Explorer:"
+        " 'http://example.com/holiday.jpg'\n"
+    )
+    assert out == ""
+    assert dispatch.shell_calls == []
+    assert dispatch.startfile_calls == []
+
+    # The refusal is a diagnostic, not a report: without --debug nothing is said.
+    capsys.readouterr()
+    dispatch.run("http://example.com/holiday.jpg", file_manager="explorer.exe")
+    assert capsys.readouterr().err == ""
+
+
+def test_a_directory_only_manager_is_given_the_parent_of_a_file(
+    dispatch: Dispatch, tmp_path: Path
+) -> None:
+    """
+    thunar shows a directory and cannot select anything inside it, so a file becomes the
+    folder holding it while a directory is passed as it stands. Nothing here arrives as a
+    URI, so the location stays a plain path rather than being rebuilt from a parsed URI.
+    """
+
+    target = tmp_path / "holiday.jpg"
+    target.write_text("", encoding="utf-8")
+
+    dispatch.run(str(target), file_manager="thunar", allow_conversion=False)
+    dispatch.run(str(tmp_path), file_manager="thunar", allow_conversion=False)
+
+    assert dispatch.commands == [
+        ["thunar", str(tmp_path)],
+        ["thunar", str(tmp_path)],
+    ]
+
+
+def test_a_manager_that_cannot_distinguish_the_two_is_given_the_parent(
+    dispatch: Dispatch, tmp_path: Path
+) -> None:
+    """
+    nemo has no way to select a directory rather than open it, so asking to select means
+    the parent is opened instead. This is that same rule reached with a plain path instead
+    of a URI, which is the half the URI scenario cannot cover.
+    """
+
+    folder = tmp_path / "trip"
+    folder.mkdir()
+
+    dispatch.run(
+        str(folder),
+        file_manager="nemo",
+        open_not_select_directory=False,
+        allow_conversion=False,
+    )
+
+    assert dispatch.commands == [["nemo", str(tmp_path)]]
+
+
+def test_a_folder_on_windows_is_opened_through_the_shell(
+    dispatch: Dispatch, tmp_path: Path, capsys
+) -> None:
+    """
+    Explorer selects a file through the shell API, but a folder only opens through
+    os.startfile(), so the locations and the directories are handled by different means.
+    --verbose names the shell call, since no command line is built for it.
+    """
+
+    dispatch.configure(WINDOWS)
+
+    dispatch.run(str(tmp_path), file_manager="explorer.exe", verbose=True)
+
+    out, err = capsys.readouterr()
+    assert out == f"Executing Windows shell to open {tmp_path}\n"
+    assert err == ""
+    assert dispatch.startfile_calls == [str(tmp_path)]
+    assert dispatch.shell_calls == []
+
+
+def test_debug_reports_every_wsl_conversion_outcome_on_stderr(
+    wsl: Dispatch, capsys
+) -> None:
+    """
+    The three ways a request can fail to become something Explorer or a Linux manager can
+    use are each announced, and the one that succeeds is announced too, all on stderr so
+    stdout keeps showing only the commands that were run.
+    """
+
+    wsl.wsl_reports["/mnt/c/x/nope.jpg"] = wsl.report(
+        is_win_location=True, win_uri=None
+    )
+    wsl.wsl_reports["/mnt/c/x/holiday.jpg"] = wsl.report(
+        is_win_location=True, win_uri="file:///c:/x/holiday.jpg", is_dir=False
+    )
+    wsl.wsl_reports["/home/damon/x.jpg"] = wsl.report(
+        is_win_location=False, linux_path=None, win_uri=None
+    )
+
+    wsl.run("/mnt/c/x/nope.jpg", debug=True)
+    wsl.run("/mnt/c/x/holiday.jpg", debug=True)
+    wsl.run("/home/damon/x.jpg", debug=True)
+
+    out, err = capsys.readouterr()
+    assert err == (
+        "Unable to convert '/mnt/c/x/nope.jpg' into a Windows URI\n"
+        "Converted '/mnt/c/x/holiday.jpg' to 'file:///c:/x/holiday.jpg'\n"
+        "Unable to convert '/home/damon/x.jpg' into a Linux path\n"
+    )
+    assert out == ""
