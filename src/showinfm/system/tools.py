@@ -43,16 +43,60 @@ def is_file_uri(path_uri: str) -> bool:
     """
     Does the URI name a location on a filesystem, i.e. carry the file: scheme?
 
-    Only such a URI can become a path. Others say what they are by their scheme,
-    smb://, trash://, camera:/ among them, and rewriting one of those as a path
-    invents a place the scheme never named: trash:// is not the root of the
-    filesystem, and no path says where a share named by a URI actually is.
+    Only such a URI can become a path through this function. Others name something
+    else: trash:// or camera:/ have no filesystem location to stand for, and
+    rewriting one invents a place the scheme never named. smb:// does name a
+    folder, but Windows writes it as a UNC path, so it is translated by
+    smb_uri_to_unc() rather than here.
 
     :param path_uri: the path or URI to examine
     :return: True if the value is a URI with the file: scheme
     """
 
     return path_uri[:6].lower() == "file:/"
+
+
+def is_smb_uri(path_uri: str) -> bool:
+    """
+    Does the URI name a network share written the smb:// way?
+
+    Windows has no handler for that scheme: the same share is written there as a
+    UNC path, \\\\server\\share, so the URI can be translated rather than passed on.
+    Elsewhere the file managers speak smb:// directly and want the URI untouched.
+
+    :param path_uri: the path or URI to examine
+    :return: True if the value is an smb: URI naming a server
+    """
+
+    return path_uri[:6].lower() == "smb://"
+
+
+def smb_uri_to_unc(uri: str) -> str:
+    r"""
+    Translate an smb:// URI into the UNC path Windows uses for the same share.
+
+    smb://server/share/file becomes \\server\share\file. Only the authority and
+    the path carry over; a query or fragment names nothing a filesystem location
+    can hold. Unlike a file: URI, an authority here is a server to reach, never
+    this machine, so the localhost reading from RFC 8089 does not apply.
+
+    :param uri: the smb:// URI to translate
+    :return: the UNC path, with separators normalised
+    :raises ValueError: if the URI is not an smb: URI naming a server
+    """
+
+    parsed = urlparse(uri)
+    if parsed.scheme.lower() != "smb" or not parsed.netloc:
+        raise ValueError(f"Not an smb URI naming a share: {uri!r}")
+
+    remainder = url2pathname(parsed.path).lstrip(f"{os.path.sep}{os.path.altsep or ''}")
+    return os.path.normpath(_unc_root(parsed.netloc) + remainder)
+
+
+def _unc_root(authority: str) -> str:
+    r"""The two separators, the server and one more, that begin a UNC path."""
+
+    return f"{os.path.sep}{os.path.sep}{authority}{os.path.sep}"
 
 
 def _double_quoted(value: str) -> str:
@@ -152,7 +196,7 @@ def file_uri_to_path(uri: str) -> str:
     # Loopback addresses and FQDNs that resolve locally are deliberately not
     # recognised here: that would mean resolving a name while converting a path.
     authority = "" if parsed.netloc.lower() == "localhost" else parsed.netloc
-    root = f"{os.path.sep}{os.path.sep}{authority}{os.path.sep}"
+    root = _unc_root(authority)
     if authority:
         # A URI with a host names a network location, and the host supplies the leading
         # separators. url2pathname() keeps the one the URI's path starts with, and

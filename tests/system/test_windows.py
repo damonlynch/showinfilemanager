@@ -41,7 +41,7 @@ from showinfm import filemanager
 from showinfm.constants import Platform
 from showinfm.exceptions import WindowsShellUnavailableError
 from showinfm.system import tools, windows
-from showinfm.system.tools import file_uri_to_path
+from showinfm.system.tools import file_uri_to_path, smb_uri_to_unc
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -245,6 +245,58 @@ def test_the_error_is_a_runtime_error_reachable_from_the_package() -> None:
 
 @pytest.mark.skipif(
     platform.system() != "Windows",
+    reason="the translation exists because Windows writes a share as a UNC path",
+)
+def test_an_smb_uri_becomes_the_unc_path_for_the_same_share() -> None:
+    r"""
+    Windows has no smb: handler, so the URI has to be said the Windows way before
+    anything can open it. The share alone, and the server alone, are roots: their
+    str() carries a trailing separator, which is what the quoting has to survive.
+    """
+
+    assert smb_uri_to_unc("smb://srv/share/holiday.jpg") == r"\\srv\share\holiday.jpg"
+    assert (
+        smb_uri_to_unc("smb://srv/my share/holiday.jpg")
+        == r"\\srv\my share\holiday.jpg"
+    )
+    assert smb_uri_to_unc("smb://srv/share/h%20name.jpg") == r"\\srv\share\h name.jpg"
+    assert smb_uri_to_unc("SMB://SRV/Share") == r"\\SRV\Share"
+    assert smb_uri_to_unc("smb://srv/share") == r"\\srv\share"
+    assert Path(smb_uri_to_unc("smb://srv/share")).is_absolute()
+
+    with pytest.raises(ValueError, match="Not an smb URI"):
+        smb_uri_to_unc("smb:///share/holiday.jpg")
+
+
+@requires_unc_share
+def test_a_live_smb_uri_reaches_the_share_it_names(
+    monkeypatch: pytest.MonkeyPatch, unc_folder: str
+) -> None:
+    """
+    The translation proved against the share itself rather than a made-up server: the
+    UNC path it produces is the folder Windows can see, and the shell API accepts it.
+    """
+
+    server, share = UNC_ROOT.strip("\\").split("\\", 1)
+    tail = unc_folder[len(UNC_ROOT) :].replace("\\", "/").replace(" ", "%20")
+    uri = f"smb://{server}/{share}{tail}"
+
+    opened: list[str] = []
+    monkeypatch.setattr(filemanager, "os", SimpleNamespace(startfile=opened.append))
+    monkeypatch.setattr(
+        filemanager.windows,
+        "launch_file_explorer",
+        lambda paths, verbose=False: opened.extend(paths),
+    )
+
+    filemanager.FileManager().show_in_file_manager(uri, file_manager="explorer.exe")
+
+    assert opened == [unc_folder]
+    assert scenario("unc_parse", unc_folder)["error"] is None
+
+
+@pytest.mark.skipif(
+    platform.system() != "Windows",
     reason="ntpath and the Windows url2pathname decide this shape",
 )
 def test_a_uri_with_a_host_keeps_one_separator_before_the_share() -> None:
@@ -273,9 +325,10 @@ def test_a_uri_with_a_host_keeps_one_separator_before_the_share() -> None:
 )
 def test_a_uri_of_another_scheme_is_not_turned_into_a_path(uri: str) -> None:
     """
-    Converting these invented a location the URI never named: a server taken from
-    the authority, or the filesystem root for trash://. Refusing is the honest
-    answer, and the callers now ask before converting.
+    file_uri_to_path() takes file: URIs only; smb:// has its own translation and
+    the rest name no filesystem location at all. Converting those invented a place
+    the URI never claimed: a server taken from the authority, or the filesystem
+    root for trash://.
     """
 
     with pytest.raises(ValueError, match="Not a file URI"):

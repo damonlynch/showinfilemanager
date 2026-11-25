@@ -409,16 +409,29 @@ def test_a_file_uri_with_a_raw_space_is_still_converted(
 
 
 @requires_windows_paths
-def test_explorer_is_handed_nothing_for_a_foreign_scheme(dispatch: Dispatch) -> None:
-    """
-    Explorer is reached through the shell API, which takes filesystem items, and a
-    URI given to it raises com_error here. So no item is passed on, and the launch
-    falls back to the bare start the code already does for a dropped item: one
-    string, keeping the trailing space, since Windows is not split here.
+def test_an_smb_uri_becomes_a_share_path_for_explorer(dispatch: Dispatch) -> None:
+    r"""
+    Windows cannot open an smb: URI, so it is said as the UNC path for the same share.
+    The server here need not exist: nothing is contacted, only the handover observed.
     """
 
     dispatch.configure(platform=WINDOWS)
     dispatch.run("smb://srv/share/holiday.jpg", file_manager="explorer.exe")
+    assert dispatch.shell_calls == [[r"\\srv\share\holiday.jpg"]]
+
+
+@requires_windows_paths
+def test_explorer_is_handed_nothing_for_a_scheme_with_no_path(
+    dispatch: Dispatch,
+) -> None:
+    """
+    A scheme Windows cannot name either, and which no file manager was asked to browse,
+    is dropped rather than turned into a server: the shell API answers a URI with a COM
+    error, so the launch falls back to the bare start a dropped item already causes.
+    """
+
+    dispatch.configure(platform=WINDOWS)
+    dispatch.run("ftp://srv/pub/holiday.jpg", file_manager="explorer.exe")
     assert dispatch.shell_calls == []
     assert dispatch.startfile_calls == []
     assert dispatch.commands == [["explorer.exe "]]

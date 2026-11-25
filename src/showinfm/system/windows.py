@@ -12,8 +12,10 @@ from showinfm.system.tools import (
     directories_and_their_files,
     file_uri_to_path,
     is_file_uri,
+    is_smb_uri,
     is_uri,
     path_to_file_uri,
+    smb_uri_to_unc,
 )
 
 WindowsFileManagerBehavior = {
@@ -110,6 +112,12 @@ def parse_command_line_arguments(path_or_uri: list[str]) -> list[str]:
         if is_file_uri(pu):
             uri = pu
             path = Path(file_uri_to_path(uri=uri))
+        elif is_smb_uri(pu):
+            # Windows names the same share as a UNC path, and it is the path that
+            # can be globbed and resolved here. The URI form means nothing to
+            # explorer.exe, so it is not carried past this point.
+            uri = None
+            path = Path(smb_uri_to_unc(uri=pu))
         elif is_uri(pu):
             # A URI of another scheme names no filesystem item, so there is
             # nothing to glob or resolve: pass it along as it arrived rather

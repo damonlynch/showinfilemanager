@@ -263,6 +263,12 @@ class FileManager:
                     # Convert URI to a regular path
                     uri = None
                     path = Path(tools.file_uri_to_path(pu))
+                elif current_platform == Platform.windows and tools.is_smb_uri(pu):
+                    # Windows has no smb: handler, but it has a way to name the
+                    # same share: the UNC path. Elsewhere the file managers speak
+                    # smb:// themselves and the URI is left as it arrived.
+                    uri = None
+                    path = Path(tools.smb_uri_to_unc(pu))
                 elif (
                     current_platform == Platform.windows
                     and self.file_manager == "explorer.exe"

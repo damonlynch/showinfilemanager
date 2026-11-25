@@ -116,9 +116,10 @@ def show_in_file_manager(
     passed as command line arguments to the file manager, because some file 
     managers do not handle regular paths correctly. However, a file: URI will
     be converted to a path to handle file managers that do not accept URIs.
-    A URI of any other scheme, smb:// or trash:// among them, is passed along
-    as it stands: no path names what such a URI points at, and rewriting one
-    opens somewhere the caller never asked for.
+    On Windows an smb:// URI becomes the UNC path for the same share, since
+    Windows has no handler for that scheme. Any other scheme is passed along as
+    it stands: no path names what such a URI points at, and rewriting one opens
+    somewhere the caller never asked for.
     
     On Windows, Explorer is called using the Win32 API.
     
