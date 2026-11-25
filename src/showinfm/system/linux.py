@@ -209,6 +209,13 @@ def linux_file_manager_type(file_manager: str) -> FileManagerType:
 def caja_version() -> packaging.version.Version | None:
     """
     Get the version of Caja via a command line switch
+
+    The version is read from the first digit in the output to its end, which depends
+    on Caja printing no earlier digits and printing the version last, as it does in
+    MATE caja 1.26.4. Output that continues after the version is not parseable, and
+    caja_supports_select() treats that failure as absent support for --select, so Caja
+    opens the folder without selecting the file rather than reporting an error.
+
     :return: parsed ver
     """
 

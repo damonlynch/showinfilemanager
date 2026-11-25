@@ -302,9 +302,10 @@ def test_caja_version_with_a_banner_is_not_a_version(
 ) -> None:
     """
     caja_version() takes everything from the first digit to the end of the output, so
-    a version string carrying a product name is not parseable, and the exception
-    escapes caja_version() to be absorbed by caja_supports_select(). Whether real
-    caja prints such a banner is unverified; this pins the consequence if it does.
+    text following the version is not parseable, and the exception escapes
+    caja_version() only to be absorbed by caja_supports_select(). Caja does print the
+    version last today, as in MATE caja 1.26.4, so this pins what happens if a release
+    ever appends anything to that line.
     """
 
     fake_subprocess.run_output = b"caja 1.26.0 (MATE Desktop)\n"
