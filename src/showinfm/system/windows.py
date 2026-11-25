@@ -11,6 +11,7 @@ from showinfm.system import current_platform
 from showinfm.system.tools import (
     directories_and_their_files,
     file_uri_to_path,
+    is_file_uri,
     is_uri,
     path_to_file_uri,
 )
@@ -106,9 +107,15 @@ def parse_command_line_arguments(path_or_uri: list[str]) -> list[str]:
 
     paths = []
     for pu in path_or_uri:
-        if is_uri(pu):
+        if is_file_uri(pu):
             uri = pu
             path = Path(file_uri_to_path(uri=uri))
+        elif is_uri(pu):
+            # A URI of another scheme names no filesystem item, so there is
+            # nothing to glob or resolve: pass it along as it arrived rather
+            # than turning its host into a UNC server.
+            paths.append(pu)
+            continue
         else:
             uri = None
             path = Path(pu)

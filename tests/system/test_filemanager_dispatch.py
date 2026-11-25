@@ -50,6 +50,15 @@ requires_posix_paths = pytest.mark.skipif(
     reason="depends on POSIX path semantics a Windows interpreter cannot reproduce",
 )
 
+# The mirror of the marker above: these scenarios name a drive path, and url2pathname()
+# and ntpath follow the interpreter rather than the patched flags, so on a POSIX
+# interpreter file:///C:/x becomes a path called C:x rather than a drive path. The
+# expectation is the string Windows produces, so it is asked of Windows only.
+requires_windows_paths = pytest.mark.skipif(
+    platform.system() != "Windows",
+    reason="depends on Windows path semantics a POSIX interpreter cannot reproduce",
+)
+
 
 class RecordedPopen:
     """Stand in for a Popen result, remembering that it was waited on."""
@@ -344,12 +353,86 @@ def test_a_path_with_spaces_survives_the_round_trip(
     assert dispatch.commands == [["nautilus", "--select", str(target)]]
 
 
-def test_a_uri_is_handed_over_unchanged_when_conversion_is_refused(
-    dispatch: Dispatch, tmp_path
+def test_a_foreign_scheme_reaches_a_uri_capable_manager_unchanged(
+    dispatch: Dispatch,
 ) -> None:
-    uri = "camera:/store/DCIM/100PENTX/123.jpg"
-    dispatch.run(uri, file_manager="nautilus", allow_conversion=False)
+    """
+    Nautilus opens smb:// itself, which is why nothing was converted here before.
+    The scheme is how it knows to browse a share rather than a folder.
+    """
+
+    uri = "smb://srv/share/holiday.jpg"
+    dispatch.run(uri, file_manager="nautilus")
     assert dispatch.commands == [["nautilus", "--select", uri]]
+
+
+def test_a_foreign_scheme_is_not_rewritten_for_a_path_only_manager(
+    dispatch: Dispatch,
+) -> None:
+    """
+    lumina-fm is handed a path, so the URI used to be rewritten as one: smb:// became
+    //srv/share (or /share before the host was kept), a location that may well exist and
+    open as if it were the share.
+    """
+
+    dispatch.run("smb://srv/share/holiday.jpg", file_manager="lumina-fm")
+    assert dispatch.commands == [["lumina-fm", "smb://srv/share/holiday.jpg"]]
+
+
+def test_a_scheme_without_a_path_is_not_collapsed_to_the_root(
+    dispatch: Dispatch,
+) -> None:
+    """trash:// became /, the filesystem root, which opens as if intended."""
+
+    dispatch.run("trash://", file_manager="fman")
+    assert dispatch.commands == [["fman", "trash://"]]
+
+
+def test_a_file_uri_with_a_raw_space_is_still_converted(
+    dispatch: Dispatch,
+) -> None:
+    """
+    The grammar rejects a space, so file:///home/damon/My Docs was taken for a
+    relative path and resolved against the working directory: nautilus was asked to
+    select a file under the project folder. The file: prefix bypass makes it a URI
+    again, and the space is encoded because a raw one would split the command line.
+    """
+
+    dispatch.run("file:///home/damon/My Docs/holiday.jpg", file_manager="nautilus")
+    assert dispatch.commands == [
+        [
+            "nautilus",
+            "--select",
+            "file:///home/damon/My%20Docs/holiday.jpg",
+        ]
+    ]
+
+
+@requires_windows_paths
+def test_explorer_is_handed_nothing_for_a_foreign_scheme(dispatch: Dispatch) -> None:
+    """
+    Explorer is reached through the shell API, which takes filesystem items, and a
+    URI given to it raises com_error here. So no item is passed on, and the launch
+    falls back to the bare start the code already does for a dropped item: one
+    string, keeping the trailing space, since Windows is not split here.
+    """
+
+    dispatch.configure(platform=WINDOWS)
+    dispatch.run("smb://srv/share/holiday.jpg", file_manager="explorer.exe")
+    assert dispatch.shell_calls == []
+    assert dispatch.startfile_calls == []
+    assert dispatch.commands == [["explorer.exe "]]
+
+
+@requires_windows_paths
+def test_a_file_uri_with_a_space_becomes_a_drive_path_for_explorer(
+    dispatch: Dispatch,
+) -> None:
+    """What the bypass buys on Windows: a drive path, not one starting file:."""
+
+    dispatch.configure(platform=WINDOWS)
+    dispatch.run("file:///C:/x y/holiday.jpg", file_manager="explorer.exe")
+    assert dispatch.shell_calls == [[r"C:\x y\holiday.jpg"]]
 
 
 def test_no_path_still_opens_the_file_manager(dispatch: Dispatch) -> None:

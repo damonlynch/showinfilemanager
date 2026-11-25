@@ -260,6 +260,47 @@ def test_a_uri_with_a_host_keeps_one_separator_before_the_share() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "uri",
+    [
+        "smb://srv/share/h.jpg",
+        "ftp://srv/pub/h.jpg",
+        "nfs://srv/export/h.jpg",
+        "trash://",
+        "camera:/1234567890",
+        "mailto:someone@example.com",
+    ],
+)
+def test_a_uri_of_another_scheme_is_not_turned_into_a_path(uri: str) -> None:
+    """
+    Converting these invented a location the URI never named: a server taken from
+    the authority, or the filesystem root for trash://. Refusing is the honest
+    answer, and the callers now ask before converting.
+    """
+
+    with pytest.raises(ValueError, match="Not a file URI"):
+        file_uri_to_path(uri)
+
+
+def test_only_file_uris_are_accepted_by_the_converter() -> None:
+    """The guard is on the scheme, not on the grammar, so the ordinary case converts."""
+
+    assert file_uri_to_path("file:///x y/h.jpg").endswith(os.path.join("x y", "h.jpg"))
+
+
+def test_a_file_uri_with_a_raw_space_is_still_recognised() -> None:
+    """
+    RFC 3986 forbids a space, so the grammar alone rejected the URIs people actually
+    write, and an unrecognized one was taken for a relative path and resolved against
+    the working directory.
+    """
+
+    assert tools.is_uri("file:///home/damon/My Docs/h.jpg")
+    assert tools.is_file_uri("file:///home/damon/My Docs/h.jpg")
+    assert not tools.is_file_uri("smb://srv/share/h.jpg")
+    assert not tools.is_file_uri("/home/damon/My Docs/h.jpg")
+
+
 @pytest.mark.skipif(
     platform.system() != "Windows",
     reason="ntpath and the Windows url2pathname decide this shape",

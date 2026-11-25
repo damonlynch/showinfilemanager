@@ -21,13 +21,38 @@ def filemanager_requires_path(file_manager: str) -> bool:
 def is_uri(path_uri: str) -> bool:
     """
     Checks if string is probably a uri of some kind.
+
+    camera: is an opaque identifier from Rapid Photo Downloader rather than a
+    location, so it is accepted whatever the grammar says.
+
+    file: is accepted by prefix because the grammar forbids a raw space, and a
+    space is how people write a file URI whose path contains one:
+    file:///home/user/My Docs/x.jpg. Rejected by the grammar, that string is
+    taken for a relative path and resolved against the working directory.
+
     :param path_uri: the
     :return: True if probably a URI, else False
     """
 
-    if path_uri and path_uri.startswith("camera:/"):
+    if path_uri and path_uri.startswith(("camera:/", "file:/")):
         return True
     return re.match("^%s$" % urivalidate.URI, path_uri, re.VERBOSE) is not None
+
+
+def is_file_uri(path_uri: str) -> bool:
+    """
+    Does the URI name a location on a filesystem, i.e. carry the file: scheme?
+
+    Only such a URI can become a path. Others say what they are by their scheme,
+    smb://, trash://, camera:/ among them, and rewriting one of those as a path
+    invents a place the scheme never named: trash:// is not the root of the
+    filesystem, and no path says where a share named by a URI actually is.
+
+    :param path_uri: the path or URI to examine
+    :return: True if the value is a URI with the file: scheme
+    """
+
+    return path_uri[:6].lower() == "file:/"
 
 
 def _double_quoted(value: str) -> str:
@@ -100,15 +125,25 @@ def path_to_file_uri(path: str) -> str:
 
 
 def file_uri_to_path(uri: str) -> str:
-    """
+    r"""
     Convert a file: URL to a path.
 
     On Windows this is more reliable than urllib.parse.urlparse, because that fails when
     run with a URI like file:///D:/some/directory
 
+    Only a file: URI names a location on a filesystem, so anything else raises. A
+    share URI has a defensible reading as a UNC path, but trash:// has no path to
+    stand for it, and rewriting it as the filesystem root opens a folder the caller
+    never asked for and reports no error while doing it.
+
     Taken from https://stackoverflow.com/a/61922504/592623
-    and modified by Damon Lynch 2021, 2024
+    and modified by Damon Lynch 2021, 2024, 2026
+
+    :raises ValueError: if the URI does not carry the file: scheme
     """
+
+    if not is_file_uri(uri):
+        raise ValueError(f"Not a file URI: {uri!r}")
 
     parsed = urlparse(uri)
     path = url2pathname(parsed.path)

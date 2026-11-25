@@ -259,11 +259,33 @@ class FileManager:
                 tools.filemanager_requires_path(file_manager=self.file_manager)
                 and self.allow_conversion
             ):
-                # Convert URI to a regular path
-                uri = None
-                path = Path(tools.file_uri_to_path(pu))
+                if tools.is_file_uri(pu):
+                    # Convert URI to a regular path
+                    uri = None
+                    path = Path(tools.file_uri_to_path(pu))
+                elif (
+                    current_platform == Platform.windows
+                    and self.file_manager == "explorer.exe"
+                ):
+                    # Explorer is driven through the shell API, which takes
+                    # filesystem items only: a URI it cannot turn into an item
+                    # comes back as a COM error, so there is nothing to show.
+                    if self.debug:
+                        print(
+                            f"Cannot show a {pu.split(':', 1)[0]}:// URI in"
+                            f" Windows Explorer: '{pu}'",
+                            file=sys.stderr,
+                        )
+                    return ProcessPathOrUri(fully_processed=True, path=None, uri=None)
+                else:
+                    # A manager that was given a URI takes it as it stands, but a
+                    # raw space is not valid in a URI and would split the command
+                    # line it goes into, so it is encoded. The same is done to
+                    # Windows URIs in linux.wsl_transform_path_uri().
+                    uri = pu.replace(" ", "%20")
+                    path = None
             else:
-                uri = pu
+                uri = pu.replace(" ", "%20")
                 path = None
         else:
             if (
@@ -289,6 +311,12 @@ class FileManager:
         assert current_platform != Platform.windows
         # Show only the directory: do not attempt to select the file,
         # because the file manager cannot handle it.
+
+        if uri and not tools.is_file_uri(uri):
+            # Not a filesystem location, so there is no parent directory to
+            # show. The manager is given the URI it was sent, unchanged.
+            self.locations.append(uri)
+            return
 
         if uri:
             # Do not use tools.file_url_to_path() here, because we need the
@@ -331,12 +359,22 @@ class FileManager:
             or self.file_manager_type == FileManagerType.regular
         ):
             if uri:
-                path = Path(tools.file_uri_to_path(uri=uri))
-                open_directory = path.is_dir()
+                if tools.is_file_uri(uri):
+                    path = Path(tools.file_uri_to_path(uri=uri))
+                    open_directory = path.is_dir()
+                else:
+                    # A URI from another scheme names something this process
+                    # cannot examine, so it cannot be treated as a directory:
+                    # it goes to the file manager as the URI it arrived as.
+                    open_directory = False
             else:
                 assert path is not None
                 open_directory = path.is_dir()
             if open_directory:
+                # Only a path that was examined can be a directory, so this is
+                # never None here; a URI of another scheme sets open_directory
+                # to False instead of inventing a path to examine.
+                assert path is not None
                 if (
                     self.file_manager_type == FileManagerType.regular
                     and not self.open_not_select_directory
