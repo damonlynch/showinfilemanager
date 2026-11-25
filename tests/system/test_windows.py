@@ -26,6 +26,7 @@ import functools
 import json
 import os
 import platform
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -35,8 +36,9 @@ import pytest
 
 import showinfm
 from showinfm import filemanager
+from showinfm.constants import Platform
 from showinfm.exceptions import WindowsShellUnavailableError
-from showinfm.system import windows
+from showinfm.system import tools, windows
 from showinfm.system.tools import file_uri_to_path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -296,6 +298,37 @@ def test_a_live_network_folder_reaches_startfile_exactly(
 
 
 @requires_unc_share
+def test_a_live_network_folder_reaches_another_manager_quoted_and_intact(
+    monkeypatch: pytest.MonkeyPatch, unc_folder: str
+) -> None:
+    """
+    The route the explorer.exe guard leaves to quote_path(): a manager that is not
+    explorer.exe receives one command string, so the folder must arrive quoted as one
+    token and still name the share. Rebuilding that token as a Path left it as
+    "\\server\share\folder" with one leading separator, a local path, and no change to
+    the quoting itself could fix that. Hence a real share.
+    """
+
+    launched: list = []
+
+    class _Process:
+        returncode = 0
+
+        def wait(self) -> None:
+            return None
+
+    def popen(args, *rest, **kwargs):
+        launched.append(args)
+        return _Process()
+
+    monkeypatch.setattr(filemanager, "subprocess", SimpleNamespace(Popen=popen))
+
+    filemanager.FileManager().show_in_file_manager(unc_folder, file_manager="nemo")
+
+    assert launched == [f'nemo "{unc_folder}"']
+
+
+@requires_unc_share
 def test_a_live_network_folder_survives_the_uri_round_trip(unc_folder: str) -> None:
     """
     as_uri() and back has to name the same folder: that round trip is the only way a
@@ -351,3 +384,90 @@ def test_the_shell_api_accepts_the_network_folder_it_is_given(unc_folder: str) -
     )
     assert report["error"] is None, report
     assert report["parsed"] is True
+
+
+@pytest.fixture
+def as_windows(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Select the Windows branch of quote_path() on any interpreter.
+
+    The branch is chosen by current_platform, which is patched here the same way the
+    dispatch scenarios set it. What a patch cannot move is the Path class, which
+    follows the interpreter, so the UNC case below separates right from wrong only on
+    Windows. That is where it matters, and it is skipped elsewhere rather than diluted.
+    """
+
+    monkeypatch.setattr(tools, "current_platform", Platform.windows)
+
+
+@pytest.mark.skipif(
+    platform.system() != "Windows",
+    reason="only a Windows Path collapses the UNC prefix it is handed",
+)
+def test_quoting_a_windows_unc_path_keeps_both_leading_separators(
+    as_windows: None,
+) -> None:
+    r"""
+    Wrapping a path in quotes must leave the path alone. Rebuilding the quoted value
+    as a Path hides the UNC root behind the quote character, so "\\server\share" comes
+    back as "\server\share" -- a folder called server on the current drive. That is the
+    failure issue #38 reports, for any manager other than explorer.exe.
+    """
+
+    quoted = tools.quote_path(path=Path(r"\\server\share\media render"))
+
+    assert quoted == '"\\\\server\\share\\media render"'
+    assert Path(quoted.strip('"')).is_absolute()
+
+
+def test_quoting_a_windows_drive_path_makes_one_token(as_windows: None) -> None:
+    """The point of the quoting: an unquoted space would split the argument."""
+
+    quoted = tools.quote_path(path=Path(r"C:\x y\holiday.jpg"))
+
+    assert quoted == '"C:\\x y\\holiday.jpg"'
+
+
+def test_quoting_an_already_quoted_windows_path_leaves_it_alone(
+    as_windows: None,
+) -> None:
+    """
+    A path that arrives quoted is returned as it stands. Quoting it again would nest the
+    quotes, so the caller would get an argument whose closing quote is escaped.
+    """
+
+    quoted = tools.quote_path(path=Path('"C:\\x y\\holiday.jpg"'))
+
+    assert quoted == '"C:\\x y\\holiday.jpg"'
+
+
+def test_a_single_quoted_windows_path_becomes_double_quoted(as_windows: None) -> None:
+    """Windows takes double quotes, so a path arriving single quoted is rewritten."""
+
+    quoted = tools.quote_path(path=Path("'C:\\x y'"))
+
+    assert quoted == '"C:\\x y"'
+
+
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="a Windows interpreter turns the POSIX path into separators of its own",
+)
+def test_quoting_off_windows_uses_shell_quoting(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    The other branch, kept as the contrast that stops a Windows fix leaking into it: the
+    managers here are handed a command line that shlex will split, so they need shell
+    quoting rather than double quotes.
+
+    Only expressible on a POSIX interpreter: patching current_platform selects the
+    branch, not the Path class, and a WindowsPath renders this input with backslashes.
+    """
+
+    monkeypatch.setattr(tools, "current_platform", Platform.linux)
+
+    quoted = tools.quote_path(path=Path("/home/damon/holiday film.jpg"))
+
+    assert quoted == "'/home/damon/holiday film.jpg'"
+    assert shlex.split(f"nemo {quoted}")[1] == "/home/damon/holiday film.jpg"

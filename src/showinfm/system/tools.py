@@ -30,8 +30,8 @@ def is_uri(path_uri: str) -> bool:
     return re.match("^%s$" % urivalidate.URI, path_uri, re.VERBOSE) is not None
 
 
-def quote_path(path: Path) -> Path:
-    """
+def quote_path(path: Path) -> str:
+    r"""
     Quote path in a way that works with file managers on Windows and Unix-like.
 
     If path is already quoted, returns it as is.
@@ -41,8 +41,14 @@ def quote_path(path: Path) -> Path:
     Uses shlex.quote on non-Windows platforms, but again only if the path is
     not already quoted.
 
+    The quoted value is a command line token rather than a path, so it is
+    returned as a string: rebuilding it as a Path reinterprets it, and on
+    Windows a leading quote hides the UNC prefix, turning "\\server\share"
+    into the drive-relative "\server\share".
+
     :param path: path to quote, if necessary
-    :return: double-quoted path
+    :return: the path as one command line token, double quoted on Windows and
+     shell quoted elsewhere
     """
 
     p = str(path)
@@ -51,14 +57,14 @@ def quote_path(path: Path) -> Path:
 
         if re.match("""'(.*)'""", p) is not None:
             # Replace single quotes with double quotes
-            return Path(f'"{p[1:-1]}"')
+            return f'"{p[1:-1]}"'
         if re.match(r"""\"(.*)\"""", p) is None:
             # Add double quotes where there was no quoting at all
-            return Path(f'"{path}"')
+            return f'"{p}"'
     else:
         if not (p[0] in ('"', "'") and p[-1] == p[0]):
-            return Path(shlex.quote(p))
-    return path
+            return shlex.quote(p)
+    return p
 
 
 def path_to_file_uri(path: str) -> str:

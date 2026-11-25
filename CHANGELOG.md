@@ -15,6 +15,7 @@
   `Path.as_uri()` therefore never opened, so the workaround suggested in issue #38 did not
   work either. `Path.is_dir()` also answered differently for the doubled path on Python
   3.11 and 3.14, so which route the failure took depended on the interpreter.
+- Fix `quote_path()` for network paths on Windows: rebuilding the quoted value as a `Path` dropped one of the two leading separators, so any file manager other than Explorer was handed a local path.
 
 ## 1.1.6 (2026-02-17)
 

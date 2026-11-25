@@ -305,12 +305,12 @@ class FileManager:
         if not (path.is_dir() and self.open_not_select_directory):
             path = path.parent
 
-        if uri:
-            path = urllib.parse.quote(str(path))
-            uri = str(urllib.parse.urlunparse(parse_result._replace(path=str(path))))
+        if parse_result is not None:
+            quoted = urllib.parse.quote(str(path))
+            location = str(urllib.parse.urlunparse(parse_result._replace(path=quoted)))
         else:
-            path = tools.quote_path(path=path)
-        self.locations.append(uri or str(path))
+            location = tools.quote_path(path=path)
+        self.locations.append(location)
 
     def _process_path_or_uri_can_select(
         self, path: Path | None, uri: str | None
@@ -348,14 +348,23 @@ class FileManager:
                     path = path.parent
                     if uri:
                         uri = path.as_uri()
-                if uri is None and self.file_manager != "explorer.exe":
-                    path = tools.quote_path(path=path)
-                self.directories.append(uri or str(path))
+                if uri is not None:
+                    location = uri
+                elif self.file_manager == "explorer.exe":
+                    location = str(path)
+                else:
+                    location = tools.quote_path(path=path)
+                self.directories.append(location)
         if not open_directory:
-            if uri is None and self.file_manager != "explorer.exe":
+            if uri is not None:
+                location = uri
+            else:
                 assert path is not None
-                path = tools.quote_path(path=path)
-            self.locations.append(uri or str(path))
+                if self.file_manager == "explorer.exe":
+                    location = str(path)
+                else:
+                    location = tools.quote_path(path=path)
+            self.locations.append(location)
 
     def _process_path_or_uri(self, path_or_uri: PathOrUri) -> None:
         """
