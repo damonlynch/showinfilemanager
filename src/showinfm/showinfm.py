@@ -9,12 +9,12 @@ Open the system file manager and optionally select files in it.
 
 import shutil
 import sys
-from collections.abc import Sequence
 
 import showinfm.filemanager
 from showinfm.argumentsparse import get_parser
 from showinfm.constants import Platform
 from showinfm.exceptions import WindowsShellUnavailableError
+from showinfm.filemanager import PathOrUri
 from showinfm.system import current_platform, is_wsl, is_wsl1, is_wsl2, linux, windows
 
 _file_manager = showinfm.filemanager.FileManager()
@@ -93,7 +93,7 @@ def valid_file_manager() -> str:
 
 
 def show_in_file_manager(
-    path_or_uri: str | Sequence[str] | None = None,
+    path_or_uri: PathOrUri | None = None,
     open_not_select_directory: bool = True,
     file_manager: str | None = None,
     allow_conversion: bool = True,
@@ -104,7 +104,8 @@ def show_in_file_manager(
     Open the file manager and show zero or more directories or files in it.
 
     The path_or_uri is a sequence of items, or a single item. An item can
-    be a regular path, or a URI.
+    be a regular path, a URI, or any object implementing os.PathLike, such
+    as a pathlib.Path.
 
     On non-Windows platforms, regular paths will be converted to URIs when
     passed as command line arguments to the file manager, because some file
@@ -137,7 +138,7 @@ def show_in_file_manager(
     line arguments.
 
     :param path_or_uri: zero or more files or directories to open, specified
-     as a single URI or valid path, or a sequence of URIs/paths.
+     as a single URI, valid path or os.PathLike, or a sequence of those.
     :param open_not_select_directory: if the URI or path is a directory and
      not a file, open the directory itself in the file manager, rather than
      selecting it and displaying it in its parent directory.

@@ -22,6 +22,7 @@ Windows accepts -- quote and doubled separators both fail there, and both fail q
 on a machine without a share.
 """
 
+import ctypes
 import functools
 import json
 import os
@@ -29,6 +30,7 @@ import platform
 import shlex
 import subprocess
 import sys
+from ctypes import wintypes
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -51,6 +53,30 @@ requires_unc_share = pytest.mark.skipif(
     not REAL_UNC,
     reason="needs SHOWINFM_UNC_ROOT set to a readable network share",
 )
+
+
+def win_argv(command: str) -> list[str]:
+    """
+    Ask Windows how a command string tokenises, rather than reading it here.
+
+    CreateProcess tokenises by the MSVC rule: a backslash escapes the quote after it,
+    so `"C:\"` arrives as `C:"`. CommandLineToArgvW implements that rule, which makes it
+    the answer for a manager launched from a command string.
+    Windows only: ctypes.windll does not exist elsewhere.
+    """
+
+    shell32 = ctypes.windll.shell32
+    shell32.CommandLineToArgvW.restype = ctypes.POINTER(wintypes.LPWSTR)
+    shell32.CommandLineToArgvW.argtypes = [
+        wintypes.LPCWSTR,
+        ctypes.POINTER(ctypes.c_int),
+    ]
+    count = ctypes.c_int(0)
+    argv = shell32.CommandLineToArgvW(command, ctypes.byref(count))
+    try:
+        return [argv[i] for i in range(count.value)]
+    finally:
+        ctypes.windll.kernel32.LocalFree(argv)
 
 
 @pytest.fixture(scope="module")
@@ -447,6 +473,76 @@ def test_a_single_quoted_windows_path_becomes_double_quoted(as_windows: None) ->
     quoted = tools.quote_path(path=Path("'C:\\x y'"))
 
     assert quoted == '"C:\\x y"'
+
+
+@pytest.mark.skipif(
+    platform.system() != "Windows",
+    reason="only a Windows path renders its root with a trailing separator",
+)
+def test_quoting_a_windows_root_escapes_its_trailing_separator(
+    as_windows: None,
+) -> None:
+    r"""
+    str() of a root ends with a separator, and for a share root pathlib adds that
+    separator itself: `\\server\share` becomes `\\server\share\`. Quoting it as it
+    stands leaves the closing quote escaped, so the token needs a doubled separator.
+    """
+
+    assert tools.quote_path(path=Path("C:\\")) == '"C:\\\\"'
+    assert tools.quote_path(path=Path(r"\\server\share")) == '"\\\\server\\share\\\\"'
+
+
+def test_quoting_leaves_a_path_without_a_trailing_separator_alone(
+    as_windows: None,
+) -> None:
+    """The escape is for roots only; an ordinary path must not grow characters."""
+
+    assert (
+        tools.quote_path(path=Path(r"C:\x y\holiday.jpg")) == '"C:\\x y\\holiday.jpg"'
+    )
+
+
+@pytest.mark.skipif(
+    platform.system() != "Windows",
+    reason="CreateProcess tokenising is what is being asked",
+)
+def test_a_quoted_root_parses_back_to_one_argument(as_windows: None) -> None:
+    """
+    The parser's verdict rather than this file's reading of the string: what a file
+    manager launched from one command string is handed. Before the escape was added,
+    `nemo "C:\"` came back as the single argument `C:"`.
+    """
+
+    for raw in ("C:\\", "\\\\server\\share"):
+        wanted = str(Path(raw))
+        parsed = win_argv(f"nemo {tools.quote_path(path=Path(raw))}")
+        assert parsed == ["nemo", wanted]
+
+
+@requires_unc_share
+def test_a_live_share_root_reaches_another_manager_as_one_token(
+    monkeypatch: pytest.MonkeyPatch, unc_folder: str
+) -> None:
+    """
+    The share root alongside a folder below it: the root is the case whose str() ends
+    with a separator, and a swallowed quote corrupts the argument after it too. The
+    assertion is what the parser returns, not what this file built.
+    """
+
+    launched: list = []
+    monkeypatch.setattr(
+        filemanager,
+        "subprocess",
+        SimpleNamespace(Popen=lambda args, *rest, **kw: launched.append(args)),
+    )
+
+    root = str(Path(UNC_ROOT))
+    filemanager.FileManager().show_in_file_manager(
+        [UNC_ROOT, unc_folder], file_manager="nemo"
+    )
+
+    assert launched == [f'nemo "{root}\\" "{unc_folder}"']
+    assert win_argv(launched[0]) == ["nemo", root, unc_folder]
 
 
 @pytest.mark.skipif(

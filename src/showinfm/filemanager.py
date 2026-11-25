@@ -8,6 +8,7 @@ import subprocess
 import sys
 import urllib.parse
 from collections.abc import Sequence
+from os import PathLike, fspath
 from pathlib import Path
 from typing import NamedTuple
 
@@ -22,7 +23,7 @@ from showinfm.system import (
     windows,
 )
 
-PathOrUri = str | Sequence[str]
+PathOrUri = str | os.PathLike[str] | Sequence[str | os.PathLike[str]]
 
 
 class ProcessPathOrUri(NamedTuple):
@@ -374,11 +375,17 @@ class FileManager:
         :param path_or_uri: path or URI to process
         """
 
-        if isinstance(path_or_uri, str):
+        # PathLike and fspath are imported by name rather than reached through
+        # os, because tests replace this module's os with a recorder for
+        # startfile, and turning arguments into strings must not depend on that.
+        if isinstance(path_or_uri, (str, PathLike)):
             # turn the single path / URI into a Sequence
             path_or_uri = (path_or_uri,)
 
-        filtered_path_or_uri = (p_or_u for p_or_u in path_or_uri if p_or_u)
+        # The rest of this layer works on strings, since what gets built is a
+        # command line. A Path is resolved here rather than deeper in, because
+        # it is only ever a string with an iterator it does not have.
+        filtered_path_or_uri = (fspath(p_or_u) for p_or_u in path_or_uri if p_or_u)
         for pu in filtered_path_or_uri:
             if is_wsl:
                 p = self._process_path_or_uri_wsl(pu)

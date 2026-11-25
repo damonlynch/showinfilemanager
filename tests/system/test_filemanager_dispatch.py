@@ -233,6 +233,34 @@ def test_a_directory_is_opened_rather_than_selected(
     assert dispatch.commands == [["dolphin", tmp_path.as_uri()]]
 
 
+def test_a_path_object_is_accepted(dispatch: Dispatch, tmp_path) -> None:
+    """
+    Callers reach for pathlib, and a Path is not iterable, so a single one has to be
+    treated as the item it is rather than as a sequence.
+    """
+
+    dispatch.run(tmp_path, file_manager="dolphin")
+    assert dispatch.commands == [["dolphin", tmp_path.as_uri()]]
+
+
+def test_paths_and_strings_can_be_mixed_in_one_call(
+    dispatch: Dispatch, tmp_path
+) -> None:
+    """
+    The sequence case: each item is resolved to its string form on the way in, so the
+    rest of this layer never has to know which kind of item it was given.
+    """
+
+    first = tmp_path / "one.jpg"
+    second = tmp_path / "two.jpg"
+    first.write_text("", encoding="utf-8")
+    second.write_text("", encoding="utf-8")
+    dispatch.run([first, str(second)], file_manager="dolphin")
+    assert dispatch.commands == [
+        ["dolphin", "--select", first.as_uri(), second.as_uri()]
+    ]
+
+
 def test_a_file_is_selected(dispatch: Dispatch, tmp_path) -> None:
     target = tmp_path / "holiday.jpg"
     target.write_text("", encoding="utf-8")

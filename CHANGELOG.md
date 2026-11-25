@@ -16,6 +16,8 @@
   work either. `Path.is_dir()` also answered differently for the doubled path on Python
   3.11 and 3.14, so which route the failure took depended on the interpreter.
 - Fix `quote_path()` for network paths on Windows: rebuilding the quoted value as a `Path` dropped one of the two leading separators, so any file manager other than Explorer was handed a local path.
+- Fix quoted paths ending in a separator on Windows: `C:\` arrived at the file manager as `C:"`, and a second path was swallowed with it.
+- Accept `pathlib.Path` and other `os.PathLike` objects as items in `show_in_file_manager()`, which the documentation already implied.
 
 ## 1.1.6 (2026-02-17)
 

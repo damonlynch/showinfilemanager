@@ -30,13 +30,31 @@ def is_uri(path_uri: str) -> bool:
     return re.match("^%s$" % urivalidate.URI, path_uri, re.VERBOSE) is not None
 
 
+def _double_quoted(value: str) -> str:
+    r"""
+    Wrap a Windows path in double quotes, leaving it a single command line token.
+
+    A trailing backslash has to be doubled first: CreateProcess tokenises with the
+    MSVC rule where `\"` is an escaped quote rather than the end of the argument, so
+    `"C:\"` arrives as `C:"` and, with another path following it, swallows that too.
+    pathlib produces such a trailing separator on its own for a share root, since
+    `"\\server\share"` is a root and `str()` of a root ends with a separator.
+    """
+
+    # Hoisted out of the f-string: a backslash in an f-string expression is a
+    # syntax error before Python 3.12, and 3.11 is the supported floor.
+    escaped = re.sub(r"(\\+)$", r"\1\1", value)
+    return f'"{escaped}"'
+
+
 def quote_path(path: Path) -> str:
     r"""
     Quote path in a way that works with file managers on Windows and Unix-like.
 
     If path is already quoted, returns it as is.
 
-    Replaces single quoted string with double quotes on Windows.
+    Replaces single quoted string with double quotes on Windows, and escapes a
+    trailing separator so the closing quote closes.
 
     Uses shlex.quote on non-Windows platforms, but again only if the path is
     not already quoted.
@@ -57,10 +75,10 @@ def quote_path(path: Path) -> str:
 
         if re.match("""'(.*)'""", p) is not None:
             # Replace single quotes with double quotes
-            return f'"{p[1:-1]}"'
+            return _double_quoted(p[1:-1])
         if re.match(r"""\"(.*)\"""", p) is None:
             # Add double quotes where there was no quoting at all
-            return f'"{p}"'
+            return _double_quoted(p)
     else:
         if not (p[0] in ('"', "'") and p[-1] == p[0]):
             return shlex.quote(p)
