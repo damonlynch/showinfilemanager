@@ -21,7 +21,8 @@
 - Fix URIs whose scheme is not `file:` being rewritten as a path, which could open somewhere the URI never named: the host in the URI became a server, and a URI with no path became the root of the filesystem. Such a URI is now passed to the file manager unchanged, which is what the file managers supporting it expect.
 - Fix a `file:` URI containing a space being mistaken for a relative path and resolved against the working directory.
 - `file_uri_to_path()` now raises `ValueError` for a URI that is not a `file:` URI.
-- - Accept `smb://` URIs on Windows by translating them to the UNC path for the same share, since Windows has no handler for that scheme. File managers elsewhere are given the URI unchanged, as they open shares themselves.
+- Accept `smb://` URIs by translating them to the UNC path for the same share, since Windows has no handler for that scheme. A file manager that opens `smb://` itself is given the URI unchanged.
+- Fix a share URI under WSL being resolved against the current drive, so `file://server/share` could name a local folder that has nothing to do with the share. Explorer now receives the share, and a URI with a space in it reaches the file manager as one argument rather than two.
 
 ## 1.1.6 (2026-02-17)
 

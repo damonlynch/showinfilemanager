@@ -621,6 +621,75 @@ def test_an_explicit_linux_file_manager_overrides_the_explorer_route(
     assert wsl.shell_calls == []
 
 
+def test_a_share_uri_with_a_space_reaches_the_manager_in_one_token(
+    dispatch: Dispatch,
+) -> None:
+    """
+    The grammar forbids a raw space, so without the smb: prefix bypass this URI was
+    taken for a path, found not to exist, and dropped: the manager was never called.
+    One token here is the point, since a space left in the command line would make it
+    two arguments out of one URI.
+    """
+
+    dispatch.run("smb://srv/Backup/media render/holiday.jpg", file_manager="nautilus")
+    assert dispatch.commands == [
+        ["nautilus", "--select", "smb://srv/Backup/media%20render/holiday.jpg"]
+    ]
+
+
+def test_an_smb_uri_is_handed_to_a_linux_manager_under_wsl_as_it_arrived(
+    wsl: Dispatch,
+) -> None:
+    """
+    The caller's half of the decision in linux.wsl_transform_path_uri: nothing can be
+    translated for this scheme and nothing should be, because nautilus opens smb://
+    itself under WSL exactly as it does on any other Linux install. The record staged
+    here is the one that function now returns, so the two halves are pinned together.
+    """
+
+    uri = "smb://srv/Backup/media render/holiday.jpg"
+    wsl.wsl_reports[uri] = wsl.report(
+        linux_path=None, win_path=None, win_uri=None, is_dir=None, is_win_location=False
+    )
+
+    wsl.run(uri, file_manager="nautilus")
+
+    assert wsl.commands == [
+        ["nautilus", "--select", "smb://srv/Backup/media%20render/holiday.jpg"]
+    ]
+    assert wsl.shell_calls == []
+    assert wsl.startfile_calls == []
+
+
+def test_an_smb_uri_for_explorer_under_wsl_becomes_a_share_uri(
+    wsl: Dispatch,
+) -> None:
+    """
+    The other answer the same function gives: explorer.exe is handed the file://
+    spelling of a share, which is the form that survives /select, from WSL. Which
+    string Windows accepts is pinned in test_linux.py; which one is launched is here.
+
+    The item is selected rather than opened, because nothing on the Linux side can
+    say a share is a directory, and guessing would decide by the name of the share.
+    """
+
+    uri = "smb://srv/Backup/media render"
+    wsl.wsl_reports[uri] = wsl.report(
+        linux_path=None,
+        win_path="\\\\srv\\Backup\\media render",
+        win_uri="file://srv/Backup/media%20render",
+        is_dir=None,
+        is_win_location=True,
+    )
+
+    wsl.run(uri, file_manager="explorer.exe")
+
+    assert wsl.commands == [
+        ["explorer.exe", "/select,file://srv/Backup/media%20render"]
+    ]
+    assert wsl.startfile_calls == []
+
+
 @requires_posix_paths
 def test_an_explicit_manager_still_receives_a_windows_path(
     wsl: Dispatch,

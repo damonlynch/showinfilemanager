@@ -298,6 +298,80 @@ def test_relative_path_resolves_against_the_working_directory(
     assert fake_wslpath.calls == []
 
 
+def test_a_share_uri_is_described_without_asking_wslpath(
+    fake_wslpath: FakeWslpath,
+) -> None:
+    r"""
+    A URI whose authority names a server is a share, and Windows writes it as
+    \\server\share. wslpath is not consulted: it refuses a UNC, and given the share
+    path alone it resolves it against the current drive, inventing a local folder
+    such as /mnt/d/Backup that has nothing to do with the share.
+    """
+
+    result = wsl_transform_path_uri("file://srv/Backup/media render", True)
+
+    assert result.win_path == "\\\\srv\\Backup\\media render"
+    assert result.win_uri == "file://srv/Backup/media%20render"
+    assert result.linux_path is None
+    assert result.is_win_location is True
+    assert result.is_dir is None
+    assert fake_wslpath.calls == []
+
+
+def test_an_smb_uri_for_explorer_becomes_the_same_share(
+    fake_wslpath: FakeWslpath,
+) -> None:
+    """
+    Explorer has no handler for smb:, so the URI is read for what it names: the same
+    share, in the two spellings Windows takes. Measured from WSL, explorer.exe opens
+    both, but only the URI form works behind /select,.
+    """
+
+    share = wsl_transform_path_uri("file://srv/Backup/media render", True)
+    smb = wsl_transform_path_uri("smb://srv/Backup/media render", True)
+
+    assert smb.win_path == share.win_path
+    assert smb.win_uri == share.win_uri
+    assert smb.linux_path is None
+    assert smb.exists is True
+    assert smb.is_win_location is True
+    assert fake_wslpath.calls == []
+
+
+def test_an_smb_uri_for_a_linux_manager_is_left_alone(
+    fake_wslpath: FakeWslpath,
+) -> None:
+    """
+    The other half of the decision: nautilus and dolphin open smb:// themselves, so
+    under WSL as elsewhere the URI must reach them unaltered. Nothing here can name a
+    path for it, which is what the caller reads from all fields being None.
+    """
+
+    result = wsl_transform_path_uri("smb://srv/Backup/media render", False)
+
+    assert result.win_path is None
+    assert result.win_uri is None
+    assert result.linux_path is None
+    assert result.exists is True
+    assert result.is_win_location is False
+    assert fake_wslpath.calls == []
+
+
+def test_a_localhost_authority_still_names_a_local_path(
+    fake_wslpath: FakeWslpath,
+) -> None:
+    """
+    The share branch turns on an authority that is not localhost, and this is the
+    case that must not move with it: RFC 8089 reads localhost as this machine.
+    """
+
+    result = wsl_transform_path_uri("file://localhost/home/damon/holiday.jpg", True)
+
+    assert result.linux_path == "/home/damon/holiday.jpg"
+    assert result.win_path is None
+    assert fake_wslpath.calls == []
+
+
 @requires_wsl
 @pytest.mark.parametrize(
     "path_or_uri",

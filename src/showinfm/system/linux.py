@@ -280,6 +280,36 @@ class WSLTransformPathURI(NamedTuple):
     exists: bool
 
 
+def _wsl_share(uri: str) -> WSLTransformPathURI:
+    r"""
+    Describe a network share given as a URI that carries a server.
+
+    Windows names a share \\server\share, so the authority and the path together
+    make the Windows path. wslpath is deliberately not asked: measured on WSL2 it
+    refuses a UNC outright (exit 1), and given a path with no drive in it, it
+    resolves the remainder against the *current* drive, so file://server/share/x
+    became /mnt/d/share/x, which names a local folder that has nothing to do with
+    the share. A share that is not mapped to a drive letter has no /mnt entry at
+    all, so existence is left to Windows to judge. Measured, an unreachable
+    server makes Explorer do nothing rather than open something else, which is the
+    safer of the two answers from here.
+
+    :param uri: a file: URI whose authority names the server
+    :return: the details of the location for Windows
+    """
+
+    parsed = urlparse(url=uri)
+    unc = str(PureWindowsPath(f"\\\\{parsed.netloc}{unquote(parsed.path)}"))
+    return WSLTransformPathURI(
+        win_uri=uri.replace(" ", "%20"),
+        win_path=unc,
+        linux_path=None,
+        is_dir=None,
+        exists=True,
+        is_win_location=True,
+    )
+
+
 def wsl_transform_path_uri(
     path_or_uri: str, generate_win_path: bool
 ) -> WSLTransformPathURI:
@@ -302,11 +332,34 @@ def wsl_transform_path_uri(
       exists: whether the path/URI exists
     """
 
+    # Imported here rather than at the top of the module: showinfm.system imports
+    # this module before it has worked out current_platform, and tools reads that
+    # name as it is imported, so a module-level import fails at startup.
+    from showinfm.system import tools
+
+    is_smb_uri = tools.is_smb_uri
+
     win_uri: str | None = None
     win_path: str | None = None
     linux_path: str | None = None
     is_dir: bool | None = None
     exists: bool = False
+
+    if is_smb_uri(path_or_uri):
+        if generate_win_path:
+            # Explorer has no handler for smb:, but the same share is a file: URI
+            # carrying the server, which is what _wsl_share expects.
+            return _wsl_share("file:" + path_or_uri[len("smb:") :])
+        # Asked by a Linux file manager, which opens shares of this kind itself
+        # and needs nothing done to the URI.
+        return WSLTransformPathURI(
+            win_uri=None,
+            win_path=None,
+            linux_path=None,
+            is_dir=None,
+            exists=True,
+            is_win_location=False,
+        )
 
     if path_or_uri.startswith("file:/"):
         is_win_uri = False
@@ -318,7 +371,7 @@ def wsl_transform_path_uri(
             # Remove first forward slash from e.g. /c:/Program Files
             path = path[1:]
         elif netloc and netloc != "localhost":
-            is_win_uri = True
+            return _wsl_share(path_or_uri)
 
         if is_win_uri:
             win_uri = path_or_uri.replace(" ", "%20")

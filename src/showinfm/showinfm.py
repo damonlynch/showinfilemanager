@@ -112,8 +112,9 @@ def show_in_file_manager(
     managers do not handle regular paths correctly. However, a file: URI will
     be converted to a path to handle file managers that do not accept URIs.
     On Windows an smb:// URI becomes the UNC path for the same share, since
-    Windows has no handler for that scheme. Any other scheme is passed along as
-    it stands: no path names what such a URI points at, and rewriting one opens
+    Windows has no handler for that scheme, and the same happens under WSL when
+    the file manager is explorer.exe. Any other scheme is passed along as it
+    stands: no path names what such a URI points at, and rewriting one opens
     somewhere the caller never asked for.
 
     On Windows, Explorer is called using the Win32 API.

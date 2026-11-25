@@ -25,8 +25,8 @@ def is_uri(path_uri: str) -> bool:
     camera: is an opaque identifier from Rapid Photo Downloader rather than a
     location, so it is accepted whatever the grammar says.
 
-    file: is accepted by prefix because the grammar forbids a raw space, and a
-    space is how people write a file URI whose path contains one:
+    file: and smb: are accepted by prefix because the grammar forbids a raw
+    space, and a space is how people write a path that contains one:
     file:///home/user/My Docs/x.jpg. Rejected by the grammar, that string is
     taken for a relative path and resolved against the working directory.
 
@@ -34,7 +34,7 @@ def is_uri(path_uri: str) -> bool:
     :return: True if probably a URI, else False
     """
 
-    if path_uri and path_uri.startswith(("camera:/", "file:/")):
+    if path_uri and path_uri.startswith(("camera:/", "file:/", "smb:/")):
         return True
     return re.match("^%s$" % urivalidate.URI, path_uri, re.VERBOSE) is not None
 

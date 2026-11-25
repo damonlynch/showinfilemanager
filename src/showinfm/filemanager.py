@@ -228,6 +228,15 @@ class FileManager:
                 self.wsl_windows_directories.append(wsl_details.win_uri)
             return ProcessPathOrUri(fully_processed=True, path=None, uri=None)
         else:
+            if wsl_details.linux_path is None and tools.is_smb_uri(pu):
+                # A share URI this route deliberately left alone: the Linux file
+                # managers open this scheme themselves, exactly as they do when
+                # not running under WSL. The spaces are encoded because this
+                # string goes into a command line, where a raw one would split
+                # the URI in two.
+                return ProcessPathOrUri(
+                    fully_processed=False, path=None, uri=pu.replace(" ", "%20")
+                )
             if wsl_details.linux_path is None:
                 if self.debug:
                     print(
