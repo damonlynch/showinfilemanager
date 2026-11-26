@@ -62,9 +62,10 @@ def user_file_manager() -> str:
 
     Exceptions are not caught.
 
-    :return: executable name
+    :return: executable name, or an empty string if the user has no file manager
+     set, which is what valid_file_manager() answers when it can find nothing at all
     :raises FileManagerUnavailableError: if the manager the user settled on is not
-     installed to run, which includes no manager being set at all
+     installed to run
     """
 
     if current_platform == Platform.windows or is_wsl1:
@@ -75,6 +76,11 @@ def user_file_manager() -> str:
         file_manager = "open"
     else:
         raise NotImplementedError
+
+    # Nothing set is a state of the machine rather than a choice that cannot be run,
+    # and it has to be settled here because shutil.which('') finds nothing to run.
+    if not file_manager:
+        return ""
 
     if shutil.which(file_manager) is None:
         msg = f"The user's file manager {file_manager!r} is not installed"
@@ -235,10 +241,16 @@ class Diagnostics:
             if self.windows_shell_status
             else ""
         )
+        # Either of these two can answer with nothing, and the two states are different:
+        # no file manager registered by the user is normal, while nothing this system can
+        # run is the failure the reader is asking about. A blank line names neither.
+        user_choice = self.user_file_manager or "not set"
+        valid = self.valid_file_manager or "no file manager found"
+
         file_managers = (
             f"Stock: {self.stock_file_manager}\n"
-            f"User's choice: {self.user_file_manager}\n"
-            f"Valid: {self.valid_file_manager}"
+            f"User's choice: {user_choice}\n"
+            f"Valid: {valid}"
         )
         return desktop + wsl + win_shell + file_managers
 

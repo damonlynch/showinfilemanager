@@ -56,6 +56,9 @@ manpages = [
     "man/showinfilemanager.1:function=get_parser:pyfile=src/showinfm/argumentsparse.py:manual_title=General Commands Manual",
 ]
 
+[tool.hatch.envs.test.scripts]
+sifm = "python -Wd -m src.cli --debug {args}"
+
 [[tool.hatch.envs.hatch-test.matrix]]
 python = ["3.11", "3.12", "3.13", "3.14", "3.15"]
 

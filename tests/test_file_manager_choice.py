@@ -5,9 +5,10 @@
 Tests for the installed check in stock_file_manager() and user_file_manager().
 
 Both functions name a file manager without knowing whether the machine can still run it:
-the desktop's configuration can point at a program that was uninstalled, and the user's
-choice can be empty. What they report has to say which name failed, because --debug prints
-these strings to a human reading a bug report. Nothing here launches anything.
+the desktop's configuration can point at a program that was uninstalled. What they report
+has to say which name failed, because --debug prints these strings to a human reading a
+bug report. Having no user choice registered is not that kind of failure, and is answered
+with an empty string instead. Nothing here launches anything.
 """
 
 import pytest
@@ -45,21 +46,37 @@ def test_a_missing_stock_manager_is_named_in_the_error(
     assert "no-such-fm" in str(caught.value)
 
 
-def test_no_user_choice_at_all_is_reported_as_not_installed(
+def test_no_user_choice_at_all_is_answered_with_an_empty_string(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     r"""
-    An empty answer from the user's configuration reaches the same check as a program that
-    is gone, because there is nothing to run either way. The name shows as '' rather than
-    the message reading as though a real program were missing.
+    Nothing registered is a state of the machine rather than a choice that cannot be run,
+    so the answer is the empty string valid_file_manager() already uses for finding
+    nothing. This is settled before the PATH lookup, because shutil.which('') finds
+    nothing to run and the report would otherwise name a file manager called '' to
+    whoever reads the bug report.
     """
 
     monkeypatch.setattr(showinfm.linux, "user_linux_file_manager", lambda: "")
 
+    assert showinfm.user_file_manager() == ""
+
+
+def test_a_user_choice_that_cannot_be_run_is_named_in_the_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    A name the user did register is worth reporting as missing, unlike no name at all: the
+    desktop entry outlives the program it points at often enough that the reader needs to
+    know which one to reinstall.
+    """
+
+    monkeypatch.setattr(showinfm.linux, "user_linux_file_manager", lambda: "dolphin")
+
     with pytest.raises(FileManagerUnavailableError) as caught:
         showinfm.user_file_manager()
 
-    assert "''" in str(caught.value)
+    assert "dolphin" in str(caught.value)
 
 
 def test_the_diagnostics_report_carries_the_missing_manager_name(

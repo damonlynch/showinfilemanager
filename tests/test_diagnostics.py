@@ -65,6 +65,42 @@ def test_a_failure_to_detect_is_reported_as_its_message(
     assert "User's choice: dolphin" in report
 
 
+def test_no_user_choice_registered_reads_as_a_state_not_a_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    A machine with nothing registered for directories is a normal machine, not a broken
+    one, so the report says the choice is not set. Naming an empty string as a file manager
+    that is not installed sends whoever reads the report looking for a program called ''.
+    """
+
+    monkeypatch.setattr(showinfm, "user_file_manager", lambda: "")
+
+    diagnostics = Diagnostics()
+
+    assert diagnostics.user_file_manager == ""
+    report = str(diagnostics)
+    assert "User's choice: not set" in report
+    assert "not installed" not in report
+
+
+def test_nothing_usable_to_run_is_reported_as_no_file_manager_found(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    An empty answer from valid_file_manager() is the one finding a bug report needs: no
+    file manager on this system can be run, so nothing was launched. Left blank, the line
+    reads as though the check never happened.
+    """
+
+    monkeypatch.setattr(showinfm, "valid_file_manager", lambda: "")
+
+    diagnostics = Diagnostics()
+
+    assert diagnostics.valid_file_manager == ""
+    assert "Valid: no file manager found" in str(diagnostics)
+
+
 def test_a_desktop_that_cannot_be_read_is_reported_as_unknown(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

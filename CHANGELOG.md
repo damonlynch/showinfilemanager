@@ -1,6 +1,6 @@
 # Changelog for Show in File Manager
 
-## 1.1.7 (2026-11-xx)
+## 1.1.7 (2026-11-27)
 
 - Minimum supported Python version is now 3.11.
 - Added pytest coverage for Python versions 3.11–3.15.
@@ -32,6 +32,8 @@
 - A location the system cannot answer for is now treated as no folder and nothing matched, rather than as a failure. Asking whether a network share is a directory can answer with an error instead of yes or no — measured on Windows as `OSError: [WinError 64] The specified network name is no longer available` when a share went away mid-call — and that error used to propagate out of `show_in_file_manager()` as an `OSError` neither its documentation nor the README declares. An argument the program cannot place is left out, whether nothing matched it, it is not there, or the system would not answer for it, and `--debug` names the argument it leaves out.
 - `stock_file_manager()` and `user_file_manager()` now raise `FileManagerUnavailableError` for a file manager that is not installed, naming it in the message, instead of a bare `assert`
 - `directories_and_their_files()` now raises `InvalidPathsArgumentError`, a new `TypeError` in `showinfm.exceptions`, when a single path arrives as a string instead of in a list: a string is iterable, so grouping it would have answered with one entry per character rather than failing, and the Windows shell API below it selects one file per entry.
+- `user_file_manager()` answers with an empty string when the user has no file manager set. A choice that is set but cannot be run raises `FileManagerUnavailableError`, by name.
+- Running `showinfilemanager --debug` prints a short report of the file managers found on this system. When the user has no file manager set, the report now states `User's choice: not set`, instead of showing error output as it did previously. The report's last line, `Valid:`, names the file manager the program settles on and then actually runs, unless another is given on the command line. On Linux a valid file manager sometimes cannot be found: neither the file manager registered by the user nor the desktop's stock one is installed, or the desktop cannot be identified — because `XDG_CURRENT_DESKTOP` is unset, or holds a value this package does not recognize — leaving no stock manager to try either. In previous versions the line read `Valid: ` with nothing after it, which looked exactly like a check that never ran. It now reads `Valid: no file manager found`, so the report says in words that no file manager could be found to open the folder.
 
 ## 1.1.6 (2026-02-17)
 

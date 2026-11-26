@@ -226,9 +226,10 @@ def user_file_manager() -> str:
 
     Exceptions are not caught.
 
-    :return: executable name
+    :return: executable name, or an empty string if the user has no file manager
+     set, which is what valid_file_manager() answers when it can find nothing at all
     :raises FileManagerUnavailableError: if the manager the user settled on is not
-     installed to run, which includes no manager being set at all
+     installed to run
     """
 ```
 
@@ -244,7 +245,7 @@ The exception classes live in `showinfm.exceptions`, so they can be imported wit
 |---------|--------|------|
 | `show_in_file_manager()` | `WindowsShellUnavailableError` | files are to be selected in Windows Explorer on this system and `win32com.shell` is not available. Opening folders does not need it. |
 | `stock_file_manager()` | `FileManagerUnavailableError`, and on Linux `DesktopEnvironmentUnknownError` | the manager named for this desktop or operating system is not installed, or the desktop cannot be identified |
-| `user_file_manager()` | `FileManagerUnavailableError`, and on Linux `XdgUnavailableError`, `XdgQueryError`, `DesktopEntryError` | the user's choice is not installed, which includes no choice being set, or the desktop entry behind it cannot be found, opened, or parsed |
+| `user_file_manager()` | `FileManagerUnavailableError`, and on Linux `XdgUnavailableError`, `XdgQueryError`, `DesktopEntryError` | the user's choice is set but not installed, or the desktop entry behind it cannot be found, opened, or parsed. Nothing being set is not a failure: it answers with an empty string |
 | `valid_file_manager()` | nothing | every failure is caught, so it answers with the stock manager or an empty string |
 
 Each class derives from `RuntimeError`, and `DesktopEnvironmentUnknownError`, `XdgUnavailableError`, `XdgQueryError` and `DesktopEntryError` all derive from `LinuxFileManagerError`, so a caller that only needs to know that no Linux file manager could be settled on catches that one class.
