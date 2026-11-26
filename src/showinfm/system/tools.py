@@ -267,7 +267,14 @@ def directories_and_their_files(paths: list[str]) -> defaultdict[str, list[str]]
 
     :param paths: list of paths
     :return: default dict of folders with list of their files
+    :raises TypeError: if a single path is passed as a string rather than in a list
     """
+
+    # A bare path is iterable, so without this the loop would group its characters instead
+    # of saying the call is wrong.
+    if isinstance(paths, str):
+        msg = "directories_and_their_files() takes a list of paths, not one path"
+        raise TypeError(msg)
 
     folder_contents = defaultdict(list)
     for path in paths:

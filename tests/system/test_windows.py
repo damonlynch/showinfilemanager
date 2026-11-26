@@ -33,6 +33,7 @@ import sys
 from ctypes import wintypes
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
@@ -784,3 +785,17 @@ def test_a_root_is_announced_with_nothing_quoted_after_it(
     assert out.startswith("Executing Windows shell to open file explorer at ")
     assert out.endswith(", selecting \n")
     assert fake_shell[0] == ["pidl", "\\\\srv\\share\\"]
+
+
+def test_a_single_path_handed_over_as_a_string_is_refused() -> None:
+    r"""
+    A bare path is iterable, so grouping it would answer with each character as an entry
+    rather than failing, and the shell API below would be handed folders that name nothing.
+    The parameter is a list, so this builds the call a checker rejects: that rejected call
+    is exactly what the guard turns into a TypeError.
+    """
+
+    one_path: Any = r"C:\x y\holiday.jpg"
+
+    with pytest.raises(TypeError, match="not one path"):
+        tools.directories_and_their_files(one_path)
