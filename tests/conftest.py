@@ -3,6 +3,7 @@
 
 import subprocess
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 
@@ -50,6 +51,35 @@ class FakeWslpath:
         if path not in table:
             raise subprocess.CalledProcessError(1, cmd)
         return subprocess.CompletedProcess(cmd, 0, table[path].encode(), b"")
+
+
+class UnanswerablePath(type(Path())):  # type: ignore[valid-type]
+    """
+    A path the system cannot answer for, in the one way that matters.
+
+    The redirector answers a network location that went away mid-call with a code
+    pathlib does not swallow -- WinError 64 was measured here, and the swallow list is
+    both narrow and moving between releases. Nothing a test can name forces that answer
+    on a quiet machine, so it is injected rather than hoped for.
+
+    Subclassing Path itself is not possible on Python 3.11 (the flavour is set by the
+    factory, not the class), and this subclass makes glob() raise as well, because
+    pathlib builds its entries from type(path). So it is only sound where the code under
+    test stops before globbing: a root, which has no filename component to glob, or
+    tools.is_directory(), whose own guard is what is being asked about.
+    """
+
+    def is_dir(self) -> bool:
+        raise OSError(
+            22, "The specified network name is no longer available", None, 64, None
+        )
+
+
+@pytest.fixture
+def unanswerable_path() -> type:
+    """The class, so a scenario can put it on the module attribute the code reads."""
+
+    return UnanswerablePath
 
 
 @pytest.fixture

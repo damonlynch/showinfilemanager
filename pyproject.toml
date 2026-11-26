@@ -61,49 +61,63 @@ python = ["3.11", "3.12", "3.13", "3.14", "3.15"]
 
 [tool.ruff]
 target-version = "py311"
+line-length = 88
 exclude = [
-    ".bzr",
-    ".direnv",
-    ".eggs",
     ".git",
-    ".git-rewrite",
-    ".hg",
-    ".ipynb_checkpoints",
-    ".mypy_cache",
-    ".nox",
-    ".pants.d",
-    ".pyenv",
     ".pytest_cache",
-    ".pytype",
+    ".qwen",
     ".ruff_cache",
-    ".svn",
-    ".tox",
-    ".venv",
-    ".vscode",
     "__pypackages__",
-    "_build",
-    "buck-out",
     "build",
     "dist",
-    "node_modules",
-    "site-packages",
-    "venv",
     "urivalidate.py",
 ]
-# Same as Black.
-line-length = 88
-indent-width = 4
 
-[tool.ruff.lint]
-select = [
-    # pycodestyle
-    "E",
-    # Pyflakes
-    "F",
-    # pyupgrade
-    "UP",
-    # flake8-simplify
-    "SIM",
-    # isort
-    "I",
+# Rules deliberately kept in system/linux.py, each for a reason stated at the site it
+# covers. This adds to the per-file ignores that Hatch's ruff defaults supply rather than
+# replacing them, and the pattern is anchored with **/ because hatch runs ruff against a
+# merged copy of this file in its environment data directory, where a path relative to the
+# repository root would not resolve.
+#   BLE001  valid_linux_file_manager() and caja_supports_select() swallow every exception,
+#           which their docstrings state as their contract.
+#   FBT001  translate_wsl_path() and wsl_transform_path_uri() are public and are called
+#           positionally by filemanager.py and the tests; keyword-only would break them.
+#   PLC0415 wsl_transform_path_uri() imports showinfm.system.tools inside the function
+#           because tools reads current_platform as it is imported.
+#   PLR2004 len(path) > 2 is the shortest Windows drive path in a file: URI.
+#   PLW0603 _linux_desktop is reset by tests/conftest.py and monkeypatched by
+#           test_linux_file_manager.py, so it cannot become local.
+#   S101    the asserts tie the fields of WSLTransformPathURI together.
+#   S607    caja and wslpath are resolved through PATH on purpose.
+[tool.ruff.lint.extend-per-file-ignores]
+"**/showinfm/system/linux.py" = [
+    "BLE001",
+    "FBT001",
+    "PLC0415",
+    "PLR2004",
+    "PLW0603",
+    "S101",
+    "S607",
 ]
+
+# Rules deliberately kept in filemanager.py, the module that actually launches a file
+# manager:
+#   FBT001  show_in_file_manager() is the entry point exported from the package, and its
+#           booleans are declared positionally; keyword-only would break consumers this
+#           project cannot enumerate.
+#   FBT002  those same parameters also carry their defaults positionally.
+#   S101    the asserts narrow Optional to non-None. Deleting them takes pyrefly from 0
+#           errors to 8 in this file, so they are load-bearing, not decoration.
+#   S606    os.startfile() is the Windows shell call the code intends; there is no shell
+#           left to start.
+#   T201    this is the --verbose and --debug output the command line documents.
+"**/showinfm/filemanager.py" = [
+    "FBT001",
+    "FBT002",
+    "S101",
+    "S606",
+    "T201",
+]
+
+[tool.pyrefly]
+project-excludes = ["src/showinfm/system/urivalidate.py"]

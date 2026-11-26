@@ -51,40 +51,27 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def parse_dead_share(argument: str) -> list[str]:
+def require_unreachable_share() -> None:
     r"""
-    Run the parser on an argument naming a share nobody can reach, or say why this
-    machine cannot answer the question.
+    Skip unless this machine really cannot reach the share these scenarios name.
 
-    Two answers stand in the way, and neither is the code's. If the server resolves,
-    the share can be a folder and the empty result here cannot happen. Worse, the
-    redirector answers a share that went away with codes pathlib's is_dir() does not
-    swallow -- WinError 64, "The specified network name is no longer available", is one
-    -- and those leave parse_command_line_arguments() as an OSError. Asked repeatedly on
-    the developer's own Windows machine that happened in one run of six. It is a defect
-    in the code's exposure to the network, reported as a finding, and not what the
-    expectations below are about, so they are skipped naming the error rather than
-    failed or, worse, passed quietly.
+    Two answers would make the scenarios say nothing. If the server resolves, the share
+    can be a folder, and the empty result is no longer the point. And the check itself
+    is a stat: the redirector can answer a vanished share with a code pathlib does not
+    swallow -- WinError 64, measured here -- which is the network talking, not the
+    parser. The parser is no longer exposed to that answer (tools.is_directory() absorbs
+    it), so this guard protects only the precondition, and says what it saw.
     """
-
-    def hiccup(e: OSError) -> None:
-        pytest.skip(
-            f"the network layer answered {argument!r} with WinError "
-            f"{getattr(e, 'winerror', None)} ({e.strerror}), not 'not found'"
-        )
 
     try:
         reachable = Path(DEAD_SHARE_ROOT).is_dir()
     except OSError as e:
-        hiccup(e)
-        return []
+        pytest.skip(
+            f"{DEAD_SHARE_ROOT} answered WinError {getattr(e, 'winerror', None)} "
+            f"({e.strerror}): no view of it at all, so nothing to compare against"
+        )
     if reachable:
         pytest.skip(f"{DEAD_SHARE_ROOT} is a folder here, so no dead share to test")
-    try:
-        return windows.parse_command_line_arguments([argument])
-    except OSError as e:
-        hiccup(e)
-        return []
 
 
 @pytest.fixture
@@ -298,31 +285,72 @@ def test_an_smb_uri_is_not_carried_past_the_conversion() -> None:
     the working directory appeared, which is what the plain path branch would have made.
     """
 
+    require_unreachable_share()
+
     dead = f"smb://{DEAD_SERVER}/share/h*.jpg"
 
-    assert parse_dead_share(dead) == []
+    assert windows.parse_command_line_arguments([dead]) == []
 
 
-def test_an_unreachable_share_root_raises_from_the_glob() -> None:
+def test_an_unreachable_share_root_contributes_no_path() -> None:
     r"""
-    A root has no filename component, so pathlib reports its name as empty and glob()
-    rejects that pattern instead of matching nothing. Recorded as it behaves: the
-    ValueError escapes parse_command_line_arguments(), and main() calls the parser
-    outside its try, so showinfilemanager smb://srv/share ends in a traceback rather
-    than a message.
+    A share root carries no filename component, so there is nothing to glob and nothing
+    to show when the server cannot be reached. This ended in ValueError before, from
+    glob() refusing the empty pattern, and reached the user as a traceback because
+    main() called the parser outside its handler. The answer now is the one the same
+    call already gives for a pattern that matches no file, which is the point: an
+    argument that names nothing this machine cannot reach names nothing.
     """
 
-    with pytest.raises(ValueError, match="Unacceptable pattern"):
-        parse_dead_share(f"smb://{DEAD_SERVER}/share")
+    require_unreachable_share()
+
+    assert windows.parse_command_line_arguments([f"smb://{DEAD_SERVER}/share"]) == []
 
 
-def test_an_unmapped_drive_root_raises_from_the_glob(
+def test_an_unmapped_drive_root_contributes_no_path(
     unmapped_drive_root: str,
 ) -> None:
-    """The same defect with no network in it, so it is asked of every Windows machine."""
+    """The same answer with no network in it, so every Windows machine is asked this."""
 
-    with pytest.raises(ValueError, match="Unacceptable pattern"):
-        windows.parse_command_line_arguments([unmapped_drive_root])
+    assert windows.parse_command_line_arguments([unmapped_drive_root]) == []
+
+
+def test_a_root_the_system_cannot_answer_for_contributes_no_path(
+    unmapped_drive_root: str,
+    monkeypatch: pytest.MonkeyPatch,
+    unanswerable_path: type,
+) -> None:
+    r"""
+    What happens when even the question "is this a folder" goes unanswered, which is how
+    a share that went away mid-call presents itself (WinError 64, measured). The parser
+    must not pass that to its caller: no answer is no folder, and a root has no filename
+    component to glob, so the argument contributes nothing rather than ending in a
+    traceback. Injected because nothing on a quiet machine produces that answer on
+    demand, and a root is the one input where the injection stays faithful: glob() would
+    raise for this path class too, and the parser never gets that far.
+    """
+
+    monkeypatch.setattr(windows, "Path", unanswerable_path)
+
+    assert windows.parse_command_line_arguments([unmapped_drive_root]) == []
+
+
+def test_an_unanswerable_path_is_not_a_directory(
+    folder: Path, monkeypatch: pytest.MonkeyPatch, unanswerable_path: type
+) -> None:
+    """
+    The guard itself, asked directly. The three answers a caller can get are yes, no and
+    no answer, and the last one has to come back as False like the others. Everything
+    above this line reaches the guard only through the parser, so this is where removing
+    the catch fails, rather than somewhere dependent on a network.
+    """
+
+    assert tools.is_directory(folder) is True
+    assert tools.is_directory(folder / "b.jpg") is False
+    assert tools.is_directory(folder / "absent") is False
+
+    monkeypatch.chdir(folder)
+    assert tools.is_directory(unanswerable_path("sub")) is False
 
 
 @requires_unc_share

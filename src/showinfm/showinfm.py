@@ -245,14 +245,18 @@ def main() -> None:
         print(Diagnostics())
         verbose = True
 
-    if current_platform == Platform.windows and not is_wsl:
-        path_or_uri = windows.parse_command_line_arguments(args.path)
-    else:
-        path_or_uri = args.path
-
     open_not_select_directory = not args.select_folder
 
     try:
+        if current_platform == Platform.windows and not is_wsl:
+            # The raw arguments are globbed and normalised here, before anything is
+            # launched, so this belongs inside the handler below: what the parser
+            # cannot make of an argument should reach the user as its message rather
+            # than as a traceback, the same promise every other failure here makes.
+            path_or_uri = windows.parse_command_line_arguments(args.path)
+        else:
+            path_or_uri = args.path
+
         show_in_file_manager(
             file_manager=args.file_manager,
             path_or_uri=path_or_uri,

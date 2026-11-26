@@ -36,7 +36,7 @@ def is_uri(path_uri: str) -> bool:
 
     if path_uri and path_uri.startswith(("camera:/", "file:/", "smb:/")):
         return True
-    return re.match("^%s$" % urivalidate.URI, path_uri, re.VERBOSE) is not None
+    return re.match(f"^{urivalidate.URI}$", path_uri, re.VERBOSE) is not None
 
 
 def is_file_uri(path_uri: str) -> bool:
@@ -69,6 +69,30 @@ def is_smb_uri(path_uri: str) -> bool:
     """
 
     return path_uri[:6].lower() == "smb://"
+
+
+def is_directory(path: Path) -> bool:
+    """
+    Whether a path is a directory, treating "this process cannot get an answer" as no.
+
+    Path.is_dir() returns False only for the errors pathlib knows about and re-raises the
+    rest. The list is narrow and it moves: on Python 3.11.9 pathlib ignores the OS errors
+    21, 123 and 1921 plus errnos 2, 20, 9 and 10062, and by 3.15 those module attributes
+    have moved. A network location that went away mid-call answers something else
+    entirely -- WinError 64, "The specified network name is no longer available", was
+    measured escaping here -- so letting is_dir() answer directly turns a location the
+    program cannot examine into an undocumented OSError from show_in_file_manager(), and
+    into a traceback on the command line. A folder that cannot be examined is not a
+    folder that can be opened, which is the same answer a missing path gets.
+
+    :param path: the location to examine
+    :return: True if the system says it is a directory, else False
+    """
+
+    try:
+        return path.is_dir()
+    except OSError:
+        return False
 
 
 def smb_uri_to_unc(uri: str) -> str:
@@ -148,9 +172,8 @@ def quote_path(path: Path) -> str:
         if re.match(r"""\"(.*)\"""", p) is None:
             # Add double quotes where there was no quoting at all
             return _double_quoted(p)
-    else:
-        if not (p[0] in ('"', "'") and p[-1] == p[0]):
-            return shlex.quote(p)
+    elif not (p[0] in ('"', "'") and p[-1] == p[0]):
+        return shlex.quote(p)
     return p
 
 

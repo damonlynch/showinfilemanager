@@ -25,6 +25,13 @@ except ImportError:
     have_xdg = False
 
 from showinfm.constants import FileManagerType
+from showinfm.exceptions import (
+    DesktopEntryError,
+    DesktopEnvironmentUnknownError,
+    LinuxFileManagerError,
+    XdgQueryError,
+    XdgUnavailableError,
+)
 
 _linux_desktop: Optional["LinuxDesktop"] = None
 
@@ -49,8 +56,9 @@ def stock_linux_file_manager() -> str:
         desktop = LinuxDesktopFamily.get(desktop) or desktop
 
         return StandardLinuxFileManager[desktop]
-    except KeyError:
-        raise Exception(f"The desktop {desktop} is unknown")
+    except KeyError as err:
+        msg = f"The desktop {desktop} is unknown"
+        raise DesktopEnvironmentUnknownError(msg) from err
 
 
 def user_linux_file_manager() -> str:
@@ -77,21 +85,21 @@ def user_linux_file_manager() -> str:
     """
 
     if not have_xdg:
-        raise Exception(
-            "xdg utilities and/or the python binding for xdg are not installed"
-        )
+        msg = "xdg utilities and/or the python binding for xdg are not installed"
+        raise XdgUnavailableError(msg)
 
     xdg_cmd = "xdg-mime query default inode/directory"
     cmd = shlex.split(xdg_cmd)
     try:
         desktop_file: str = subprocess.check_output(cmd, universal_newlines=True)
-    except Exception:
-        raise Exception(f"Could not determine file manager using {xdg_cmd}")
+    except Exception as err:
+        msg = f"Could not determine file manager using {xdg_cmd}"
+        raise XdgQueryError(msg) from err
 
     # Where more than one handler is registered, xdg-mime lists them in order of
     # preference
-    for desktop_file in desktop_file.strip().split(";"):
-        if not desktop_file:
+    for handler in desktop_file.strip().split(";"):
+        if not handler:
             # An empty answer splits to one empty name, which must not be used as a
             # filename: that would test the applications directory itself, which
             # exists, and report it as an unreadable desktop entry
@@ -99,7 +107,7 @@ def user_linux_file_manager() -> str:
         for desktop_path in (
             Path(d) / "applications" for d in BaseDirectory.xdg_data_dirs
         ):
-            path = desktop_path / desktop_file
+            path = desktop_path / handler
             if not path.exists():
                 continue
             fm_cmd = _executable_from_desktop_entry(str(path))
@@ -125,14 +133,17 @@ def _executable_from_desktop_entry(path: str) -> str:
 
     try:
         desktop_entry = DesktopEntry(path)
-    except Exception:
-        raise Exception(f"Could not open desktop entry at {path}")
+    except Exception as err:
+        msg = f"Could not open desktop entry at {path}"
+        raise DesktopEntryError(msg) from err
     try:
         desktop_entry.parse(path)
-    except xdg.Exceptions.ParsingError:
-        raise Exception(f"Could not parse desktop entry at {path}")
-    except Exception:
-        raise Exception(f"Desktop entry at {path} might be malformed")
+    except xdg.Exceptions.ParsingError as err:
+        msg = f"Could not parse desktop entry at {path}"
+        raise DesktopEntryError(msg) from err
+    except Exception as err:
+        msg = f"Desktop entry at {path} might be malformed"
+        raise DesktopEntryError(msg) from err
 
     fm = desktop_entry.getExec()
     if not fm:
@@ -143,10 +154,7 @@ def _executable_from_desktop_entry(path: str) -> str:
     # Strip away any path information
     fm_cmd = Path(fm_cmd).name
     # Strip away any quotes
-    fm_cmd = fm_cmd.replace('"', "")
-    fm_cmd = fm_cmd.replace("'", "")
-
-    return fm_cmd
+    return fm_cmd.replace('"', "").replace("'", "")
 
 
 def valid_linux_file_manager() -> str:
@@ -225,8 +233,9 @@ def caja_version() -> packaging.version.Version | None:
             .stdout.decode()
             .strip()
         )
-    except subprocess.CalledProcessError:
-        raise Exception("Failed to get version number from caja")
+    except subprocess.CalledProcessError as err:
+        msg = "Failed to get version number from caja"
+        raise LinuxFileManagerError(msg) from err
 
     result = re.search(r"\d", version_string)
     if result is None:
@@ -525,70 +534,70 @@ class LinuxDesktop(Enum):
     cosmic = 21
 
 
-LinuxDesktopHumanize = dict(
-    gnome="Gnome",
-    unity="Unity",
-    cinnamon="Cinnamon",
-    kde="KDE",
-    xfce="XFCE",
-    mate="Mate",
-    lxde="LXDE",
-    lxqt="LxQt",
-    ubuntugnome="Ubuntu Gnome",
-    popgnome="Pop Gnome",
-    deepin="Deepin",
-    zorin="Zorin",
-    ukui="UKUI",
-    pantheon="Pantheon",
-    enlightenment="Enlightenment",
-    wsl="WSL1",
-    wsl2="WSL2",
-    cutefish="Cutefish",
-    lumina="Lumina",
-    unknown="Unknown",
-    cosmic="Cosmic",
-)
+LinuxDesktopHumanize = {
+    "gnome": "Gnome",
+    "unity": "Unity",
+    "cinnamon": "Cinnamon",
+    "kde": "KDE",
+    "xfce": "XFCE",
+    "mate": "Mate",
+    "lxde": "LXDE",
+    "lxqt": "LxQt",
+    "ubuntugnome": "Ubuntu Gnome",
+    "popgnome": "Pop Gnome",
+    "deepin": "Deepin",
+    "zorin": "Zorin",
+    "ukui": "UKUI",
+    "pantheon": "Pantheon",
+    "enlightenment": "Enlightenment",
+    "wsl": "WSL1",
+    "wsl2": "WSL2",
+    "cutefish": "Cutefish",
+    "lumina": "Lumina",
+    "unknown": "Unknown",
+    "cosmic": "Cosmic",
+}
 
-LinuxDesktopFamily = dict(
-    ubuntugnome="gnome",
-    popgnome="gnome",
-    zorin="gnome",
-    unity="gnome",
-)
+LinuxDesktopFamily = {
+    "ubuntugnome": "gnome",
+    "popgnome": "gnome",
+    "zorin": "gnome",
+    "unity": "gnome",
+}
 
-StandardLinuxFileManager = dict(
-    gnome="nautilus",
-    kde="dolphin",
-    cinnamon="nemo",
-    mate="caja",
-    xfce="thunar",
-    lxde="pcmanfm",
-    lxqt="pcmanfm-qt",
-    deepin="dde-file-manager",
-    pantheon="io.elementary.files",
-    ukui="peony",
-    enlightenment="pcmanfm",
-    wsl="explorer.exe",
-    wsl2="explorer.exe",
-    cutefish="cutefish-filemanager",
-    lumina="lumina-fm",
-    cosmic="cosmic-files",
-)
+StandardLinuxFileManager = {
+    "gnome": "nautilus",
+    "kde": "dolphin",
+    "cinnamon": "nemo",
+    "mate": "caja",
+    "xfce": "thunar",
+    "lxde": "pcmanfm",
+    "lxqt": "pcmanfm-qt",
+    "deepin": "dde-file-manager",
+    "pantheon": "io.elementary.files",
+    "ukui": "peony",
+    "enlightenment": "pcmanfm",
+    "wsl": "explorer.exe",
+    "wsl2": "explorer.exe",
+    "cutefish": "cutefish-filemanager",
+    "lumina": "lumina-fm",
+    "cosmic": "cosmic-files",
+}
 
-LinuxFileManagerBehavior = dict(
-    nautilus=FileManagerType.select,
-    dolphin=FileManagerType.select,
-    caja=FileManagerType.dir_only_uri,
-    thunar=FileManagerType.dir_only_uri,
-    nemo=FileManagerType.regular,
-    pcmanfm=FileManagerType.dir_only_uri,
-    peony=FileManagerType.show_items,
-    index=FileManagerType.dir_only_uri,
-    doublecmd=FileManagerType.dual_panel,
-    krusader=FileManagerType.dir_only_uri,
-    spacefm=FileManagerType.dir_only_uri,
-    fman=FileManagerType.dual_panel,
-)
+LinuxFileManagerBehavior = {
+    "nautilus": FileManagerType.select,
+    "dolphin": FileManagerType.select,
+    "caja": FileManagerType.dir_only_uri,
+    "thunar": FileManagerType.dir_only_uri,
+    "nemo": FileManagerType.regular,
+    "pcmanfm": FileManagerType.dir_only_uri,
+    "peony": FileManagerType.show_items,
+    "index": FileManagerType.dir_only_uri,
+    "doublecmd": FileManagerType.dual_panel,
+    "krusader": FileManagerType.dir_only_uri,
+    "spacefm": FileManagerType.dir_only_uri,
+    "fman": FileManagerType.dual_panel,
+}
 LinuxFileManagerBehavior["pcmanfm-qt"] = FileManagerType.dir_only_uri
 LinuxFileManagerBehavior["dde-file-manager"] = FileManagerType.show_item
 LinuxFileManagerBehavior["io.elementary.files"] = FileManagerType.regular
@@ -623,12 +632,12 @@ def linux_desktop() -> LinuxDesktop:
 
     try:
         env = os.getenv("XDG_CURRENT_DESKTOP").lower()  # type: ignore
-    except AttributeError:
+    except AttributeError as err:
         wsl = wsl_version()
         if wsl is not None:
             return wsl
-        else:
-            raise Exception("The value for XDG_CURRENT_DESKTOP is not set")
+        msg = "The value for XDG_CURRENT_DESKTOP is not set"
+        raise DesktopEnvironmentUnknownError(msg) from err
 
     if env in ("unity:unity7", "unity:unity7:ubuntu"):
         env = "unity"
@@ -647,8 +656,9 @@ def linux_desktop() -> LinuxDesktop:
 
     try:
         return LinuxDesktop[env]
-    except KeyError:
-        raise Exception(f"The desktop environment {env} is unknown")
+    except KeyError as err:
+        msg = f"The desktop environment {env} is unknown"
+        raise DesktopEnvironmentUnknownError(msg) from err
 
 
 def linux_desktop_humanize(desktop: LinuxDesktop) -> str:

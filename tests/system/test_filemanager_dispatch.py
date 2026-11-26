@@ -486,6 +486,30 @@ def test_a_share_uri_is_left_alone_when_conversion_is_refused(
 
 
 @requires_windows_paths
+def test_a_share_root_that_cannot_be_answered_for_does_not_raise(
+    dispatch: Dispatch,
+    monkeypatch: pytest.MonkeyPatch,
+    unanswerable_path: type,
+) -> None:
+    r"""
+    The public API's half of the same exposure, and the more important one. An smb: URI
+    becomes \\srv\share, and deciding whether that is a folder is a stat on a network
+    location -- answered WinError 64 by a redirector when the share went away mid-call.
+    show_in_file_manager() documents one raise, WindowsShellUnavailableError, so an
+    OSError escaping here contradicts the documented API rather than merely marring a
+    command line. Not a folder that can be opened, so the root is handed over to be
+    selected as it stands, with a trailing separator because that is how a Windows path
+    renders a share root.
+    """
+
+    dispatch.configure(platform=WINDOWS)
+    monkeypatch.setattr(filemanager, "Path", unanswerable_path)
+    dispatch.run("smb://srv/share", file_manager="explorer.exe")
+    assert dispatch.shell_calls == [["\\\\srv\\share\\"]]
+    assert dispatch.startfile_calls == []
+
+
+@requires_windows_paths
 def test_explorer_is_handed_nothing_for_a_scheme_with_no_path(
     dispatch: Dispatch,
 ) -> None:
@@ -1029,6 +1053,31 @@ def test_a_directory_only_manager_is_given_the_parent_of_a_file(
         ["thunar", str(tmp_path)],
         ["thunar", str(tmp_path)],
     ]
+
+
+def test_a_folder_that_cannot_be_answered_for_is_treated_as_a_file(
+    dispatch: Dispatch,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    unanswerable_path: type,
+) -> None:
+    """
+    The guard on the route that opens rather than selects. A directory-only manager has
+    to know whether the item is a folder to choose between showing it and showing its
+    parent, and that question is a stat -- which a stale network mount answers with a
+    code pathlib lets through, not a False. No answer is no folder, so the containing
+    directory is handed over. What must not happen is an OSError leaving the public
+    function, whose only documented raise is WindowsShellUnavailableError. Found by
+    mutation: the Windows-only scenarios above leave this branch untouched.
+    """
+
+    target = tmp_path / "holiday.jpg"
+    target.write_text("", encoding="utf-8")
+    monkeypatch.setattr(filemanager, "Path", unanswerable_path)
+
+    dispatch.run(str(target), file_manager="thunar", allow_conversion=False)
+
+    assert dispatch.commands == [["thunar", str(tmp_path)]]
 
 
 def test_a_manager_that_cannot_distinguish_the_two_is_given_the_parent(

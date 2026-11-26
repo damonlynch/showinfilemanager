@@ -10,6 +10,7 @@ stderr, and the traceback that --debug asks to be left alone. The launch itself 
 rather than performed, so no file manager is started here.
 """
 
+import platform
 import sys
 
 import pytest
@@ -107,4 +108,49 @@ def test_debug_lets_the_same_failure_propagate(
     argv(monkeypatch, "--debug", str(tmp_path))
 
     with pytest.raises(ValueError, match=failing):
+        showinfm.main()
+
+
+@pytest.mark.skipif(
+    platform.system() != "Windows",
+    reason="only the Windows run takes the arguments through the parser at all",
+)
+def test_a_parser_failure_is_reported_as_a_message_not_a_traceback(
+    monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    """
+    Globbing and URI normalisation happen on the raw arguments before anything launches,
+    and that call used to sit outside this function's try. So the one failure a user
+    could meet without a file manager running was the only one that reached them as a
+    traceback -- and after the parser stopped raising on an unreachable root, this is
+    what keeps a future raise from escaping unannounced.
+    """
+
+    def unparseable(_arguments):
+        message = "Unacceptable pattern: ''"
+        raise ValueError(message)
+
+    monkeypatch.setattr(showinfm.windows, "parse_command_line_arguments", unparseable)
+    argv(monkeypatch, "Q:\\")
+
+    showinfm.main()
+
+    assert capsys.readouterr().err == "Unacceptable pattern: ''"
+
+
+@pytest.mark.skipif(
+    platform.system() != "Windows",
+    reason="only the Windows run takes the arguments through the parser at all",
+)
+def test_debug_lets_a_parser_failure_propagate(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The same promise --debug already makes of every other failure here."""
+
+    def unparseable(_arguments):
+        message = "Unacceptable pattern: ''"
+        raise ValueError(message)
+
+    monkeypatch.setattr(showinfm.windows, "parse_command_line_arguments", unparseable)
+    argv(monkeypatch, "--debug", "Q:\\")
+
+    with pytest.raises(ValueError, match="Unacceptable pattern"):
         showinfm.main()

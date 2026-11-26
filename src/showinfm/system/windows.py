@@ -11,6 +11,7 @@ from showinfm.system import current_platform
 from showinfm.system.tools import (
     directories_and_their_files,
     file_uri_to_path,
+    is_directory,
     is_file_uri,
     is_smb_uri,
     is_uri,
@@ -104,7 +105,8 @@ def parse_command_line_arguments(path_or_uri: list[str]) -> list[str]:
     Windows shell does not do itself
 
     :param path_or_uri: list of paths or URIs
-    :return: list of paths or URIs with resolved paths and no glob components
+    :return: list of paths or URIs with resolved paths and no glob components. An
+     argument that names nothing this machine can reach contributes nothing.
     """
 
     paths = []
@@ -127,17 +129,23 @@ def parse_command_line_arguments(path_or_uri: list[str]) -> list[str]:
         else:
             uri = None
             path = Path(pu)
-        if not path.is_dir():
+        if not is_directory(path):
+            if not path.name:
+                # A root has no filename component, and glob() refuses the empty
+                # pattern with ValueError rather than matching nothing. There is
+                # nothing here to show, so the argument contributes nothing -- the
+                # same answer a pattern that matches no file gives. A root that
+                # does exist was taken as a folder above.
+                continue
             for globbed_pu in path.parent.resolve().glob(path.name):
                 if uri:
                     paths.append(path_to_file_uri(str(globbed_pu)))
                 else:
                     paths.append(str(globbed_pu))
+        elif uri:
+            paths.append(path_to_file_uri(str(path)))
         else:
-            if uri:
-                paths.append(path_to_file_uri(str(path)))
-            else:
-                paths.append(str(path.resolve()))
+            paths.append(str(path.resolve()))
 
     return paths
 

@@ -5,27 +5,26 @@
 Parse command line arguments
 """
 
+import ast
 import importlib.metadata
 from argparse import ArgumentParser, HelpFormatter
 from pathlib import Path
 
 try:
-    from showinfm import __about__ as __about__
+    from showinfm.__about__ import __version__
 except ImportError:
     # The script is being run at build time
     # Module imports are unavailable
-
-    here = Path(__file__).parent
-    with open(here / "__about__.py") as f:
-        about = {}
-        exec(f.read(), about)
-
-    # Convert about dictionary to class
-    class About:
-        pass
-
-    __about__ = About()
-    __about__.__dict__.update(about)
+    #
+    # The version is parsed out of the file rather than the file being executed, so
+    # that nothing runs while the package is still being built.
+    __version__ = next(
+        ast.literal_eval(node.value)
+        for node in ast.parse(Path(__file__).with_name("__about__.py").read_text()).body
+        if isinstance(node, ast.Assign)
+        for target in node.targets
+        if isinstance(target, ast.Name) and target.id == "__version__"
+    )
 
 
 def package_metadata():
@@ -38,7 +37,7 @@ def package_metadata():
     try:
         metadata = importlib.metadata.metadata("show-in-file-manager")
         summary = metadata["summary"]
-    except Exception:
+    except (importlib.metadata.PackageNotFoundError, KeyError):
         summary = (
             "Platform independent Python module to open the system file manager "
             "and optionally select files in it "
@@ -61,7 +60,7 @@ def get_parser(formatter_class=HelpFormatter) -> ArgumentParser:
     )
 
     parser.add_argument(
-        "--version", action="version", version=f"%(prog)s {__about__.__version__}"
+        "--version", action="version", version=f"%(prog)s {__version__}"
     )
 
     parser.add_argument("-f", "--file-manager", help="file manager to run")
@@ -78,7 +77,7 @@ def get_parser(formatter_class=HelpFormatter) -> ArgumentParser:
     )
 
     parser.add_argument(
-        "--debug", action="store_true", help="output debugging information to stdout"
+        "--debug", action="store_true", help="output debugging information to stderr"
     )
 
     parser.add_argument(

@@ -137,12 +137,11 @@ def _file_manager_type(fm: str) -> FileManagerType:
 
     if current_platform == Platform.windows or is_wsl1:
         return windows.windows_file_manager_type(fm)
-    elif current_platform == Platform.linux:
+    if current_platform == Platform.linux:
         return linux.linux_file_manager_type(fm)
-    elif current_platform == Platform.macos:
+    if current_platform == Platform.macos:
         return FileManagerType.reveal
-    else:
-        raise NotImplementedError
+    raise NotImplementedError
 
 
 class FileManager:
@@ -235,7 +234,9 @@ class FileManager:
         else:
             try:
                 self.file_manager_type = _file_manager_type(self.file_manager)
-            except Exception:
+            except NotImplementedError:
+                # All _file_manager_type() can raise: both platform helpers look the name
+                # up with a default, and the caja probe swallows its own failures.
                 self.file_manager_type = None
 
         if not self.file_manager:
@@ -300,31 +301,30 @@ class FileManager:
             else:
                 self.wsl_windows_directories.append(wsl_details.win_uri)
             return ProcessPathOrUri(fully_processed=True, path=None, uri=None)
-        else:
-            if wsl_details.linux_path is None and tools.is_smb_uri(pu):
-                # A share URI this route deliberately left alone: the Linux file
-                # managers open this scheme themselves, exactly as they do when
-                # not running under WSL. The spaces are encoded because this
-                # string goes into a command line, where a raw one would split
-                # the URI in two.
-                return ProcessPathOrUri(
-                    fully_processed=False, path=None, uri=pu.replace(" ", "%20")
+        if wsl_details.linux_path is None and tools.is_smb_uri(pu):
+            # A share URI this route deliberately left alone: the Linux file
+            # managers open this scheme themselves, exactly as they do when
+            # not running under WSL. The spaces are encoded because this
+            # string goes into a command line, where a raw one would split
+            # the URI in two.
+            return ProcessPathOrUri(
+                fully_processed=False, path=None, uri=pu.replace(" ", "%20")
+            )
+        if wsl_details.linux_path is None:
+            if self.debug:
+                print(
+                    f"Unable to convert '{pu}' into a Linux path",
+                    file=sys.stderr,
                 )
-            if wsl_details.linux_path is None:
-                if self.debug:
-                    print(
-                        f"Unable to convert '{pu}' into a Linux path",
-                        file=sys.stderr,
-                    )
-                return ProcessPathOrUri(fully_processed=True, path=None, uri=None)
-            assert self.file_manager
-            if tools.filemanager_requires_path(file_manager=self.file_manager):
-                path = Path(wsl_details.linux_path).resolve()
-                uri = None
-            else:
-                path = None
-                uri = Path(wsl_details.linux_path).resolve().as_uri()
-            return ProcessPathOrUri(fully_processed=False, path=path, uri=uri)
+            return ProcessPathOrUri(fully_processed=True, path=None, uri=None)
+        assert self.file_manager
+        if tools.filemanager_requires_path(file_manager=self.file_manager):
+            path = Path(wsl_details.linux_path).resolve()
+            uri = None
+        else:
+            path = None
+            uri = Path(wsl_details.linux_path).resolve().as_uri()
+        return ProcessPathOrUri(fully_processed=False, path=path, uri=uri)
 
     def _process_path_or_uri_non_wsl(self, pu: str) -> ProcessPathOrUri:
         """
@@ -375,16 +375,15 @@ class FileManager:
             else:
                 uri = pu.replace(" ", "%20")
                 path = None
+        elif (
+            tools.filemanager_requires_path(file_manager=self.file_manager)
+            or not self.allow_conversion
+        ):
+            path = Path(pu)
+            uri = None
         else:
-            if (
-                tools.filemanager_requires_path(file_manager=self.file_manager)
-                or not self.allow_conversion
-            ):
-                path = Path(pu)
-                uri = None
-            else:
-                uri = Path(pu).resolve().as_uri()
-                path = None
+            uri = Path(pu).resolve().as_uri()
+            path = None
 
         return ProcessPathOrUri(fully_processed=False, path=path, uri=uri)
 
@@ -419,7 +418,7 @@ class FileManager:
 
         assert path is not None
 
-        if not (path.is_dir() and self.open_not_select_directory):
+        if not (tools.is_directory(path) and self.open_not_select_directory):
             path = path.parent
 
         if parse_result is not None:
@@ -444,12 +443,11 @@ class FileManager:
         if (
             self.open_not_select_directory
             and self.file_manager_type != FileManagerType.dual_panel
-            or self.file_manager_type == FileManagerType.regular
-        ):
+        ) or self.file_manager_type == FileManagerType.regular:
             if uri:
                 if tools.is_file_uri(uri):
                     path = Path(tools.file_uri_to_path(uri=uri))
-                    open_directory = path.is_dir()
+                    open_directory = tools.is_directory(path)
                 else:
                     # A URI from another scheme names something this process
                     # cannot examine, so it cannot be treated as a directory:
@@ -457,7 +455,7 @@ class FileManager:
                     open_directory = False
             else:
                 assert path is not None
-                open_directory = path.is_dir()
+                open_directory = tools.is_directory(path)
             if open_directory:
                 # Only a path that was examined can be a directory, so this is
                 # never None here; a URI of another scheme sets open_directory
