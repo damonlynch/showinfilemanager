@@ -65,7 +65,10 @@ def win_argv(command: str) -> list[str]:
     Windows only: ctypes.windll does not exist elsewhere.
     """
 
-    shell32 = ctypes.windll.shell32
+    # getattr, not attribute access: ctypes.windll exists only on Windows, so the plain
+    # form leaves a checker on the interpreters that lack it with nothing to resolve.
+    windll = getattr(ctypes, "windll")  # noqa: B009
+    shell32 = windll.shell32
     shell32.CommandLineToArgvW.restype = ctypes.POINTER(wintypes.LPWSTR)
     shell32.CommandLineToArgvW.argtypes = [
         wintypes.LPCWSTR,
@@ -76,7 +79,7 @@ def win_argv(command: str) -> list[str]:
     try:
         return [argv[i] for i in range(count.value)]
     finally:
-        ctypes.windll.kernel32.LocalFree(argv)
+        windll.kernel32.LocalFree(argv)
 
 
 class RecordedLaunch:
@@ -310,7 +313,7 @@ def test_a_live_smb_uri_reaches_the_share_it_names(
     monkeypatch.setattr(
         filemanager.windows,
         "launch_file_explorer",
-        lambda paths, verbose=False: opened.extend(paths),
+        lambda paths, _verbose=False: opened.extend(paths),
     )
 
     filemanager.FileManager().show_in_file_manager(uri, file_manager="explorer.exe")
@@ -455,7 +458,7 @@ def test_a_live_network_folder_reaches_another_manager_quoted_and_intact(
 
     launched: list = []
 
-    def popen(args, *rest, **kwargs):
+    def popen(args, *_rest, **_kwargs):
         launched.append(args)
         return RecordedLaunch()
 
@@ -495,7 +498,7 @@ def test_a_live_network_folder_given_as_a_uri_is_opened_not_selected(
     monkeypatch.setattr(
         filemanager.windows,
         "launch_file_explorer",
-        lambda paths, verbose=False: selected.append(paths),
+        lambda paths, _verbose=False: selected.append(paths),
     )
 
     filemanager.FileManager().show_in_file_manager(
@@ -542,9 +545,8 @@ def as_windows(monkeypatch: pytest.MonkeyPatch) -> None:
     platform.system() != "Windows",
     reason="only a Windows Path collapses the UNC prefix it is handed",
 )
-def test_quoting_a_windows_unc_path_keeps_both_leading_separators(
-    as_windows: None,
-) -> None:
+@pytest.mark.usefixtures("as_windows")
+def test_quoting_a_windows_unc_path_keeps_both_leading_separators() -> None:
     r"""
     Wrapping a path in quotes must leave the path alone. Rebuilding the quoted value
     as a Path hides the UNC root behind the quote character, so "\\server\share" comes
@@ -558,7 +560,8 @@ def test_quoting_a_windows_unc_path_keeps_both_leading_separators(
     assert Path(quoted.strip('"')).is_absolute()
 
 
-def test_quoting_a_windows_drive_path_makes_one_token(as_windows: None) -> None:
+@pytest.mark.usefixtures("as_windows")
+def test_quoting_a_windows_drive_path_makes_one_token() -> None:
     """The point of the quoting: an unquoted space would split the argument."""
 
     quoted = tools.quote_path(path=Path(r"C:\x y\holiday.jpg"))
@@ -566,9 +569,8 @@ def test_quoting_a_windows_drive_path_makes_one_token(as_windows: None) -> None:
     assert quoted == '"C:\\x y\\holiday.jpg"'
 
 
-def test_quoting_an_already_quoted_windows_path_leaves_it_alone(
-    as_windows: None,
-) -> None:
+@pytest.mark.usefixtures("as_windows")
+def test_quoting_an_already_quoted_windows_path_leaves_it_alone() -> None:
     """
     A path that arrives quoted is returned as it stands. Quoting it again would nest the
     quotes, so the caller would get an argument whose closing quote is escaped.
@@ -579,7 +581,8 @@ def test_quoting_an_already_quoted_windows_path_leaves_it_alone(
     assert quoted == '"C:\\x y\\holiday.jpg"'
 
 
-def test_a_single_quoted_windows_path_becomes_double_quoted(as_windows: None) -> None:
+@pytest.mark.usefixtures("as_windows")
+def test_a_single_quoted_windows_path_becomes_double_quoted() -> None:
     """Windows takes double quotes, so a path arriving single quoted is rewritten."""
 
     quoted = tools.quote_path(path=Path("'C:\\x y'"))
@@ -591,9 +594,8 @@ def test_a_single_quoted_windows_path_becomes_double_quoted(as_windows: None) ->
     platform.system() != "Windows",
     reason="only a Windows path renders its root with a trailing separator",
 )
-def test_quoting_a_windows_root_escapes_its_trailing_separator(
-    as_windows: None,
-) -> None:
+@pytest.mark.usefixtures("as_windows")
+def test_quoting_a_windows_root_escapes_its_trailing_separator() -> None:
     r"""
     str() of a root ends with a separator, and for a share root pathlib adds that
     separator itself: `\\server\share` becomes `\\server\share\`. Quoting it as it
@@ -604,9 +606,8 @@ def test_quoting_a_windows_root_escapes_its_trailing_separator(
     assert tools.quote_path(path=Path(r"\\server\share")) == '"\\\\server\\share\\\\"'
 
 
-def test_quoting_leaves_a_path_without_a_trailing_separator_alone(
-    as_windows: None,
-) -> None:
+@pytest.mark.usefixtures("as_windows")
+def test_quoting_leaves_a_path_without_a_trailing_separator_alone() -> None:
     """The escape is for roots only; an ordinary path must not grow characters."""
 
     assert (
@@ -618,7 +619,8 @@ def test_quoting_leaves_a_path_without_a_trailing_separator_alone(
     platform.system() != "Windows",
     reason="CreateProcess tokenising is what is being asked",
 )
-def test_a_quoted_root_parses_back_to_one_argument(as_windows: None) -> None:
+@pytest.mark.usefixtures("as_windows")
+def test_a_quoted_root_parses_back_to_one_argument() -> None:
     """
     The parser's verdict rather than this file's reading of the string: what a file
     manager launched from one command string is handed. Before the escape was added,
@@ -643,7 +645,7 @@ def test_a_live_share_root_reaches_another_manager_as_one_token(
 
     launched: list = []
 
-    def popen(args, *rest, **kwargs):
+    def popen(args, *_rest, **_kwargs):
         launched.append(args)
         return RecordedLaunch()
 

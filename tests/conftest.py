@@ -41,11 +41,12 @@ class FakeWslpath:
         self._to_windows[wsl_path] = windows_path
 
     def __call__(
-        self, cmd: list[str], *args: object, **kwargs: object
+        self, cmd: list[str], *_args: object, **_kwargs: object
     ) -> subprocess.CompletedProcess:
         program, *arguments = [str(part) for part in cmd]
         if program != "wslpath":
-            raise AssertionError(f"unexpected subprocess call for {program}")
+            msg = f"unexpected subprocess call for {program}"
+            raise AssertionError(msg)
         self.calls.append([program, *arguments])
         direction, path = arguments
         table = self._to_wsl if direction == "-u" else self._to_windows
@@ -118,7 +119,7 @@ def fake_wslpath(monkeypatch: pytest.MonkeyPatch) -> FakeWslpath:
 
 
 @pytest.fixture(autouse=True)
-def clear_cached_desktop() -> None:
+def clear_cached_desktop() -> Iterator[None]:
     """
     Drop the desktop state that would otherwise carry from test to test.
 
@@ -150,7 +151,7 @@ def isolated_launch_registry() -> Iterator[None]:
     and keeps the exit hook from reporting one on the way out.
     """
 
-    registry = filemanager._PROCESSES  # noqa: SLF001 -- one list, held on purpose
+    registry = filemanager._PROCESSES  # one list, held on purpose
     recorded = list(registry)
     yield
     registry[:] = recorded

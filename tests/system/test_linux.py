@@ -183,9 +183,8 @@ def test_unc_input_of_an_absent_target_has_no_trailing_slash(
     assert result.is_dir is None
 
 
-def test_path_wslpath_cannot_translate_reports_no_location(
-    fake_wslpath: FakeWslpath,
-) -> None:
+@pytest.mark.usefixtures("fake_wslpath")
+def test_path_wslpath_cannot_translate_reports_no_location() -> None:
     windows_path = r"C:\Program Files"
 
     result = wsl_transform_path_uri(windows_path, True)
@@ -406,6 +405,7 @@ def test_live_wsl_home_directory_is_a_windows_unc_location() -> None:
     assert result.exists is True
     assert result.is_dir is True
     assert result.is_win_location is False
-    assert result.win_path is not None and result.win_path.startswith("\\\\")
+    assert result.win_path is not None
+    assert result.win_path.startswith("\\\\")
     assert result.win_uri is not None
     assert re.match(r"^file://[^/]+(/[^/]+)+/$", result.win_uri), result.win_uri

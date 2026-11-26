@@ -26,6 +26,7 @@ import platform
 import sys
 import types
 from contextlib import redirect_stderr, redirect_stdout
+from typing import Any
 
 MODE = sys.argv[1]
 TARGET = sys.argv[2] if len(sys.argv) > 2 else ""
@@ -38,7 +39,7 @@ class ImportTracer:
     def __init__(self) -> None:
         self.attempts: list[str] = []
 
-    def find_spec(self, name, path=None, target=None):
+    def find_spec(self, name, _path=None, _target=None):
         if name == "win32com" or name.startswith("win32com."):
             self.attempts.append(name)
 
@@ -64,7 +65,7 @@ def block_win32com() -> None:
     """
 
     for name in ("win32com", "win32com.shell", "win32com.shell.shell"):
-        sys.modules[name] = None
+        sys.modules[name] = None  # type: ignore[unsupported-operation]
 
 
 def install_fake_shell() -> list:
@@ -76,19 +77,19 @@ def install_fake_shell() -> list:
     """
 
     calls: list = []
-    shell = types.ModuleType("win32com.shell.shell")
-    shell.SHILCreateFromPath = lambda path, flags: (
+    shell: Any = types.ModuleType("win32com.shell.shell")
+    shell.SHILCreateFromPath = lambda path, _flags: (
         calls.append(["SHILCreateFromPath", path]) or (f"pidl-{path}", 0)
     )
-    shell.SHParseDisplayName = lambda display, unused, reference: (
+    shell.SHParseDisplayName = lambda display, _unused, _reference: (
         calls.append(["SHParseDisplayName", display]) or (f"item-{display}", 0)
     )
     shell.SHOpenFolderAndSelectItems = lambda folder, items, flags: calls.append(
         ["SHOpenFolderAndSelectItems", folder, list(items), flags]
     )
-    package = types.ModuleType("win32com.shell")
+    package: Any = types.ModuleType("win32com.shell")
     package.shell = shell
-    root = types.ModuleType("win32com")
+    root: Any = types.ModuleType("win32com")
     root.shell = package
     sys.modules["win32com"] = root
     sys.modules["win32com.shell"] = package
@@ -163,7 +164,9 @@ def report_folder_only() -> None:
     import showinfm
 
     opened: list = []
-    os.startfile = lambda path: opened.append(path)
+    # setattr, not assignment: os.startfile exists only on Windows, so assigning it
+    # plainly leaves a checker here with no attribute to resolve.
+    setattr(os, "startfile", lambda path: opened.append(path))  # noqa: B010
     errors: list = []
     try:
         showinfm.show_in_file_manager(TARGET)
@@ -233,6 +236,7 @@ elif MODE in ("cli_missing", "cli_present"):
         install_fake_shell()
     report_cli()
 else:
-    raise AssertionError(f"unknown scenario: {MODE}")
+    msg = f"unknown scenario: {MODE}"
+    raise AssertionError(msg)
 
 print(json.dumps(REPORT))

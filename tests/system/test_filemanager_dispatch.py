@@ -125,41 +125,52 @@ class Dispatch:
             ),
         )
 
-    def _popen(self, args: object, *more: object, **kwargs: object) -> RecordedPopen:
+    def _popen(self, args: object, *_more: object, **_kwargs: object) -> RecordedPopen:
         self.launches.append(args)
         return RecordedPopen(self, args)
 
     def _startfile(self, path: str) -> None:
         self.startfile_calls.append(path)
 
-    def _shell(self, locations: list[str], verbose: bool = False) -> None:
+    def _shell(
+        self,
+        locations: list[str],
+        _verbose: bool = False,  # noqa: FBT001, FBT002
+    ) -> None:
+        # The name mirrors launch_file_explorer(), which the code under test calls
+        # positionally, so the parameter stays even though nothing is recorded from it.
         self.shell_calls.append(list(locations))
 
     def _valid_linux_file_manager(self) -> str:
         self.valid_manager_calls += 1
         return "nautilus"
 
-    def _wsl_transform(self, pu: str, require_win_path: bool):
+    def _wsl_transform(
+        self,
+        pu: str,
+        _require_win_path: bool,  # noqa: FBT001
+    ):
         report = self.wsl_reports.get(pu, self.default_report)
         assert report is not None, f"no WSL report staged for {pu}"
         return report
 
     def report(self, **overrides):
         """Build a WSLTransformPathURI for a path under tmp_path."""
-        fields = dict(
-            is_win_location=False,
-            win_uri=None,
-            win_path=None,
-            linux_path=str(self._tmp_path),
-            is_dir=True,
-            exists=True,
-        )
+        fields = {
+            "is_win_location": False,
+            "win_uri": None,
+            "win_path": None,
+            "linux_path": str(self._tmp_path),
+            "is_dir": True,
+            "exists": True,
+        }
         fields.update(overrides)
         return real_linux.WSLTransformPathURI(**fields)
 
     def configure(
         self,
         platform: Platform = LINUX,
+        *,
         wsl: bool = False,
         wsl1: bool = False,
         wsl2: bool = False,
@@ -176,11 +187,14 @@ class Dispatch:
 
         if wsl1 or wsl2:
             if not wsl:
-                raise AssertionError("wsl1 and wsl2 both imply wsl")
+                msg = "wsl1 and wsl2 both imply wsl"
+                raise AssertionError(msg)
             if platform is not LINUX:
-                raise AssertionError("WSL is reported as Linux")
+                msg = "WSL is reported as Linux"
+                raise AssertionError(msg)
         if wsl1 and wsl2:
-            raise AssertionError("a machine is either WSL1 or WSL2")
+            msg = "a machine is either WSL1 or WSL2"
+            raise AssertionError(msg)
         if platform is LINUX and wsl:
             interpreter = "Linux"
         elif platform is WINDOWS:
@@ -233,7 +247,7 @@ def dispatch(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Dispatch:
     ],
 )
 def test_argument_for_each_file_manager_type(
-    dispatch: Dispatch, manager_type: FileManagerType, expected: str
+    manager_type: FileManagerType, expected: str
 ) -> None:
     """
     win_select is the only one without a trailing space, because explorer.exe takes
@@ -870,7 +884,7 @@ def test_the_valid_file_manager_is_probed_once_per_instance(
         filemanager, "valid_file_manager", lambda: calls.append(1) or "dolphin"
     )
     monkeypatch.setattr(
-        filemanager, "_file_manager_type", lambda fm: FileManagerType.select
+        filemanager, "_file_manager_type", lambda _fm: FileManagerType.select
     )
     target = tmp_path / "holiday.jpg"
     target.write_text("", encoding="utf-8")
@@ -880,6 +894,7 @@ def test_the_valid_file_manager_is_probed_once_per_instance(
         fm.show_in_file_manager(str(target))
 
     assert len(calls) == 1
+    assert len(dispatch.launches) == 3
 
 
 def test_no_valid_file_manager_launches_nothing(

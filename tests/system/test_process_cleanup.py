@@ -72,7 +72,6 @@ def run_child(tmp_path: Path, spec: tuple[str, list[str]], grace: float) -> str:
         encoding="utf-8",
     )
     out = tmp_path / "child.out"
-    kill_after: list[int] = []
     with out.open("w", encoding="utf-8") as handle:
         subprocess.run(
             [sys.executable, "-X", "dev", str(script)],
@@ -82,9 +81,9 @@ def run_child(tmp_path: Path, spec: tuple[str, list[str]], grace: float) -> str:
             check=False,
         )
     text = out.read_text(encoding="utf-8")
-    for line in text.splitlines():
-        if line.startswith("PID "):
-            kill_after.append(int(line.split()[1]))
+    kill_after = [
+        int(line.split()[1]) for line in text.splitlines() if line.startswith("PID ")
+    ]
     for pid in kill_after:
         _kill(pid)
     return text

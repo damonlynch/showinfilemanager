@@ -20,8 +20,10 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from packaging.version import InvalidVersion
 
 from showinfm.constants import FileManagerType
+from showinfm.exceptions import XdgUnavailableError
 from showinfm.system import linux
 from showinfm.system.linux import LinuxDesktop
 
@@ -44,20 +46,22 @@ class FakeSubprocess:
         self.check_output_error: BaseException | None = None
         self.calls: list[list[str]] = []
 
-    def run(self, cmd: list[str], *args: object, **kwargs: object):
+    def run(self, cmd: list[str], *_args: object, **_kwargs: object):
         self.calls.append([str(part) for part in cmd])
         if self.run_error is not None:
             raise self.run_error
         if self.run_output is None:
-            raise AssertionError("subprocess.run called with no canned output")
+            msg = "subprocess.run called with no canned output"
+            raise AssertionError(msg)
         return subprocess.CompletedProcess(cmd, 0, self.run_output, b"")
 
-    def check_output(self, cmd: list[str], *args: object, **kwargs: object) -> str:
+    def check_output(self, cmd: list[str], *_args: object, **_kwargs: object) -> str:
         self.calls.append([str(part) for part in cmd])
         if self.check_output_error is not None:
             raise self.check_output_error
         if self.check_output_result is None:
-            raise AssertionError("check_output called with no canned output")
+            msg = "check_output called with no canned output"
+            raise AssertionError(msg)
         return self.check_output_result
 
 
@@ -99,14 +103,15 @@ def xdg_entries(
             if Entry.construct_error is not None:
                 raise Entry.construct_error
             if not Path(path).is_file():
-                raise OSError(f"{path} is not a file")
+                msg = f"{path} is not a file"
+                raise OSError(msg)
             self.text = Path(path).read_text(encoding="utf-8")
 
-        def parse(self, path: str | None = None) -> None:
+        def parse(self, _path: str | None = None) -> None:
             if Entry.parse_error is not None:
                 raise Entry.parse_error
 
-        def getExec(self) -> str:
+        def getExec(self) -> str:  # noqa: N802 -- pyxdg's own method name
             for line in self.text.splitlines():
                 if line.startswith("Exec="):
                     return line[len("Exec=") :]
@@ -127,7 +132,9 @@ def xdg_entries(
         raising=False,
     )
 
-    def write(name: str, exec_line: str = "nautilus %U", system: bool = False) -> Path:
+    def write(
+        name: str, exec_line: str = "nautilus %U", *, system: bool = False
+    ) -> Path:
         root = system_dir if system else user_dir
         path = root / "applications" / name
         path.write_text(
@@ -309,7 +316,7 @@ def test_caja_version_with_a_banner_is_not_a_version(
     """
 
     fake_subprocess.run_output = b"caja 1.26.0 (MATE Desktop)\n"
-    with pytest.raises(Exception):
+    with pytest.raises(InvalidVersion):
         linux.caja_version()
     assert linux.linux_file_manager_type("caja") is FileManagerType.dir_only_uri
 
@@ -408,6 +415,19 @@ def test_preference_order_outranks_directory_order(xdg_entries) -> None:
     assert linux.user_linux_file_manager() == "nautilus"
 
 
+def test_the_user_directory_shadows_the_system_one(xdg_entries) -> None:
+    """
+    Sharing a .desktop name is how a user overrides a system-installed handler, so for that
+    name the first listed data directory decides the executable. No other test places one
+    name in both directories, which is the only arrangement that makes the order observable.
+    """
+
+    xdg_entries.write("org.gnome.Nautilus.desktop", "nemo %U")
+    xdg_entries.write("org.gnome.Nautilus.desktop", "nautilus %U", system=True)
+    xdg_entries.answer("org.gnome.Nautilus.desktop\n")
+    assert linux.user_linux_file_manager() == "nemo"
+
+
 def test_no_handler_in_the_list_has_a_desktop_file(xdg_entries) -> None:
     xdg_entries.answer("gone.desktop;also-gone.desktop\n")
     assert linux.user_linux_file_manager() == ""
@@ -493,7 +513,8 @@ def _ladder(
     if user is None:
 
         def user_query_fails() -> str:
-            raise Exception("no xdg")
+            msg = "no xdg"
+            raise XdgUnavailableError(msg)
 
         monkeypatch.setattr(linux, "user_linux_file_manager", user_query_fails)
     else:

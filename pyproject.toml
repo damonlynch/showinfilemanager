@@ -149,5 +149,37 @@ exclude = [
     "T201",
 ]
 
+# Added to the per-file ignores Hatch's own defaults already grant tests (S, PLC1901,
+# PLR2004, PLR6301, TID252), which this same glob extends rather than replaces:
+#   SLF001  a test of this package has to reach the module attribute the code itself reads,
+#           because that is the seam. _PROCESSES and _reap_processes are the process
+#           registry with no public accessor; _linux_desktop is the desktop memo that
+#           conftest.py has to clear between tests; _shell is what launch_file_explorer()
+#           looks up, so a stand-in has to be assigned there; and a few tests call one
+#           private method to exercise it without launching anything.
+"**/tests/**/*" = ["SLF001"]
+
+# Rules that belong to windows_probe.py's role as the child-interpreter harness:
+#   PLC0415  each report function imports showinfm inside itself, on purpose. The module
+#            decides at import time whether to attempt win32com.shell, so the import has to
+#            follow pretend_windows() and block_win32com(). Hoisting it to the header would
+#            import the module as a non-Windows one and the scenario would pass while
+#            testing nothing, which is the failure this file's header warns about.
+#   BLE001   these clauses exist to copy whatever happened into the report as a type name
+#            and a message for the parent to assert on, so the set of types is not known
+#            here and narrowing would lose the finding the probe was called for.
+#   T201     print(json.dumps(REPORT)) is the whole parent-child protocol; stdout is the
+#            only channel, and test_windows.py parses it.
+"**/tests/system/windows_probe.py" = [
+    "BLE001",
+    "PLC0415",
+    "T201",
+]
+
 [tool.pyrefly]
 project-excludes = ["src/showinfm/system/urivalidate.py"]
+# pywin32 is imported only when running on Windows, and only where the shell API is
+# needed. Treating it as unmapped when absent keeps the members typing.Any, which is what
+# they are on the machines that lack the package, without suppressing the import once
+# pywin32 is installed.
+ignore-missing-imports = ["win32com.shell"]
