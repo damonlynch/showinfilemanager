@@ -9,11 +9,15 @@ Open the system file manager and optionally select files in it.
 
 import shutil
 import sys
-from collections.abc import Sequence
 
 import showinfm.filemanager
 from showinfm.argumentsparse import get_parser
 from showinfm.constants import Platform
+from showinfm.exceptions import (
+    FileManagerUnavailableError,
+    WindowsShellUnavailableError,
+)
+from showinfm.filemanager import PathOrUri
 from showinfm.system import current_platform, is_wsl, is_wsl1, is_wsl2, linux, windows
 
 _file_manager = showinfm.filemanager.FileManager()
@@ -31,6 +35,8 @@ def stock_file_manager() -> str:
     Exceptions are not caught.
 
     :return: executable name
+    :raises FileManagerUnavailableError: if the manager named for this desktop is not
+     installed to run
     """
 
     if current_platform == Platform.windows or is_wsl1:
@@ -42,7 +48,9 @@ def stock_file_manager() -> str:
     else:
         raise NotImplementedError
 
-    assert shutil.which(file_manager) is not None
+    if shutil.which(file_manager) is None:
+        msg = f"The stock file manager {file_manager!r} is not installed"
+        raise FileManagerUnavailableError(msg)
     return file_manager
 
 
@@ -54,7 +62,10 @@ def user_file_manager() -> str:
 
     Exceptions are not caught.
 
-    :return: executable name
+    :return: executable name, or an empty string if the user has no file manager
+     set, which is what valid_file_manager() answers when it can find nothing at all
+    :raises FileManagerUnavailableError: if the manager the user settled on is not
+     installed to run
     """
 
     if current_platform == Platform.windows or is_wsl1:
@@ -66,7 +77,14 @@ def user_file_manager() -> str:
     else:
         raise NotImplementedError
 
-    assert shutil.which(file_manager) is not None
+    # Nothing set is a state of the machine rather than a choice that cannot be run,
+    # and it has to be settled here because shutil.which('') finds nothing to run.
+    if not file_manager:
+        return ""
+
+    if shutil.which(file_manager) is None:
+        msg = f"The user's file manager {file_manager!r} is not installed"
+        raise FileManagerUnavailableError(msg)
     return file_manager
 
 
@@ -92,7 +110,7 @@ def valid_file_manager() -> str:
 
 
 def show_in_file_manager(
-    path_or_uri: str | Sequence[str] | None = None,
+    path_or_uri: PathOrUri | None = None,
     open_not_select_directory: bool = True,
     file_manager: str | None = None,
     allow_conversion: bool = True,
@@ -103,12 +121,18 @@ def show_in_file_manager(
     Open the file manager and show zero or more directories or files in it.
 
     The path_or_uri is a sequence of items, or a single item. An item can
-    be a regular path, or a URI.
+    be a regular path, a URI, or any object implementing os.PathLike, such
+    as a pathlib.Path.
 
     On non-Windows platforms, regular paths will be converted to URIs when
     passed as command line arguments to the file manager, because some file
-    managers do not handle regular paths correctly. However, URIs will be
-    convereted to paths to handle file managers that do not accept URIs.
+    managers do not handle regular paths correctly. However, a file: URI will
+    be converted to a path to handle file managers that do not accept URIs.
+    On Windows an smb:// URI becomes the UNC path for the same share, since
+    Windows has no handler for that scheme, and the same happens under WSL when
+    the file manager is explorer.exe. Any other scheme is passed along as it
+    stands: no path names what such a URI points at, and rewriting one opens
+    somewhere the caller never asked for.
 
     On Windows, Explorer is called using the Win32 API.
 
@@ -136,7 +160,7 @@ def show_in_file_manager(
     line arguments.
 
     :param path_or_uri: zero or more files or directories to open, specified
-     as a single URI or valid path, or a sequence of URIs/paths.
+     as a single URI, valid path or os.PathLike, or a sequence of those.
     :param open_not_select_directory: if the URI or path is a directory and
      not a file, open the directory itself in the file manager, rather than
      selecting it and displaying it in its parent directory.
@@ -148,9 +172,9 @@ def show_in_file_manager(
     :param verbose: if True print command to be executed before launching
      it
     :param debug: if True print debugging information to stderr
+    :raises WindowsShellUnavailableError: if files are to be selected in Windows
+     Explorer on this system and win32com.shell is not available
     """
-
-    global _file_manager
 
     _file_manager.show_in_file_manager(
         path_or_uri,
@@ -170,6 +194,7 @@ class Diagnostics:
     def __init__(self) -> None:
         self.desktop: linux.LinuxDesktop | None
         self.wsl_version: str
+        self.windows_shell_status: str | None
 
         try:
             self.stock_file_manager = stock_file_manager()
@@ -192,6 +217,14 @@ class Diagnostics:
         else:
             self.desktop = None
 
+        # Only reported on Windows, where the Win32 shell API is what selects
+        # files in Explorer. Elsewhere it is never imported, so there is
+        # nothing useful to report.
+        if current_platform == Platform.windows:
+            self.windows_shell_status = windows.windows_shell_status()
+        else:
+            self.windows_shell_status = None
+
         if is_wsl:
             if is_wsl2:
                 self.wsl_version = "2"
@@ -203,12 +236,23 @@ class Diagnostics:
     def __str__(self) -> str:
         desktop = f"Linux Desktop: {self.desktop.name}\n" if self.desktop else ""
         wsl = f"WSL version {self.wsl_version}\n" if self.wsl_version else ""
+        win_shell = (
+            f"Windows shell: {self.windows_shell_status}\n"
+            if self.windows_shell_status
+            else ""
+        )
+        # Either of these two can answer with nothing, and the two states are different:
+        # no file manager registered by the user is normal, while nothing this system can
+        # run is the failure the reader is asking about. A blank line names neither.
+        user_choice = self.user_file_manager or "not set"
+        valid = self.valid_file_manager or "no file manager found"
+
         file_managers = (
             f"Stock: {self.stock_file_manager}\n"
-            f"User's choice: {self.user_file_manager}\n"
-            f"Valid: {self.valid_file_manager}"
+            f"User's choice: {user_choice}\n"
+            f"Valid: {valid}"
         )
-        return desktop + wsl + file_managers
+        return desktop + wsl + win_shell + file_managers
 
 
 def main() -> None:
@@ -222,14 +266,18 @@ def main() -> None:
         print(Diagnostics())
         verbose = True
 
-    if current_platform == Platform.windows and not is_wsl:
-        path_or_uri = windows.parse_command_line_arguments(args.path)
-    else:
-        path_or_uri = args.path
-
     open_not_select_directory = not args.select_folder
 
     try:
+        if current_platform == Platform.windows and not is_wsl:
+            # The raw arguments are globbed and normalised here, before anything is
+            # launched, so this belongs inside the handler below: what the parser
+            # cannot make of an argument should reach the user as its message rather
+            # than as a traceback, the same promise every other failure here makes.
+            path_or_uri = windows.parse_command_line_arguments(args.path, debug=debug)
+        else:
+            path_or_uri = args.path
+
         show_in_file_manager(
             file_manager=args.file_manager,
             path_or_uri=path_or_uri,
@@ -237,6 +285,11 @@ def main() -> None:
             open_not_select_directory=open_not_select_directory,
             debug=debug,
         )
+    except WindowsShellUnavailableError as e:
+        # Aborting with the remediation steps is the point of this error, so it
+        # is reported on its own rather than as an unhandled exception.
+        sys.stderr.write(f"{e}\n")
+        sys.exit(1)
     except Exception as e:
         sys.stderr.write(str(e))
         if args.debug:

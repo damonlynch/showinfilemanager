@@ -1,6 +1,7 @@
 #  SPDX-FileCopyrightText: 2016-2026 Damon Lynch <damonlynch@gmail.com>
 #  SPDX-License-Identifier: MIT
 
+import atexit
 import os
 import platform
 import shlex
@@ -8,6 +9,7 @@ import subprocess
 import sys
 import urllib.parse
 from collections.abc import Sequence
+from os import PathLike, fspath
 from pathlib import Path
 from typing import NamedTuple
 
@@ -22,13 +24,79 @@ from showinfm.system import (
     windows,
 )
 
-PathOrUri = str | Sequence[str]
+PathOrUri = str | os.PathLike[str] | Sequence[str | os.PathLike[str]]
 
 
 class ProcessPathOrUri(NamedTuple):
     fully_processed: bool
     path: Path | None
     uri: str | None
+
+
+# The file managers this package starts are not waited for: they must outlive the
+# call, since opening a file manager and then blocking the caller would be useless.
+#
+# CPython reports a Popen finalised with no exit status noted as "still running", and
+# it does so before checking, so the report describes an unread status rather than a
+# running program. Reading the status is what keeps that honest, which is what the
+# list below is for: each launch notes the status of the earlier ones, and the exit
+# hook does the last one.
+#
+# A manager that is still running when the interpreter exits has no status to note,
+# and no later launch to read one, so it would be reported on the way out however
+# carefully the list is kept. That report is wrong for this package: it is the whole
+# intention that the file manager outlives the call. So the finalizer is replaced with
+# one that does nothing, for objects started here, and the subclass is built at launch
+# rather than at import so that a scenario replacing subprocess.Popen still stands in
+# for it. Nothing is detached and no status is invented: assigning None to __del__ is
+# not the way to remove a finalizer, it makes CPython call None on the way out.
+_PROCESSES: list[subprocess.Popen] = []
+
+_NO_FINALIZER: dict[type, type] = {}
+
+
+def _quiet_finalizer(self: subprocess.Popen) -> None:
+    """Nothing to report: this child is meant to outlive us."""
+
+
+def _start_process(args: str | list[str]) -> subprocess.Popen:
+    """
+    Start a file manager, with no finalizer to report it.
+
+    Returns a process object of the same kind the current subprocess.Popen would
+    give, but silent when it is collected: for a program expected to outlive this
+    one the report is not about a mistake.
+    """
+
+    base = subprocess.Popen
+    if getattr(base, "__del__", None) is None:
+        # Nothing to turn off: a stand-in without a finalizer, so no subclass and
+        # no reason to make one.
+        return base(args)
+
+    quiet = _NO_FINALIZER.get(base)
+    if quiet is None:
+        quiet = type("FireAndForgetParent", (base,), {"__del__": _quiet_finalizer})
+        _NO_FINALIZER[base] = quiet
+    return quiet(args)
+
+
+def _reap_processes() -> None:
+    """
+    Note down the exit status of any started file manager that has finished.
+
+    Called on each launch, so the list holds only the children still running, and
+    at exit for the last one, which no later launch would otherwise report. With no
+    finalizer to do it, this is the only thing that reads a status, so an object
+    that never reaches the list is left unreaped for the life of this process.
+    """
+
+    for process in _PROCESSES:
+        process.poll()
+    _PROCESSES[:] = [p for p in _PROCESSES if p.returncode is None]
+
+
+atexit.register(_reap_processes)
 
 
 def valid_file_manager() -> str:
@@ -69,12 +137,11 @@ def _file_manager_type(fm: str) -> FileManagerType:
 
     if current_platform == Platform.windows or is_wsl1:
         return windows.windows_file_manager_type(fm)
-    elif current_platform == Platform.linux:
+    if current_platform == Platform.linux:
         return linux.linux_file_manager_type(fm)
-    elif current_platform == Platform.macos:
+    if current_platform == Platform.macos:
         return FileManagerType.reveal
-    else:
-        raise NotImplementedError
+    raise NotImplementedError
 
 
 class FileManager:
@@ -120,8 +187,14 @@ class FileManager:
                 print("Executing", cmd)
             # Do not check current_platform here, it makes no sense
             args = shlex.split(cmd) if platform.system() != "Windows" else cmd
-            proc = subprocess.Popen(args)
+            proc = _start_process(args)
+            # Registered before anything else can raise: with no finalizer, an
+            # object that never reaches the list is never reaped either.
+            _PROCESSES.append(proc)
+            _reap_processes()
             if is_wsl2 and self.file_manager == "explorer.exe":
+                # explorer.exe returns immediately under WSL2, and waiting is what
+                # keeps its output from mangling the terminal.
                 proc.wait()
 
     def _set_valid_file_manager(self) -> None:
@@ -161,7 +234,9 @@ class FileManager:
         else:
             try:
                 self.file_manager_type = _file_manager_type(self.file_manager)
-            except Exception:
+            except NotImplementedError:
+                # All _file_manager_type() can raise: both platform helpers look the name
+                # up with a default, and the caja probe swallows its own failures.
                 self.file_manager_type = None
 
         if not self.file_manager:
@@ -226,22 +301,30 @@ class FileManager:
             else:
                 self.wsl_windows_directories.append(wsl_details.win_uri)
             return ProcessPathOrUri(fully_processed=True, path=None, uri=None)
+        if wsl_details.linux_path is None and tools.is_smb_uri(pu):
+            # A share URI this route deliberately left alone: the Linux file
+            # managers open this scheme themselves, exactly as they do when
+            # not running under WSL. The spaces are encoded because this
+            # string goes into a command line, where a raw one would split
+            # the URI in two.
+            return ProcessPathOrUri(
+                fully_processed=False, path=None, uri=pu.replace(" ", "%20")
+            )
+        if wsl_details.linux_path is None:
+            if self.debug:
+                print(
+                    f"Unable to convert '{pu}' into a Linux path",
+                    file=sys.stderr,
+                )
+            return ProcessPathOrUri(fully_processed=True, path=None, uri=None)
+        assert self.file_manager
+        if tools.filemanager_requires_path(file_manager=self.file_manager):
+            path = Path(wsl_details.linux_path).resolve()
+            uri = None
         else:
-            if wsl_details.linux_path is None:
-                if self.debug:
-                    print(
-                        f"Unable to convert '{pu}' into a Linux path",
-                        file=sys.stderr,
-                    )
-                return ProcessPathOrUri(fully_processed=True, path=None, uri=None)
-            assert self.file_manager
-            if tools.filemanager_requires_path(file_manager=self.file_manager):
-                path = Path(wsl_details.linux_path).resolve()
-                uri = None
-            else:
-                path = None
-                uri = Path(wsl_details.linux_path).resolve().as_uri()
-            return ProcessPathOrUri(fully_processed=False, path=path, uri=uri)
+            path = None
+            uri = Path(wsl_details.linux_path).resolve().as_uri()
+        return ProcessPathOrUri(fully_processed=False, path=path, uri=uri)
 
     def _process_path_or_uri_non_wsl(self, pu: str) -> ProcessPathOrUri:
         """
@@ -258,22 +341,49 @@ class FileManager:
                 tools.filemanager_requires_path(file_manager=self.file_manager)
                 and self.allow_conversion
             ):
-                # Convert URI to a regular path
-                uri = None
-                path = Path(tools.file_uri_to_path(pu))
+                if tools.is_file_uri(pu):
+                    # Convert URI to a regular path
+                    uri = None
+                    path = Path(tools.file_uri_to_path(pu))
+                elif current_platform == Platform.windows and tools.is_smb_uri(pu):
+                    # Windows has no smb: handler, but it has a way to name the
+                    # same share: the UNC path. Elsewhere the file managers speak
+                    # smb:// themselves and the URI is left as it arrived.
+                    uri = None
+                    path = Path(tools.smb_uri_to_unc(pu))
+                elif (
+                    current_platform == Platform.windows
+                    and self.file_manager == "explorer.exe"
+                ):
+                    # Explorer is driven through the shell API, which takes
+                    # filesystem items only: a URI it cannot turn into an item
+                    # comes back as a COM error, so there is nothing to show.
+                    if self.debug:
+                        print(
+                            f"Cannot show a {pu.split(':', 1)[0]}:// URI in"
+                            f" Windows Explorer: '{pu}'",
+                            file=sys.stderr,
+                        )
+                    return ProcessPathOrUri(fully_processed=True, path=None, uri=None)
+                else:
+                    # A manager that was given a URI takes it as it stands, but a
+                    # raw space is not valid in a URI and would split the command
+                    # line it goes into, so it is encoded. The same is done to
+                    # Windows URIs in linux.wsl_transform_path_uri().
+                    uri = pu.replace(" ", "%20")
+                    path = None
             else:
-                uri = pu
+                uri = pu.replace(" ", "%20")
                 path = None
+        elif (
+            tools.filemanager_requires_path(file_manager=self.file_manager)
+            or not self.allow_conversion
+        ):
+            path = Path(pu)
+            uri = None
         else:
-            if (
-                tools.filemanager_requires_path(file_manager=self.file_manager)
-                or not self.allow_conversion
-            ):
-                path = Path(pu)
-                uri = None
-            else:
-                uri = Path(pu).resolve().as_uri()
-                path = None
+            uri = Path(pu).resolve().as_uri()
+            path = None
 
         return ProcessPathOrUri(fully_processed=False, path=path, uri=uri)
 
@@ -289,6 +399,12 @@ class FileManager:
         # Show only the directory: do not attempt to select the file,
         # because the file manager cannot handle it.
 
+        if uri and not tools.is_file_uri(uri):
+            # Not a filesystem location, so there is no parent directory to
+            # show. The manager is given the URI it was sent, unchanged.
+            self.locations.append(uri)
+            return
+
         if uri:
             # Do not use tools.file_url_to_path() here, because we need the
             # parse_result, and file_url_to_path() assumes file:// URIs.
@@ -302,15 +418,15 @@ class FileManager:
 
         assert path is not None
 
-        if not (path.is_dir() and self.open_not_select_directory):
+        if not (tools.is_directory(path) and self.open_not_select_directory):
             path = path.parent
 
-        if uri:
-            path = urllib.parse.quote(str(path))
-            uri = str(urllib.parse.urlunparse(parse_result._replace(path=str(path))))
+        if parse_result is not None:
+            quoted = urllib.parse.quote(str(path))
+            location = str(urllib.parse.urlunparse(parse_result._replace(path=quoted)))
         else:
-            path = tools.quote_path(path=path)
-        self.locations.append(uri or str(path))
+            location = tools.quote_path(path=path)
+        self.locations.append(location)
 
     def _process_path_or_uri_can_select(
         self, path: Path | None, uri: str | None
@@ -327,15 +443,24 @@ class FileManager:
         if (
             self.open_not_select_directory
             and self.file_manager_type != FileManagerType.dual_panel
-            or self.file_manager_type == FileManagerType.regular
-        ):
+        ) or self.file_manager_type == FileManagerType.regular:
             if uri:
-                path = Path(tools.file_uri_to_path(uri=uri))
-                open_directory = path.is_dir()
+                if tools.is_file_uri(uri):
+                    path = Path(tools.file_uri_to_path(uri=uri))
+                    open_directory = tools.is_directory(path)
+                else:
+                    # A URI from another scheme names something this process
+                    # cannot examine, so it cannot be treated as a directory:
+                    # it goes to the file manager as the URI it arrived as.
+                    open_directory = False
             else:
                 assert path is not None
-                open_directory = path.is_dir()
+                open_directory = tools.is_directory(path)
             if open_directory:
+                # Only a path that was examined can be a directory, so this is
+                # never None here; a URI of another scheme sets open_directory
+                # to False instead of inventing a path to examine.
+                assert path is not None
                 if (
                     self.file_manager_type == FileManagerType.regular
                     and not self.open_not_select_directory
@@ -348,14 +473,23 @@ class FileManager:
                     path = path.parent
                     if uri:
                         uri = path.as_uri()
-                if uri is None:
-                    path = tools.quote_path(path=path)
-                self.directories.append(uri or str(path))
+                if uri is not None:
+                    location = uri
+                elif self.file_manager == "explorer.exe":
+                    location = str(path)
+                else:
+                    location = tools.quote_path(path=path)
+                self.directories.append(location)
         if not open_directory:
-            if uri is None and self.file_manager != "explorer.exe":
+            if uri is not None:
+                location = uri
+            else:
                 assert path is not None
-                path = tools.quote_path(path=path)
-            self.locations.append(uri or str(path))
+                if self.file_manager == "explorer.exe":
+                    location = str(path)
+                else:
+                    location = tools.quote_path(path=path)
+            self.locations.append(location)
 
     def _process_path_or_uri(self, path_or_uri: PathOrUri) -> None:
         """
@@ -365,11 +499,17 @@ class FileManager:
         :param path_or_uri: path or URI to process
         """
 
-        if isinstance(path_or_uri, str):
+        # PathLike and fspath are imported by name rather than reached through
+        # os, because tests replace this module's os with a recorder for
+        # startfile, and turning arguments into strings must not depend on that.
+        if isinstance(path_or_uri, (str, PathLike)):
             # turn the single path / URI into a Sequence
             path_or_uri = (path_or_uri,)
 
-        filtered_path_or_uri = (p_or_u for p_or_u in path_or_uri if p_or_u)
+        # The rest of this layer works on strings, since what gets built is a
+        # command line. A Path is resolved here rather than deeper in, because
+        # it is only ever a string with an iterator it does not have.
+        filtered_path_or_uri = (fspath(p_or_u) for p_or_u in path_or_uri if p_or_u)
         for pu in filtered_path_or_uri:
             if is_wsl:
                 p = self._process_path_or_uri_wsl(pu)

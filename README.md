@@ -3,7 +3,7 @@
 |         |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 |---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Package | [![PyPI - Version](https://img.shields.io/pypi/v/show-in-file-manager.svg)](https://pypi.org/project/show-in-file-manager) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/show-in-file-manager.svg?logo=python&label=Python&logoColor=gold)](https://pypi.org/project/show-in-file-manager/)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| Meta    | [![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg)](https://github.com/pypa/hatch) [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff) [![GitButler](https://img.shields.io/badge/GitButler-%23B9F4F2?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB3aWR0aD0iMzkiIGhlaWdodD0iMjgiIHZpZXdCb3g9IjAgMCAzOSAyOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTI1LjIxNDUgMTIuMTk5N0wyLjg3MTA3IDEuMzg5MTJDMS41NDI5NSAwLjc0NjUzMiAwIDEuNzE0MDYgMCAzLjE4OTQ3VjI0LjgxMDVDMCAyNi4yODU5IDEuNTQyOTUgMjcuMjUzNSAyLjg3MTA3IDI2LjYxMDlMMjUuMjE0NSAxNS44MDAzQzI2LjcxOTcgMTUuMDcyMSAyNi43MTk3IDEyLjkyNzkgMjUuMjE0NSAxMi4xOTk3WiIgZmlsbD0iYmxhY2siLz4KPHBhdGggZD0iTTEzLjc4NTUgMTIuMTk5N0wzNi4xMjg5IDEuMzg5MTJDMzcuNDU3MSAwLjc0NjUzMiAzOSAxLjcxNDA2IDM5IDMuMTg5NDdWMjQuODEwNUMzOSAyNi4yODU5IDM3LjQ1NzEgMjcuMjUzNSAzNi4xMjg5IDI2LjYxMDlMMTMuNzg1NSAxNS44MDAzQzEyLjI4MDMgMTUuMDcyMSAxMi4yODAzIDEyLjkyNzkgMTMuNzg1NSAxMi4xOTk3WiIgZmlsbD0idXJsKCNwYWludDBfcmFkaWFsXzMxMF8xMjkpIi8%2BCjxkZWZzPgo8cmFkaWFsR3JhZGllbnQgaWQ9InBhaW50MF9yYWRpYWxfMzEwXzEyOSIgY3g9IjAiIGN5PSIwIiByPSIxIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgZ3JhZGllbnRUcmFuc2Zvcm09InRyYW5zbGF0ZSgxNi41NzAxIDE0KSBzY2FsZSgxOS44NjQxIDE5LjgzODMpIj4KPHN0b3Agb2Zmc2V0PSIwLjMwMTA1NiIgc3RvcC1vcGFjaXR5PSIwIi8%2BCjxzdG9wIG9mZnNldD0iMSIvPgo8L3JhZGlhbEdyYWRpZW50Pgo8L2RlZnM%2BCjwvc3ZnPgo%3D)](https://gitbutler.com/) [![Checked with mypy](http://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/) [![License - MIT](https://img.shields.io/badge/license-MIT-9400d3.svg)](https://spdx.org/licenses/) [![GitHub Sponsors](https://img.shields.io/github/sponsors/damonlynch?logo=GitHub%20Sponsors&style=social)](https://github.com/sponsors/damonlynch) |
+| Meta    | [![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg)](https://github.com/pypa/hatch) [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff) [![GitButler](https://img.shields.io/badge/GitButler-%23B9F4F2?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB3aWR0aD0iMzkiIGhlaWdodD0iMjgiIHZpZXdCb3g9IjAgMCAzOSAyOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTI1LjIxNDUgMTIuMTk5N0wyLjg3MTA3IDEuMzg5MTJDMS41NDI5NSAwLjc0NjUzMiAwIDEuNzE0MDYgMCAzLjE4OTQ3VjI0LjgxMDVDMCAyNi4yODU5IDEuNTQyOTUgMjcuMjUzNSAyLjg3MTA3IDI2LjYxMDlMMjUuMjE0NSAxNS44MDAzQzI2LjcxOTcgMTUuMDcyMSAyNi43MTk3IDEyLjkyNzkgMjUuMjE0NSAxMi4xOTk3WiIgZmlsbD0iYmxhY2siLz4KPHBhdGggZD0iTTEzLjc4NTUgMTIuMTk5N0wzNi4xMjg5IDEuMzg5MTJDMzcuNDU3MSAwLjc0NjUzMiAzOSAxLjcxNDA2IDM5IDMuMTg5NDdWMjQuODEwNUMzOSAyNi4yODU5IDM3LjQ1NzEgMjcuMjUzNSAzNi4xMjg5IDI2LjYxMDlMMTMuNzg1NSAxNS44MDAzQzEyLjI4MDMgMTUuMDcyMSAxMi4yODAzIDEyLjkyNzkgMTMuNzg1NSAxMi4xOTk3WiIgZmlsbD0idXJsKCNwYWludDBfcmFkaWFsXzMxMF8xMjkpIi8%2BCjxkZWZzPgo8cmFkaWFsR3JhZGllbnQgaWQ9InBhaW50MF9yYWRpYWxfMzEwXzEyOSIgY3g9IjAiIGN5PSIwIiByPSIxIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgZ3JhZGllbnRUcmFuc2Zvcm09InRyYW5zbGF0ZSgxNi41NzAxIDE0KSBzY2FsZSgxOS44NjQxIDE5LjgzODMpIj4KPHN0b3Agb2Zmc2V0PSIwLjMwMTA1NiIgc3RvcC1vcGFjaXR5PSIwIi8%2BCjxzdG9wIG9mZnNldD0iMSIvPgo8L3JhZGlhbEdyYWRpZW50Pgo8L2RlZnM%2BCjwvc3ZnPgo%3D)](https://gitbutler.com/) [![pyrefly](https://img.shields.io/endpoint?url=https://pyrefly.org/badge.json)](https://github.com/pyrefly-org/pyrefly) [![License - MIT](https://img.shields.io/badge/license-MIT-9400d3.svg)](https://spdx.org/licenses/) [![GitHub Sponsors](https://img.shields.io/github/sponsors/damonlynch?logo=GitHub%20Sponsors&style=social)](https://github.com/sponsors/damonlynch) |
 
 ______________________________________________________________________
 
@@ -74,14 +74,14 @@ All but two file managers accept [URIs](https://en.wikipedia.org/wiki/Uniform_Re
 | Windows File Explorer                                                                           | Windows 10 / 11, Windows Subsystem for Linux (WSL) | `explorer.exe /select,URI`               |     &#9989;      |               &#9888;                | No space between comma and URI. Can specify only one URI via the command line, but multiple files can be specified via the Win32 API.                                                                                                                    |
 | Finder                                                                                          | macOS                                              | `open --reveal URI`                      |     &#9989;      |               &#10060;               |                                                                                                                                                                                                                                                          |
 | [Nautilus (Files)](https://gitlab.gnome.org/GNOME/nautilus)                                     | Gnome, Pop!_OS, Zorin                              | `nautilus --select URI1 URI2`            |     &#9989;      |               &#9888;                | Multiple URIs open multiple Nautilus windows. See [issue #1955](https://gitlab.gnome.org/GNOME/nautilus/-/issues/1955).                                                                                                                                  |
-| [Dolphin](https://github.com/KDE/dolphin)                                                       | KDE                                                | `dolphin --select URI1 URI2 `            |     &#9989;      |               &#9989;                |                                                                                                                                                                                                                                                          |
+| [Dolphin](https://github.com/KDE/dolphin)                                                       | KDE                                                | `dolphin --select URI1 URI2`            |     &#9989;      |               &#9989;                |                                                                                                                                                                                                                                                          |
 | [Nemo](https://github.com/linuxmint/nemo)                                                       | Linux Mint                                         | `nemo URI1 URI2`                         |     &#9989;      |               &#9888;                | Multiple URIs open multiple Nemo windows. Cannot select folders.                                                                                                                                                                                         |
 | [Elementary OS Files](https://github.com/elementary/files)                                      | Elementary OS                                      | `io.elementary.files URI1 URI2`          |     &#9989;      |               &#9888;                | Multiple URIs open multiple Files tabs. Cannot select folders.                                                                                                                                                                                           |
 | [Deepin File Manager](https://github.com/linuxdeepin/dde-file-manager)                          | Deepin                                             | `dde-file-manager --show-item URI1 URI2` |     &#9989;      |               &#9888;                | Depending on version, multiple URIs either open multiple tabs, or only opens and selects the first URI.                                                                                                                                                  |
 | [Peony](https://github.com/ukui/peony)                                                          | Ubuntu Kylin                                       | `peony --show-items URI1 URI2`           |     &#9989;      |               &#9989;                |                                                                                                                                                                                                                                                          |
 | [Caja](https://github.com/mate-desktop/caja)                                                    | Mate                                               | `caja --select URI1 URI2`                |     &#9888;      |               &#9888;                | Starting with 1.26, can select a file or folder using `--select`. In all versions, specifying a file without this switch causes an error. Multiple URIs open multiple Caja windows. See [issue #1547](https://github.com/mate-desktop/caja/issues/1547). |
 | [Thunar](https://gitlab.xfce.org/xfce/thunar)                                                   | XFCE                                               | `thunar URI1 URI2`                       |     &#10060;     |               &#9888;                | Specifying a file opens it. Multiple URIs open multiple Thunar windows.                                                                                                                                                                                  |
-| PCManFM                                                                                         | LXDE                                               | `pcmanfm  URI`                           |     &#10060;     |               &#10060;               | Specifying a file opens it. Multiple URIs open only the first URI.                                                                                                                                                                                       |
+| PCManFM                                                                                         | LXDE                                               | `pcmanfm URI`                           |     &#10060;     |               &#10060;               | Specifying a file opens it. Multiple URIs open only the first URI.                                                                                                                                                                                       |
 | [PCManFM-Qt](https://github.com/lxqt/pcmanfm-qt)                                                | LXQt                                               | `pcmanfm-qt URI1 URI2`                   |     &#10060;     |               &#9888;                | Specifying a file opens it. Multiple URIs open multiple PCManFM-Qt windows.                                                                                                                                                                              |
 | [CutefishOS File Manager](https://github.com/cutefishos/filemanager)                            | CutefishOS                                         | `cutefish-filemanager URI`               |     &#10060;     |               &#10060;               | Specifying a file causes File Manager to attempt to open it as if it is a folder. Multiple URIs open only the first URI.                                                                                                                                 |
 | [Index](https://invent.kde.org/maui/index-fm)                                                   | Linux                                              | `index URI1 URI2`                        |     &#10060;     |               &#10060;               | Specifying a file has no effect. Multiple URIs open multiple tabs, in addition to the user's home directory, which is always opened.                                                                                                                     |
@@ -98,7 +98,7 @@ All but two file managers accept [URIs](https://en.wikipedia.org/wiki/Uniform_Re
 
 ```python
 def show_in_file_manager(
-    path_or_uri: str | Sequence[str] | None = None,
+    path_or_uri: PathOrUri | None = None,
     open_not_select_directory: bool = True,
     file_manager: str | None = None,
     allow_conversion: bool = True,
@@ -109,22 +109,28 @@ def show_in_file_manager(
     Open the file manager and show zero or more directories or files in it.
 
     The path_or_uri is a sequence of items, or a single item. An item can
-    be a regular path, or a URI.
+    be a regular path, a URI, or any object implementing os.PathLike, such
+    as a pathlib.Path.
 
-    On non-Windows platforms, regular paths will be converted to URIs when 
-    passed as command line arguments to the file manager, because some file 
-    managers do not handle regular paths correctly. However, URIs will be 
-    convereted to paths to handle file managers that do not accept URIs.
-    
+    On non-Windows platforms, regular paths will be converted to URIs when
+    passed as command line arguments to the file manager, because some file
+    managers do not handle regular paths correctly. However, a file: URI will
+    be converted to a path to handle file managers that do not accept URIs.
+    On Windows an smb:// URI becomes the UNC path for the same share, since
+    Windows has no handler for that scheme, and the same happens under WSL when
+    the file manager is explorer.exe. Any other scheme is passed along as it
+    stands: no path names what such a URI points at, and rewriting one opens
+    somewhere the caller never asked for.
+
     On Windows, Explorer is called using the Win32 API.
-    
-    On WSL1, all paths are opened using Windows Explorer. URIs can be 
-    specified using Linux or Windows formats. All formats are automatically 
-    converted to use the Windows URI format. 
-        
+
+    On WSL1, all paths are opened using Windows Explorer. URIs can be
+    specified using Linux or Windows formats. All formats are automatically
+    converted to use the Windows URI format.
+
     WSL2 functions the same as WSL1, except if the WSL2 instance has a Linux
     file manager installed. On these systems, if a path on Linux is
-    specified, that file manager will be used instead of Windows Explorer. 
+    specified, that file manager will be used instead of Windows Explorer.
     Override this default behavior by using the parameter file_manager.
 
     The most common use of this function is to call it without specifying
@@ -142,7 +148,7 @@ def show_in_file_manager(
     line arguments.
 
     :param path_or_uri: zero or more files or directories to open, specified
-     as a single URI or valid path, or a sequence of URIs/paths.
+     as a single URI, valid path or os.PathLike, or a sequence of those.
     :param open_not_select_directory: if the URI or path is a directory and
      not a file, open the directory itself in the file manager, rather than
      selecting it and displaying it in its parent directory.
@@ -153,7 +159,9 @@ def show_in_file_manager(
      to False if passing non-standard URIs. Ignored when running under WSL.
     :param verbose: if True print command to be executed before launching
      it
-    :param debug: if True print debugging information to stderr     
+    :param debug: if True print debugging information to stderr
+    :raises WindowsShellUnavailableError: if files are to be selected in Windows
+     Explorer on this system and win32com.shell is not available
     """
 ```
 
@@ -175,7 +183,7 @@ def valid_file_manager() -> str:
     All exceptions are caught, except those if this platform is not supported by
     this package.
 
-    :return: If the user's default file manager is set and it is recognized 
+    :return: If the user's default file manager is set and it is recognized
      as valid by this package, then return it. Otherwise return the stock file
      manager, if it exists.
     """
@@ -202,6 +210,8 @@ def stock_file_manager() -> str:
     Exceptions are not caught.
 
     :return: executable name
+    :raises FileManagerUnavailableError: if the manager named for this desktop is not
+     installed to run
     """
 ```
 
@@ -212,15 +222,37 @@ def user_file_manager() -> str:
     """
     Get the file manager as set by the user.
 
+    The file manager executable is tested to see if it exists.
+
     Exceptions are not caught.
 
-    :return: executable name
+    :return: executable name, or an empty string if the user has no file manager
+     set, which is what valid_file_manager() answers when it can find nothing at all
+    :raises FileManagerUnavailableError: if the manager the user settled on is not
+     installed to run
     """
 ```
 
 On Windows and macOS, for now only the stock file manager is returned. That could change in future releases.
 
-On Linux, the file manager is probed using `xdg-mime query default  inode/directory`, and the resulting `.desktop` file is parsed to extract the file manager command.
+On Linux, the file manager is probed using `xdg-mime query default inode/directory`, and the resulting `.desktop` file is parsed to extract the file manager command.
+
+### Exceptions raised
+
+The exception classes live in `showinfm.exceptions`, so they can be imported without importing platform specific code. Only `WindowsShellUnavailableError` is also reachable directly from the package, as `showinfm.WindowsShellUnavailableError`.
+
+| Function | Raises | When |
+|---------|--------|------|
+| `show_in_file_manager()` | `WindowsShellUnavailableError` | files are to be selected in Windows Explorer on this system and `win32com.shell` is not available. Opening folders does not need it. |
+| `stock_file_manager()` | `FileManagerUnavailableError`, and on Linux `DesktopEnvironmentUnknownError` | the manager named for this desktop or operating system is not installed, or the desktop cannot be identified |
+| `user_file_manager()` | `FileManagerUnavailableError`, and on Linux `XdgUnavailableError`, `XdgQueryError`, `DesktopEntryError` | the user's choice is set but not installed, or the desktop entry behind it cannot be found, opened, or parsed. Nothing being set is not a failure: it answers with an empty string |
+| `valid_file_manager()` | nothing | every failure is caught, so it answers with the stock manager or an empty string |
+
+Each class derives from `RuntimeError`, and `DesktopEnvironmentUnknownError`, `XdgUnavailableError`, `XdgQueryError` and `DesktopEntryError` all derive from `LinuxFileManagerError`, so a caller that only needs to know that no Linux file manager could be settled on catches that one class.
+
+On Windows, `showinfm.system.tools.directories_and_their_files()` raises `InvalidPathsArgumentError`, a `TypeError`, if it is handed a single path as a string instead of a list. No argument of `show_in_file_manager()` reaches it that way.
+
+Running the package on a platform it does not support raises `NotImplementedError` when `showinfm.system` is imported, before any function is called.
 
 ## Examples
 
