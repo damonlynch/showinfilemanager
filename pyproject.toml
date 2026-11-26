@@ -121,10 +121,33 @@ exclude = [
 
 # Rules deliberately kept in system/windows.py, the module that says out loud what it is
 # about to ask the shell to do:
+#   BLE001  the import-time capture records whatever pywin32 raised, because the type is
+#           not the point and the comment at the clause says so; the reason is read back
+#           through _shell_unusable_reason().
+#   FBT001  launch_file_explorer() is reachable as showinfm.system.windows' own name, and
+#           filemanager.py calls verbose positionally, the same ruling as the two entry
+#           points above.
+#   FBT002  that parameter carries its default positionally too.
 #   T201    the --verbose announcement of the selection it is handing over, and the
 #           --debug note naming each argument the glob and URI pass could not place.
 #           Both are output the command line documents, as they are in filemanager.py.
-"**/showinfm/system/windows.py" = ["T201"]
+"**/showinfm/system/windows.py" = ["BLE001", "FBT001", "FBT002", "T201"]
+
+# Rules deliberately kept in showinfm.py, the package's public surface:
+#   BLE001  Diagnostics exists to record whatever detection went wrong, so a narrower
+#           clause would let the failure it is meant to report escape the report. The four
+#           arms are pinned by tests/system/test_diagnostics.py.
+#   FBT001  show_in_file_manager() is the entry point, and the README shows its booleans
+#           in a positional signature; keyword-only would break callers this project cannot
+#           enumerate, the same ruling as filemanager.py.
+#   FBT002  those parameters also carry their defaults positionally.
+#   T201    the --debug report main() prints, which is the output that option promises.
+"**/showinfm/showinfm.py" = [
+    "BLE001",
+    "FBT001",
+    "FBT002",
+    "T201",
+]
 
 [tool.pyrefly]
 project-excludes = ["src/showinfm/system/urivalidate.py"]

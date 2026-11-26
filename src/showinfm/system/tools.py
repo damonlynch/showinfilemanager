@@ -131,7 +131,8 @@ def smb_uri_to_unc(uri: str) -> str:
 
     parsed = urlparse(uri)
     if parsed.scheme.lower() != "smb" or not parsed.netloc:
-        raise ValueError(f"Not an smb URI naming a share: {uri!r}")
+        msg = f"Not an smb URI naming a share: {uri!r}"
+        raise ValueError(msg)
 
     remainder = url2pathname(parsed.path).lstrip(f"{os.path.sep}{os.path.altsep or ''}")
     return os.path.normpath(_unc_root(parsed.netloc) + remainder)
@@ -211,8 +212,7 @@ def path_to_file_uri(path: str) -> str:
     # leading separators, and urljoin() collapses those differently from Python 3.14 on,
     # which would otherwise hand a file manager "file:/C:/x" where every earlier release
     # handed it "file:///C:/x". The empty authority is the RFC 8089 form either way.
-    url = urljoin("file:///", pathname2url(path))
-    return url
+    return urljoin("file:///", pathname2url(path))
 
 
 def file_uri_to_path(uri: str) -> str:
@@ -234,7 +234,8 @@ def file_uri_to_path(uri: str) -> str:
     """
 
     if not is_file_uri(uri):
-        raise ValueError(f"Not a file URI: {uri!r}")
+        msg = f"Not a file URI: {uri!r}"
+        raise ValueError(msg)
 
     parsed = urlparse(uri)
     path = url2pathname(parsed.path)

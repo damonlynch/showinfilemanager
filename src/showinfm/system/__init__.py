@@ -3,8 +3,8 @@
 
 import platform
 
-from ..constants import Platform
-from . import linux
+from showinfm.constants import Platform
+from showinfm.system import linux
 
 current_platform: Platform | None
 system = platform.system()

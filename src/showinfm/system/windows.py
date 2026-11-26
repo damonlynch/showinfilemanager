@@ -202,13 +202,14 @@ def launch_file_explorer(paths: list[str], verbose: bool | None = False) -> None
     """
 
     if _shell is None:
-        raise WindowsShellUnavailableError(
+        msg = (
             "Cannot select files in Windows File Explorer: the win32com.shell "
             f"module of pywin32 could not be loaded ({_shell_unusable_reason()}). "
             "Install pywin32. If it is already installed, its components may not "
             "be registered, in which case run 'python -m pywin32_postinstall "
             "-install'. Folders can still be opened without pywin32."
         )
+        raise WindowsShellUnavailableError(msg)
 
     folder_contents = directories_and_their_files(paths)
     if folder_contents:

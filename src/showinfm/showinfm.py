@@ -13,7 +13,10 @@ import sys
 import showinfm.filemanager
 from showinfm.argumentsparse import get_parser
 from showinfm.constants import Platform
-from showinfm.exceptions import WindowsShellUnavailableError
+from showinfm.exceptions import (
+    FileManagerUnavailableError,
+    WindowsShellUnavailableError,
+)
 from showinfm.filemanager import PathOrUri
 from showinfm.system import current_platform, is_wsl, is_wsl1, is_wsl2, linux, windows
 
@@ -32,6 +35,8 @@ def stock_file_manager() -> str:
     Exceptions are not caught.
 
     :return: executable name
+    :raises FileManagerUnavailableError: if the manager named for this desktop is not
+     installed to run
     """
 
     if current_platform == Platform.windows or is_wsl1:
@@ -43,7 +48,9 @@ def stock_file_manager() -> str:
     else:
         raise NotImplementedError
 
-    assert shutil.which(file_manager) is not None
+    if shutil.which(file_manager) is None:
+        msg = f"The stock file manager {file_manager!r} is not installed"
+        raise FileManagerUnavailableError(msg)
     return file_manager
 
 
@@ -56,6 +63,8 @@ def user_file_manager() -> str:
     Exceptions are not caught.
 
     :return: executable name
+    :raises FileManagerUnavailableError: if the manager the user settled on is not
+     installed to run, which includes no manager being set at all
     """
 
     if current_platform == Platform.windows or is_wsl1:
@@ -67,7 +76,9 @@ def user_file_manager() -> str:
     else:
         raise NotImplementedError
 
-    assert shutil.which(file_manager) is not None
+    if shutil.which(file_manager) is None:
+        msg = f"The user's file manager {file_manager!r} is not installed"
+        raise FileManagerUnavailableError(msg)
     return file_manager
 
 
@@ -158,8 +169,6 @@ def show_in_file_manager(
     :raises WindowsShellUnavailableError: if files are to be selected in Windows
      Explorer on this system and win32com.shell is not available
     """
-
-    global _file_manager
 
     _file_manager.show_in_file_manager(
         path_or_uri,

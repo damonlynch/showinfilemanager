@@ -70,3 +70,15 @@ class DesktopEntryError(LinuxFileManagerError):
     An entry that reads fine but has no Exec key is not this error: it names no
     program, so the next registered handler is tried instead.
     """
+
+
+class FileManagerUnavailableError(RuntimeError):
+    """
+    Raised when the file manager chosen for this system cannot be run.
+
+    The name comes either from the desktop's own configuration or from this package's
+    table for the detected desktop environment, and either can name a program that has
+    since been uninstalled. Within the package only Diagnostics catches it, because
+    valid_file_manager() reaches the platform modules directly rather than through the
+    two functions that raise this.
+    """
