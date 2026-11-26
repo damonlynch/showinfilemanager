@@ -2,7 +2,7 @@
 
 ## Operating system
 
-Show in File Manager is designed to run on Linux, macOS, and Windows. If the operating system you are running on is Windows, that means a combination of Windows and the Windows Subsystem for Linux (WSL2) is being used to develop it.
+Show in File Manager is designed to run on Linux, macOS, and Windows. 
 
 ## General rules
 
@@ -18,14 +18,8 @@ Show in File Manager is designed to run on Linux, macOS, and Windows. If the ope
 
 ## Testing
 
-- Tests are being ported to use pytest, run using hatch (`hatch test -a`). 
-- Do not write new doctests. Instead, use pytest. 
-
-### Running tests in WSL
-
-WSL2 uses this same checkout, seen from Linux at `/mnt/d/Python/showinfilemanager`, so anything written into the repository is visible to both. This is where the modules above can actually be imported and their tests developed and run. `hatch` and `qwen` are installed natively in the WSL environment.
-
-Before trusting a guard test, break what it guards and confirm the test fails.
+- Tests use pytest, run using hatch (`hatch test -a`). Do not write new doctests.
+- Before trusting a guard test, break what it guards and confirm the test fails.
 
 ## Version control
 

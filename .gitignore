@@ -250,3 +250,4 @@ http-client.private.env.json
 .idea/**/copilot.data.migration.*.xml
 
 .qwen
+AGENTS.local.md
