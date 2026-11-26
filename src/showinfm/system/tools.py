@@ -11,6 +11,7 @@ from urllib.parse import urljoin, urlparse
 from urllib.request import pathname2url, url2pathname
 
 from showinfm.constants import Platform, cannot_open_uris
+from showinfm.exceptions import InvalidPathsArgumentError
 from showinfm.system import current_platform, urivalidate
 
 
@@ -267,14 +268,14 @@ def directories_and_their_files(paths: list[str]) -> defaultdict[str, list[str]]
 
     :param paths: list of paths
     :return: default dict of folders with list of their files
-    :raises TypeError: if a single path is passed as a string rather than in a list
+    :raises InvalidPathsArgumentError: if a single path is passed as a string
     """
 
     # A bare path is iterable, so without this the loop would group its characters instead
     # of saying the call is wrong.
     if isinstance(paths, str):
         msg = "directories_and_their_files() takes a list of paths, not one path"
-        raise TypeError(msg)
+        raise InvalidPathsArgumentError(msg)
 
     folder_contents = defaultdict(list)
     for path in paths:

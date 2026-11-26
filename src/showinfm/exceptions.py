@@ -82,3 +82,14 @@ class FileManagerUnavailableError(RuntimeError):
     valid_file_manager() reaches the platform modules directly rather than through the
     two functions that raise this.
     """
+
+
+class InvalidPathsArgumentError(TypeError):
+    """
+    Raised when a single path is passed where a list of paths is expected.
+
+    Derives from TypeError, so a caller that catches TypeError around the grouping of
+    folders and their files keeps catching this. A bare path is iterable, so the grouping
+    cannot tell it from a sequence of paths and would answer with one entry per character;
+    the argument is therefore checked before it is read.
+    """

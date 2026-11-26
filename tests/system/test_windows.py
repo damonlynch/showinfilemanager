@@ -40,7 +40,7 @@ import pytest
 import showinfm
 from showinfm import filemanager
 from showinfm.constants import Platform
-from showinfm.exceptions import WindowsShellUnavailableError
+from showinfm.exceptions import InvalidPathsArgumentError, WindowsShellUnavailableError
 from showinfm.system import tools, windows
 from showinfm.system.tools import file_uri_to_path, smb_uri_to_unc
 
@@ -797,5 +797,7 @@ def test_a_single_path_handed_over_as_a_string_is_refused() -> None:
 
     one_path: Any = r"C:\x y\holiday.jpg"
 
-    with pytest.raises(TypeError, match="not one path"):
+    with pytest.raises(InvalidPathsArgumentError, match="not one path") as caught:
         tools.directories_and_their_files(one_path)
+
+    assert isinstance(caught.value, TypeError)
