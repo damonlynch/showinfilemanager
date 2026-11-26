@@ -253,7 +253,7 @@ def main() -> None:
             # launched, so this belongs inside the handler below: what the parser
             # cannot make of an argument should reach the user as its message rather
             # than as a traceback, the same promise every other failure here makes.
-            path_or_uri = windows.parse_command_line_arguments(args.path)
+            path_or_uri = windows.parse_command_line_arguments(args.path, debug=debug)
         else:
             path_or_uri = args.path
 

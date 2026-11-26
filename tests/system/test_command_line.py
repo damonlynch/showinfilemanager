@@ -126,7 +126,7 @@ def test_a_parser_failure_is_reported_as_a_message_not_a_traceback(
     what keeps a future raise from escaping unannounced.
     """
 
-    def unparseable(_arguments):
+    def unparseable(_arguments, **_kwargs):
         message = "Unacceptable pattern: ''"
         raise ValueError(message)
 
@@ -145,7 +145,7 @@ def test_a_parser_failure_is_reported_as_a_message_not_a_traceback(
 def test_debug_lets_a_parser_failure_propagate(monkeypatch: pytest.MonkeyPatch) -> None:
     """The same promise --debug already makes of every other failure here."""
 
-    def unparseable(_arguments):
+    def unparseable(_arguments, **_kwargs):
         message = "Unacceptable pattern: ''"
         raise ValueError(message)
 
@@ -154,3 +154,37 @@ def test_debug_lets_a_parser_failure_propagate(monkeypatch: pytest.MonkeyPatch) 
 
     with pytest.raises(ValueError, match="Unacceptable pattern"):
         showinfm.main()
+
+
+@pytest.mark.skipif(
+    platform.system() != "Windows",
+    reason="only the Windows run reads the arguments through the parser at all",
+)
+def test_the_debug_flag_reaches_the_argument_parser(
+    launched: list, monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    """
+    Dropping an argument is silent unless --debug asked for the reason, so the flag has
+    to survive the trip from the parsed options to the parser. Recorded as the function
+    receives it rather than inferred from a docstring, and the list passes through
+    untouched so what the launch was given is visible too.
+    """
+
+    seen: list = []
+
+    def record(arguments, *, debug=False):
+        seen.append(debug)
+        return list(arguments)
+
+    monkeypatch.setattr(showinfm.windows, "parse_command_line_arguments", record)
+
+    argv(monkeypatch, str(tmp_path))
+    showinfm.main()
+    argv(monkeypatch, "--debug", str(tmp_path))
+    showinfm.main()
+
+    assert seen == [False, True]
+    assert [recorded["path_or_uri"] for recorded in launched] == [
+        [str(tmp_path)],
+        [str(tmp_path)],
+    ]

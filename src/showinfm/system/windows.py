@@ -2,6 +2,7 @@
 #  SPDX-License-Identifier: MIT
 
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +14,7 @@ from showinfm.system.tools import (
     file_uri_to_path,
     is_directory,
     is_file_uri,
+    is_present,
     is_smb_uri,
     is_uri,
     path_to_file_uri,
@@ -99,12 +101,24 @@ def windows_file_manager_type(file_manager: str) -> FileManagerType:
     return WindowsFileManagerBehavior.get(file_manager, FileManagerType.regular)
 
 
-def parse_command_line_arguments(path_or_uri: list[str]) -> list[str]:
+def parse_command_line_arguments(
+    path_or_uri: list[str], *, debug: bool = False
+) -> list[str]:
     """
     Convert any glob component in the filename component of Windows paths, which the
     Windows shell does not do itself
 
+    An argument naming something that is there is used as it stands; only what nothing
+    answers for is read as a pattern. Globbing every name was the rule, and it cannot
+    stay: brackets are legal in a Windows filename and common in the ones screenshot and
+    download tools write, so a name carrying them was re-read as a character class,
+    matched nothing, and vanished without a word -- while a one character class, as in
+    holiday[1].jpg, matched a different file and opened that instead. The two characters
+    a caller must type to mean a wildcard, * and ?, are illegal in a filename, so a name
+    that exists is never a pattern the caller meant.
+
     :param path_or_uri: list of paths or URIs
+    :param debug: say on stderr which arguments were dropped, and why
     :return: list of paths or URIs with resolved paths and no glob components. An
      argument that names nothing this machine can reach contributes nothing.
     """
@@ -129,23 +143,45 @@ def parse_command_line_arguments(path_or_uri: list[str]) -> list[str]:
         else:
             uri = None
             path = Path(pu)
-        if not is_directory(path):
-            if not path.name:
-                # A root has no filename component, and glob() refuses the empty
-                # pattern with ValueError rather than matching nothing. There is
-                # nothing here to show, so the argument contributes nothing -- the
-                # same answer a pattern that matches no file gives. A root that
-                # does exist was taken as a folder above.
-                continue
-            for globbed_pu in path.parent.resolve().glob(path.name):
-                if uri:
-                    paths.append(path_to_file_uri(str(globbed_pu)))
-                else:
-                    paths.append(str(globbed_pu))
-        elif uri:
-            paths.append(path_to_file_uri(str(path)))
+        if is_directory(path):
+            if uri:
+                paths.append(path_to_file_uri(str(path)))
+            else:
+                paths.append(str(path.resolve()))
+            continue
+
+        if not path.name:
+            # A root has no filename component to glob, and glob() refuses the empty
+            # pattern with ValueError rather than matching nothing. There is nothing
+            # here to show, so the argument contributes nothing.
+            if debug:
+                print(f"Path does not exist: '{pu}'", file=sys.stderr)
+            continue
+
+        parent = path.parent.resolve()
+        if is_present(path):
+            # The name is an item on disk. Built the way a match is built -- the
+            # resolved parent and this component, never the target of a link at the
+            # end of it -- so a literal and a pattern cannot spell one file apart.
+            matched = [parent / path.name]
         else:
-            paths.append(str(path.resolve()))
+            try:
+                matched = list(parent.glob(path.name))
+            except OSError:
+                # The selector asks its own class whether the directory it is about to
+                # scan is one, so glob() carries the same narrow swallow list as the two
+                # questions above even though neither of them raised. A location that
+                # cannot be answered has no matches, which is what this line already
+                # answers for a folder that is not there.
+                matched = []
+            if not matched and debug:
+                print(f"No file matched: '{pu}'", file=sys.stderr)
+
+        for globbed_pu in matched:
+            if uri:
+                paths.append(path_to_file_uri(str(globbed_pu)))
+            else:
+                paths.append(str(globbed_pu))
 
     return paths
 

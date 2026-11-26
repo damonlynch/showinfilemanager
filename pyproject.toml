@@ -119,5 +119,12 @@ exclude = [
     "T201",
 ]
 
+# Rules deliberately kept in system/windows.py, the module that says out loud what it is
+# about to ask the shell to do:
+#   T201    the --verbose announcement of the selection it is handing over, and the
+#           --debug note naming each argument the glob and URI pass could not place.
+#           Both are output the command line documents, as they are in filemanager.py.
+"**/showinfm/system/windows.py" = ["T201"]
+
 [tool.pyrefly]
 project-excludes = ["src/showinfm/system/urivalidate.py"]

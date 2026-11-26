@@ -4,6 +4,7 @@
 import subprocess
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Never
 
 import pytest
 
@@ -53,26 +54,46 @@ class FakeWslpath:
         return subprocess.CompletedProcess(cmd, 0, table[path].encode(), b"")
 
 
+def _unanswerable() -> OSError:
+    """The answer a vanished network location gives, built in one place."""
+
+    return OSError(
+        22, "The specified network name is no longer available", None, 64, None
+    )
+
+
 class UnanswerablePath(type(Path())):  # type: ignore[valid-type]
     """
-    A path the system cannot answer for, in the one way that matters.
+    A location the system cannot answer for, in every way it could be asked.
 
     The redirector answers a network location that went away mid-call with a code
     pathlib does not swallow -- WinError 64 was measured here, and the swallow list is
-    both narrow and moving between releases. Nothing a test can name forces that answer
-    on a quiet machine, so it is injected rather than hoped for.
+    both narrow and moving between releases. Nothing on a quiet machine produces that
+    answer on demand, so it is injected rather than hoped for.
 
-    Subclassing Path itself is not possible on Python 3.11 (the flavour is set by the
-    factory, not the class), and this subclass makes glob() raise as well, because
-    pathlib builds its entries from type(path). So it is only sound where the code under
-    test stops before globbing: a root, which has no filename component to glob, or
-    tools.is_directory(), whose own guard is what is being asked about.
+    Each question is overridden on its own rather than by overriding stat(), because
+    that is not portable: on Python 3.11 is_dir(), exists() and is_file() all route
+    through the method, while on 3.14 they do not, and a stat() override there left the
+    double answering from the real filesystem -- it reported a folder that was never
+    injected. glob() is overridden too, because pathlib's selector asks its own class
+    whether the directory it is about to scan is one, which is how a glob carries the
+    same error even when the two questions above are guarded.
+
+    Subclassing Path itself is not possible on Python 3.11: the flavour is set by the
+    Path() factory, not by inheritance.
     """
 
     def is_dir(self) -> bool:
-        raise OSError(
-            22, "The specified network name is no longer available", None, 64, None
-        )
+        raise _unanswerable()
+
+    def is_file(self) -> bool:
+        raise _unanswerable()
+
+    def exists(self) -> bool:
+        raise _unanswerable()
+
+    def glob(self, *_args: object, **_kwargs: object) -> Never:
+        raise _unanswerable()
 
 
 @pytest.fixture

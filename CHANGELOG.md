@@ -2,6 +2,8 @@
 
 ## 1.1.7 (2026-11-xx)
 
+- Minimum supported Python version is now 3.11.
+- Added pytest coverage for Python versions 3.11–3.15.
 - Fix [#39](https://github.com/damonlynch/showinfilemanager/issues/39): Show in File Manager on Windows wrongly assumes successful import of `win32com.shell`.
 - Fix the Windows Explorer URIs generated under WSL on recent Python releases:
   `urllib.request.pathname2url()` changed in Python 3.12 for paths beginning with
@@ -25,6 +27,9 @@
 - Fix a share URI under WSL being resolved against the current drive, so `file://server/share` could name a local folder that has nothing to do with the share. Explorer now receives the share, and a URI with a space in it reaches the file manager as one argument rather than two.
 - Fix [#4](https://github.com/damonlynch/showinfilemanager/issues/4): a started file manager was reported as still running when this process exited, regardless of whether the child had long finished. Its exit status is now read on each launch and at exit, and the report is turned off for these children, since a file manager is meant to outlive the call. Nothing is waited for.
 - The file: URI passed to a file manager on Windows is spelled file:///C:/… again on Python 3.14 and 3.15, where a change in urllib.parse.urljoin() had shortened it to file:/C:/…. Ordinary paths and share locations are unaffected.
+- On Windows, a filename containing brackets, which is how screenshot and download tools name their files, was re-read as a glob pattern: `showinfilemanager "C:\Users\me\Desktop\Screenshot [2026-11-26] 091500.png"` opened nothing at all, while a name with a single character class, `holiday[1].jpg`, opened a different file instead. A name that exists is now used as the name it is, and only what nothing answers for is read as a pattern, so `*` and `?` behave exactly as before.
+- On Windows, an argument the program could not place ended in a Python traceback rather than a report. An unmapped drive letter, or a network share root that cannot be reached, had its filename globbed anyway, and pathlib refuses a pattern containing nothing; and an `smb` URI naming no server — three separators before the share, as in `smb:///share/file.jpg` — was rejected as malformed. The first now contributes no location, the answer a pattern that matches no file already gave. The second is still refused, but as the message `Not an smb URI naming a share: 'smb:///share/file.jpg'`, which the command writes instead of a traceback.
+- A location the system cannot answer for is now treated as no folder and nothing matched, rather than as a failure. Asking whether a network share is a directory can answer with an error instead of yes or no — measured on Windows as `OSError: [WinError 64] The specified network name is no longer available` when a share went away mid-call — and that error used to propagate out of `show_in_file_manager()` as an `OSError` neither its documentation nor the README declares. An argument the program cannot place is left out, whether nothing matched it, it is not there, or the system would not answer for it, and `--debug` names the argument it leaves out.
 
 ## 1.1.6 (2026-02-17)
 

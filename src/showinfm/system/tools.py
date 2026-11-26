@@ -95,6 +95,26 @@ def is_directory(path: Path) -> bool:
         return False
 
 
+def is_present(path: Path) -> bool:
+    """
+    Whether anything at all answers for this path, with no answer counting as nothing.
+
+    The same guard as is_directory(), for the same reason and by the same measurement:
+    exists() asks the same stat() and so re-raises the same errors pathlib does not
+    swallow. Kept separate rather than folded into one call because the two questions
+    differ -- one asks what the item is, this one whether there is an item at all -- and
+    the caller needs both answers in order.
+
+    :param path: the location to examine
+    :return: True if the system says something is there, else False
+    """
+
+    try:
+        return path.exists()
+    except OSError:
+        return False
+
+
 def smb_uri_to_unc(uri: str) -> str:
     r"""
     Translate an smb:// URI into the UNC path Windows uses for the same share.
