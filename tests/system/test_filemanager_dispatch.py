@@ -450,6 +450,42 @@ def test_an_smb_uri_becomes_a_share_path_for_explorer(dispatch: Dispatch) -> Non
 
 
 @requires_windows_paths
+def test_a_share_uri_for_explorer_arrives_decoded_and_as_a_path(
+    dispatch: Dispatch,
+) -> None:
+    r"""
+    The other half of that conversion: an escaped space is for a URI, and a UNC path is
+    not one, so \\srv\Backup\media render is what the shell API has to be given. Left
+    encoded it names a folder that does not exist, and Windows opens nothing while
+    reporting no error.
+    """
+
+    dispatch.configure(platform=WINDOWS)
+    dispatch.run("smb://srv/Backup/media%20render", file_manager="explorer.exe")
+    assert dispatch.shell_calls == [[r"\\srv\Backup\media render"]]
+
+
+@requires_windows_paths
+def test_a_share_uri_is_left_alone_when_conversion_is_refused(
+    dispatch: Dispatch,
+) -> None:
+    """
+    allow_conversion=False is the caller insisting on the spelling it used, so even here
+    nothing becomes a path. Explorer cannot open the URI, which is the caller's answer to
+    live with, and the guard is that the conversion the Windows branch would otherwise run
+    is skipped rather than applied anyway.
+    """
+
+    dispatch.configure(platform=WINDOWS)
+    dispatch.run(
+        "smb://srv/share/holiday.jpg",
+        file_manager="explorer.exe",
+        allow_conversion=False,
+    )
+    assert dispatch.shell_calls == [["smb://srv/share/holiday.jpg"]]
+
+
+@requires_windows_paths
 def test_explorer_is_handed_nothing_for_a_scheme_with_no_path(
     dispatch: Dispatch,
 ) -> None:

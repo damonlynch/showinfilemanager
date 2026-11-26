@@ -79,6 +79,29 @@ def win_argv(command: str) -> list[str]:
         ctypes.windll.kernel32.LocalFree(argv)
 
 
+class RecordedLaunch:
+    """
+    Stand in for a launched file manager, answering what the package asks of one.
+
+    Nothing is started here, so the stand-in reports itself finished. It has to answer
+    poll() as well as wait(): _reap_processes() reads every recorded launch that way to
+    keep the module's list of them from growing, and a stand-in that cannot answer
+    leaves its object in that list for the rest of the process. Every later launch then
+    fails on it -- in whichever test happens to run next, which is how one incomplete
+    fake turned into forty-three failures.
+    """
+
+    def __init__(self) -> None:
+        self.returncode: int | None = None
+
+    def poll(self) -> int:
+        self.returncode = 0
+        return 0
+
+    def wait(self) -> None:
+        self.returncode = 0
+
+
 @pytest.fixture(scope="module")
 def unc_folder() -> str:
     """
@@ -117,6 +140,7 @@ def scenario(mode: str, target: str) -> dict:
 
     result = subprocess.run(
         [sys.executable, "-m", "tests.system.windows_probe", mode, target],
+        check=False,
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
@@ -425,21 +449,15 @@ def test_a_live_network_folder_reaches_another_manager_quoted_and_intact(
     The route the explorer.exe guard leaves to quote_path(): a manager that is not
     explorer.exe receives one command string, so the folder must arrive quoted as one
     token and still name the share. Rebuilding that token as a Path left it as
-    "\\server\share\folder" with one leading separator, a local path, and no change to
+    "\\server\\share\folder" with one leading separator, a local path, and no change to
     the quoting itself could fix that. Hence a real share.
     """
 
     launched: list = []
 
-    class _Process:
-        returncode = 0
-
-        def wait(self) -> None:
-            return None
-
     def popen(args, *rest, **kwargs):
         launched.append(args)
-        return _Process()
+        return RecordedLaunch()
 
     monkeypatch.setattr(filemanager, "subprocess", SimpleNamespace(Popen=popen))
 
@@ -624,11 +642,12 @@ def test_a_live_share_root_reaches_another_manager_as_one_token(
     """
 
     launched: list = []
-    monkeypatch.setattr(
-        filemanager,
-        "subprocess",
-        SimpleNamespace(Popen=lambda args, *rest, **kw: launched.append(args)),
-    )
+
+    def popen(args, *rest, **kwargs):
+        launched.append(args)
+        return RecordedLaunch()
+
+    monkeypatch.setattr(filemanager, "subprocess", SimpleNamespace(Popen=popen))
 
     root = str(Path(UNC_ROOT))
     filemanager.FileManager().show_in_file_manager(
@@ -661,3 +680,105 @@ def test_quoting_off_windows_uses_shell_quoting(
 
     assert quoted == "'/home/damon/holiday film.jpg'"
     assert shlex.split(f"nemo {quoted}")[1] == "/home/damon/holiday film.jpg"
+
+
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="a Windows interpreter turns the POSIX path into separators of its own",
+)
+def test_a_posix_path_that_arrives_quoted_is_left_alone(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Quoting is applied once, so a path already wrapped in matching quotes goes through
+    untouched. Wrapping it again would have the shell look for a file whose name begins and
+    ends with a quote character.
+    """
+
+    monkeypatch.setattr(tools, "current_platform", Platform.linux)
+
+    single = "'/home/damon/holiday film.jpg'"
+    double = '"/home/damon/holiday film.jpg"'
+
+    assert tools.quote_path(path=Path(single)) == single
+    assert tools.quote_path(path=Path(double)) == double
+
+
+@pytest.fixture
+def fake_shell(monkeypatch: pytest.MonkeyPatch) -> list:
+    """
+    Stand in for the three shell functions the launcher calls, and return what it was asked.
+
+    Put on the module attribute the launcher reads, so the guard for a missing pywin32 stays
+    behind the scenario and only the announcement is under test.
+    """
+
+    calls: list = []
+    shell = SimpleNamespace(
+        SHILCreateFromPath=lambda path, _flags: (
+            calls.append(["pidl", path]) or (f"pidl-{path}", 0)
+        ),
+        SHParseDisplayName=lambda display, _unused, _reference: (
+            calls.append(["item", display]) or (f"item-{display}", 0)
+        ),
+        SHOpenFolderAndSelectItems=lambda folder, items, _flags: calls.append(
+            ["open", folder, list(items), _flags]
+        ),
+    )
+    monkeypatch.setattr(windows, "_shell", shell)
+    return calls
+
+
+def test_the_selection_is_announced_with_the_files_it_selects(
+    fake_shell: list, capsys, tmp_path
+) -> None:
+    """
+    What the shell API is asked to do is invisible unless it is printed, so verbose names the
+    folder and the files selected in it.
+    """
+
+    target = tmp_path / "holiday.jpg"
+
+    windows.launch_file_explorer([str(target)], True)
+
+    out = capsys.readouterr().out
+    assert f'at "{tmp_path}", selecting "{target.name}"' in out
+    assert fake_shell[0] == ["pidl", str(tmp_path)]
+
+
+def test_nothing_is_announced_when_there_is_nothing_to_select(
+    fake_shell: list, capsys
+) -> None:
+    """
+    With no location there is no folder to ask the shell about, so the loop is skipped
+    entirely rather than announcing an empty selection.
+    """
+
+    windows.launch_file_explorer([], True)
+
+    assert capsys.readouterr().out == ""
+    assert fake_shell == []
+
+
+@pytest.mark.skipif(
+    platform.system() != "Windows",
+    reason="only a Windows path reports a share root as a folder with no name",
+)
+def test_a_root_is_announced_with_nothing_quoted_after_it(
+    fake_shell: list, capsys
+) -> None:
+    r"""
+    A share root is the folder and has no name of its own, so the list of files to
+    select is a list of one empty string, and joining it answers with nothing. Quoting
+    that would announce `selecting ""`, a file called two quote characters, which is
+    how the announcement stops matching what the shell API is asked to do. Reached from
+    the command line by selecting -- rather than opening -- a share: explorer.exe is
+    handed the root itself.
+    """
+
+    windows.launch_file_explorer([r"\\srv\share"], True)
+
+    out = capsys.readouterr().out
+    assert out.startswith("Executing Windows shell to open file explorer at ")
+    assert out.endswith(", selecting \n")
+    assert fake_shell[0] == ["pidl", "\\\\srv\\share\\"]

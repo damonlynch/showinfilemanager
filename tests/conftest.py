@@ -2,9 +2,11 @@
 #  SPDX-License-Identifier: MIT
 
 import subprocess
+from collections.abc import Iterator
 
 import pytest
 
+from showinfm import filemanager
 from showinfm.system import linux
 
 
@@ -80,3 +82,24 @@ def clear_cached_desktop() -> None:
     yield
     linux.linux_desktop.cache_clear()
     linux._linux_desktop = None
+
+
+@pytest.fixture(autouse=True)
+def isolated_launch_registry() -> Iterator[None]:
+    """
+    Keep one test's launch records from being read by the next.
+
+    The registry is module level on purpose -- a file manager started here must outlive
+    the call -- and _reap_processes() reads every entry in it on each launch. A stand-in
+    that cannot answer poll() therefore stays in the list, because the exception happens
+    before the entries can be filtered out, and then every later launch in the same
+    process fails on it: two incomplete fakes in test_windows.py turned into forty-three
+    failures across the suite, in whichever tests happened to run after them. Restoring
+    what the list held beforehand keeps an incomplete fake inside the test that made it,
+    and keeps the exit hook from reporting one on the way out.
+    """
+
+    registry = filemanager._PROCESSES  # noqa: SLF001 -- one list, held on purpose
+    recorded = list(registry)
+    yield
+    registry[:] = recorded

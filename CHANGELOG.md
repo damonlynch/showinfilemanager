@@ -24,6 +24,7 @@
 - Accept `smb://` URIs by translating them to the UNC path for the same share, since Windows has no handler for that scheme. A file manager that opens `smb://` itself is given the URI unchanged.
 - Fix a share URI under WSL being resolved against the current drive, so `file://server/share` could name a local folder that has nothing to do with the share. Explorer now receives the share, and a URI with a space in it reaches the file manager as one argument rather than two.
 - Fix [#4](https://github.com/damonlynch/showinfilemanager/issues/4): a started file manager was reported as still running when this process exited, regardless of whether the child had long finished. Its exit status is now read on each launch and at exit, and the report is turned off for these children, since a file manager is meant to outlive the call. Nothing is waited for.
+- The file: URI passed to a file manager on Windows is spelled file:///C:/… again on Python 3.14 and 3.15, where a change in urllib.parse.urljoin() had shortened it to file:/C:/…. Ordinary paths and share locations are unaffected.
 
 ## 1.1.6 (2026-02-17)
 

@@ -164,7 +164,11 @@ def path_to_file_uri(path: str) -> str:
     """
 
     path = os.path.normpath(os.path.abspath(path))
-    url = urljoin("file:", pathname2url(path))
+    # "file:///", not pip's "file:": pathname2url() answers a drive path with three
+    # leading separators, and urljoin() collapses those differently from Python 3.14 on,
+    # which would otherwise hand a file manager "file:/C:/x" where every earlier release
+    # handed it "file:///C:/x". The empty authority is the RFC 8089 form either way.
+    url = urljoin("file:///", pathname2url(path))
     return url
 
 
@@ -221,8 +225,6 @@ def directories_and_their_files(paths: list[str]) -> defaultdict[str, list[str]]
     :return: default dict of folders with list of their files
     """
 
-    if isinstance(paths, str):
-        paths = [paths]
     folder_contents = defaultdict(list)
     for path in paths:
         p = Path(path)

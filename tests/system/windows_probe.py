@@ -41,7 +41,6 @@ class ImportTracer:
     def find_spec(self, name, path=None, target=None):
         if name == "win32com" or name.startswith("win32com."):
             self.attempts.append(name)
-        return None
 
 
 def pretend_windows() -> None:
