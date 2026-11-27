@@ -1,5 +1,11 @@
 # Changelog for Show in File Manager
 
+## 1.1.8 (2026-11-28)
+
+- The source archive built by `hatch build -t sdist` now contains the `tests` directory, so a Linux distribution that rebuilds this package from source can run the test suite against the code it is about to install. 
+- The archive no longer contains `AGENTS.md`. 
+- Nothing about the installed program differs from 1.1.7.
+
 ## 1.1.7 (2026-11-27)
 
 - Minimum supported Python version is now 3.11.
